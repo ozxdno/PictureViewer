@@ -318,7 +318,7 @@ namespace PictureViewer
                 // 判断文件的存在性，可移动性
                 string sourpath = showIN.filepath + "\\" + showIN.filename + showIN.extension;
                 if (!File.Exists(sourpath)) { MessageBox.Show("IN File Not Exist !"); return; }
-                string destpath = showDB.filepath + "\\" + NewFileName + GetExtension(showIN.type);
+                string destpath = showDB.filepath + "\\" + NewFileName + showIN.extension;
                 if (File.Exists(destpath)) { MessageBox.Show("File Exists in DB !"); return; }
 
                 // 复制和删除文件
@@ -366,7 +366,7 @@ namespace PictureViewer
                 {
                     CFG.LastFileID++;
                     string NewFileName = "pvdata" + (CFG.LastFileID).ToString();
-                    ifile.CopyTo(destpath + "\\" + NewFileName + ".pv", true);
+                    ifile.CopyTo(destpath + "\\" + NewFileName + showIN.extension, true);
                 }
                 dir.Delete(true);
 
@@ -405,7 +405,7 @@ namespace PictureViewer
             if (showDB.type.Equals("PIC") || showDB.type.Equals("GIF") || showDB.type.Equals("MOV"))
             {
                 // 获取文件名
-                string sour = showDB.filepath + "\\" + showDB.filename + GetExtension(showDB.type);
+                string sour = showDB.filepath + "\\" + showDB.filename + showDB.extension;
                 string dest = CFG.e_path + "\\" + showDB.filename + showDB.extension;
                 if (File.Exists(dest)) { MessageBox.Show("File Exists in Export !"); return; }
 
@@ -550,7 +550,7 @@ namespace PictureViewer
             {
                 // 确认文件存在
                 string sour = showIN.filepath + "\\" + showIN.filename + showIN.extension;
-                string dest = showDB.filepath + "\\" + showDB.filename + GetExtension(showIN.type);
+                string dest = showDB.filepath + "\\" + showDB.filename + showIN.extension;
 
                 if (!File.Exists(sour)) { MessageBox.Show("IN File not Exist !"); return; }
                 if (!File.Exists(dest)) { MessageBox.Show("DB File not Exist !"); return; }
@@ -598,7 +598,7 @@ namespace PictureViewer
                 foreach (FileInfo ifile in files)
                 {
                     string filename = ifile.Name.Substring(0, ifile.Name.Length - showIN.extension.Length);
-                    ifile.CopyTo(dest + "\\" + filename + ".pv");
+                    ifile.CopyTo(dest + "\\" + filename + showIN.extension);
                 }
 
                 // 更新SIZE
