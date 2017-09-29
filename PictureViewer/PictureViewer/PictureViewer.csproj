@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{1F04CB2A-9FE7-4072-B7E8-6281A7652FFA}</ProjectGuid>
+    <ProjectGuid>{40D36AC3-4DF6-41AA-ADF2-35FDC2560CBF}</ProjectGuid>
     <OutputType>WinExe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>PictureViewer</RootNamespace>
@@ -32,10 +32,6 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
-  <PropertyGroup>
-    <ApplicationIcon>miku256.ico</ApplicationIcon>
-  </PropertyGroup>
-  <PropertyGroup />
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -50,54 +46,37 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Form_CMC\Form_CMC.cs">
+    <Compile Include="Class\FileOperate.cs" />
+    <Compile Include="Class\Load.cs" />
+    <Compile Include="Class\Save.cs" />
+    <Compile Include="Form\Form_Main.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Form_CMC\Form_CMC.Designer.cs">
-      <DependentUpon>Form_CMC.cs</DependentUpon>
+    <Compile Include="Form\Form_Main.Designer.cs">
+      <DependentUpon>Form_Main.cs</DependentUpon>
     </Compile>
-    <Compile Include="Form_Config\Form_Config.cs">
+    <Compile Include="Form\Form_Input.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Form_Config\Form_Config.Designer.cs">
-      <DependentUpon>Form_Config.cs</DependentUpon>
+    <Compile Include="Form\Form_Input.Designer.cs">
+      <DependentUpon>Form_Input.cs</DependentUpon>
     </Compile>
-    <Compile Include="Form_Error\Form_Error.cs">
+    <Compile Include="Form\Form_Search.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Form_Error\Form_Error.Designer.cs">
-      <DependentUpon>Form_Error.cs</DependentUpon>
+    <Compile Include="Form\Form_Search.Designer.cs">
+      <DependentUpon>Form_Search.cs</DependentUpon>
     </Compile>
-    <Compile Include="Form_Start\Form_Start.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Form_Start\Form_Start.Designer.cs">
-      <DependentUpon>Form_Start.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Form_View\Form_View.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Form_View\Form_View.Designer.cs">
-      <DependentUpon>Form_View.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Method\OutputFile.cs" />
-    <Compile Include="Method\ReadFile.cs" />
-    <Compile Include="StartProject.cs" />
+    <Compile Include="PictureViewer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <EmbeddedResource Include="Form_CMC\Form_CMC.resx">
-      <DependentUpon>Form_CMC.cs</DependentUpon>
+    <EmbeddedResource Include="Form\Form_Input.resx">
+      <DependentUpon>Form_Input.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Form_Config\Form_Config.resx">
-      <DependentUpon>Form_Config.cs</DependentUpon>
+    <EmbeddedResource Include="Form\Form_Main.resx">
+      <DependentUpon>Form_Main.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Form_Error\Form_Error.resx">
-      <DependentUpon>Form_Error.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Form_Start\Form_Start.resx">
-      <DependentUpon>Form_Start.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Form_View\Form_View.resx">
-      <DependentUpon>Form_View.cs</DependentUpon>
+    <EmbeddedResource Include="Form\Form_Search.resx">
+      <DependentUpon>Form_Search.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
@@ -121,8 +100,25 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
-    <Content Include="miku256.ico" />
+    <COMReference Include="AxWMPLib">
+      <Guid>{6BF52A50-394A-11D3-B153-00C04F79FAA6}</Guid>
+      <VersionMajor>1</VersionMajor>
+      <VersionMinor>0</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>aximp</WrapperTool>
+      <Isolated>False</Isolated>
+    </COMReference>
+    <COMReference Include="WMPLib">
+      <Guid>{6BF52A50-394A-11D3-B153-00C04F79FAA6}</Guid>
+      <VersionMajor>1</VersionMajor>
+      <VersionMinor>0</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>tlbimp</WrapperTool>
+      <Isolated>False</Isolated>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </COMReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

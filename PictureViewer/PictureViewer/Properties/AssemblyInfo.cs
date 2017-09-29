@@ -8,10 +8,10 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("PictureViewer")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("@ozxdno")]
+[assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("PictureViewer")]
 [assembly: AssemblyCopyright("Copyright ©  2017")]
-[assembly: AssemblyTrademark("@ozxdno")]
+[assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
 //将 ComVisible 设置为 false 将使此程序集中的类型
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // 如果此项目向 COM 公开，则下列 GUID 用于类型库的 ID
-[assembly: Guid("1f04cb2a-9fe7-4072-b7e8-6281a7652ffa")]
+[assembly: Guid("40d36ac3-4df6-41aa-adf2-35fdc2560cbf")]
 
 // 程序集的版本信息由下列四个值组成: 
 //
