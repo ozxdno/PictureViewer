@@ -530,7 +530,7 @@ namespace PictureViewer
                     }
                 }
                 this.HorizontalScroll.Value = xS;
-                this.VerticalScroll.Value = yS;
+                this.VerticalScroll.Value = yS; return;
             }
 
             if (type == 2)
@@ -665,7 +665,7 @@ namespace PictureViewer
             {
                 int ptX = MousePosition.X - this.Location.X;
                 int ptY = MousePosition.Y - this.Location.Y;
-                bool showPageMark = this.Width > 150 && this.Height > 150;
+                bool showPageMark = this.Width > 150 && this.Height > 150 && !this.hideToolStripMenuItem.Checked;
 
                 // 左翻页
                 int setW = this.Width / 20;
