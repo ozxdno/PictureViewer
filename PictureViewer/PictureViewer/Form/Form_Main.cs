@@ -862,6 +862,10 @@ namespace PictureViewer
                 if (config.SubFiles.Count == 0) { ShowOff(); return; }
                 if (config.SubIndex < 0 || config.SubIndex >= config.SubFiles.Count) { ShowOff(); return; }
 
+                isHide = FileOperate.IsSupportHide(FileOperate.getExtension(config.SubFiles[config.SubIndex]));
+                if (isHide && !NoHide)
+                { this.Text = "[" + Index + "/" + Total + "] [" + (config.SubIndex + 1).ToString() + "/" + config.SubFiles.Count + "] [Unsupport] " + Name + "：" + config.SubFiles[config.SubIndex]; ShowOff(); return; }
+
                 this.Text = "[" + Index + "/" + Total + "] [" + (config.SubIndex + 1).ToString() + "/" + config.SubFiles.Count + "] " + Name + "：" + config.SubFiles[config.SubIndex];
 
                 name = config.SubFiles[config.SubIndex];
