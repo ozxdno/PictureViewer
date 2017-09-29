@@ -507,10 +507,6 @@ namespace PictureViewer
             {
                 int ptX = MousePosition.X - this.Location.X;
                 int ptY = MousePosition.Y - this.Location.Y;
-                this.label1.Visible = false;
-                this.label2.Visible = false;
-                this.label3.Visible = false;
-                this.label4.Visible = false;
                 bool showPageMark = this.Width > 150 && this.Height > 150;
 
                 // 左翻页
@@ -529,6 +525,7 @@ namespace PictureViewer
                     this.label1.Visible = true;
                     this.label1.Font = new Font("宋体", font);
                 }
+                else { this.label1.Visible = false; }
                 // 右翻页
                 setW = this.Width / 20;
                 setH = this.Height / 5;
@@ -546,6 +543,7 @@ namespace PictureViewer
                     this.label2.Visible = true;
                     this.label2.Font = new Font("宋体", font);
                 }
+                else { this.label2.Visible = false; }
                 // 上翻页
                 setW = this.Width / 8;
                 setH = this.Height / 12;
@@ -562,6 +560,7 @@ namespace PictureViewer
                     this.label3.Visible = true;
                     this.label3.Font = new Font("宋体", font);
                 }
+                else { this.label3.Visible = false; }
                 // 下翻页
                 setW = this.Width / 8;
                 setH = this.Height / 12;
@@ -579,6 +578,7 @@ namespace PictureViewer
                     this.label4.Visible = true;
                     this.label4.Font = new Font("宋体", font);
                 }
+                else { this.label4.Visible = false; }
 
                 // 滚屏
                 if (!key.Down || (!this.HorizontalScroll.Visible && !this.VerticalScroll.Visible)) { return; }
@@ -690,7 +690,7 @@ namespace PictureViewer
             string full = path + "\\" + name;
             int type = FileOperate.getFileType(FileOperate.getExtension(name));
 
-            if (type == 0) { this.Text = "[" + Index + "/" + Total + "] File Error >> " + Name; ShowOff(); return; }
+            if (type == 0) { this.Text = "[" + Index + "/" + Total + "] [Unsupport] " + Name; ShowOff(); return; }
             if (type == 1 && !Directory.Exists(full)) { ShowOff(); return; }
             if (type != 1 && !File.Exists(full)) { ShowOff(); return; }
 
