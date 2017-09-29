@@ -110,6 +110,7 @@ namespace PictureViewer.Class
             if (extension == ".gif") { return 3; }
             if (extension == ".avi") { return 4; }
             if (extension == ".mp4") { return 4; }
+            if (extension == ".webm") { return 0; } // 未被处理的文件
             return -1;
         }
 
@@ -127,6 +128,7 @@ namespace PictureViewer.Class
             if (extension == ".gif") { return true; }
             if (extension == ".avi") { return true; }
             if (extension == ".mp4") { return true; }
+            if (extension == ".webm") { return true; }
             return false;
         }
 
@@ -144,6 +146,7 @@ namespace PictureViewer.Class
             if (extension == ".pv5") { return true; }
             if (extension == ".pv6") { return true; }
             if (extension == ".pv7") { return true; }
+            if (extension == ".pv8") { return true; }
             return false;
         }
 
@@ -221,6 +224,7 @@ namespace PictureViewer.Class
             if (hideExtension == ".pv5") { return ".gif"; }
             if (hideExtension == ".pv6") { return ".avi"; }
             if (hideExtension == ".pv7") { return ".mp4"; }
+            if (hideExtension == ".pv8") { return ".webm"; }
 
             return null;
         }
@@ -240,6 +244,7 @@ namespace PictureViewer.Class
             if (showExtension == ".gif") { return ".pv5"; }
             if (showExtension == ".avi") { return ".pv6"; }
             if (showExtension == ".mp4") { return ".pv7"; }
+            if (showExtension == ".webm") { return ".pv8"; }
 
             return null;
         }

@@ -48,6 +48,10 @@
             this.openComicToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.axWindowsMediaPlayer1 = new AxWMPLib.AxWindowsMediaPlayer();
+            this.label1 = new System.Windows.Forms.Label();
+            this.label2 = new System.Windows.Forms.Label();
+            this.label3 = new System.Windows.Forms.Label();
+            this.label4 = new System.Windows.Forms.Label();
             this.contextMenuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.axWindowsMediaPlayer1)).BeginInit();
@@ -106,7 +110,7 @@
             // pathToolStripMenuItem
             // 
             this.pathToolStripMenuItem.Name = "pathToolStripMenuItem";
-            this.pathToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.pathToolStripMenuItem.Size = new System.Drawing.Size(101, 22);
             this.pathToolStripMenuItem.Text = "Path";
             this.pathToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Export_Path);
             // 
@@ -182,6 +186,7 @@
             this.pictureBox1.Size = new System.Drawing.Size(203, 52);
             this.pictureBox1.TabIndex = 6;
             this.pictureBox1.TabStop = false;
+            this.pictureBox1.DoubleClick += new System.EventHandler(this.Form_Main_DoubleClick);
             // 
             // axWindowsMediaPlayer1
             // 
@@ -195,6 +200,46 @@
             this.axWindowsMediaPlayer1.Visible = false;
             this.axWindowsMediaPlayer1.MouseDownEvent += new AxWMPLib._WMPOCXEvents_MouseDownEventHandler(this.WMP_RightButtonClicked);
             // 
+            // label1
+            // 
+            this.label1.Location = new System.Drawing.Point(-1, 51);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(10, 17);
+            this.label1.TabIndex = 7;
+            this.label1.Text = "<";
+            this.label1.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.label1.Click += new System.EventHandler(this.Page_L);
+            // 
+            // label2
+            // 
+            this.label2.Location = new System.Drawing.Point(221, 51);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(11, 12);
+            this.label2.TabIndex = 8;
+            this.label2.Text = ">";
+            this.label2.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.label2.Click += new System.EventHandler(this.Page_R);
+            // 
+            // label3
+            // 
+            this.label3.Location = new System.Drawing.Point(82, 0);
+            this.label3.Name = "label3";
+            this.label3.Size = new System.Drawing.Size(11, 12);
+            this.label3.TabIndex = 9;
+            this.label3.Text = "↑";
+            this.label3.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.label3.Click += new System.EventHandler(this.Page_U);
+            // 
+            // label4
+            // 
+            this.label4.Location = new System.Drawing.Point(82, 124);
+            this.label4.Name = "label4";
+            this.label4.Size = new System.Drawing.Size(11, 12);
+            this.label4.TabIndex = 10;
+            this.label4.Text = "↓";
+            this.label4.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.label4.Click += new System.EventHandler(this.Page_D);
+            // 
             // Form_Main
             // 
             this.AllowDrop = true;
@@ -203,6 +248,10 @@
             this.AutoScroll = true;
             this.ClientSize = new System.Drawing.Size(232, 136);
             this.ContextMenuStrip = this.contextMenuStrip1;
+            this.Controls.Add(this.label4);
+            this.Controls.Add(this.label3);
+            this.Controls.Add(this.label2);
+            this.Controls.Add(this.label1);
             this.Controls.Add(this.pictureBox1);
             this.Controls.Add(this.axWindowsMediaPlayer1);
             this.KeyPreview = true;
@@ -212,6 +261,7 @@
             this.Load += new System.EventHandler(this.Form_Loaded);
             this.DragDrop += new System.Windows.Forms.DragEventHandler(this.Form_DragDrop);
             this.DragEnter += new System.Windows.Forms.DragEventHandler(this.Form_DragEntre);
+            this.DoubleClick += new System.EventHandler(this.Form_Main_DoubleClick);
             this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.Form_KeyDown);
             this.KeyUp += new System.Windows.Forms.KeyEventHandler(this.Form_KeyUp);
             this.contextMenuStrip1.ResumeLayout(false);
@@ -241,6 +291,10 @@
         private System.Windows.Forms.ToolStripMenuItem openExportToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem openRootToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem openComicToolStripMenuItem;
+        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.Label label3;
+        private System.Windows.Forms.Label label4;
     }
 }
 

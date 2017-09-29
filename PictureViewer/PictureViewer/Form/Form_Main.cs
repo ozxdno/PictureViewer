@@ -394,10 +394,193 @@ namespace PictureViewer
             MenuShowed_OnWMP = !MenuShowed_OnWMP;
         }
 
+        private void Form_Main_DoubleClick(object sender, EventArgs e)
+        {
+            if (config.FolderIndex < 0 || config.FolderIndex >= FileOperate.RootFiles.Count) { return; }
+            if (config.FileIndex < 0 || config.FileIndex >= FileOperate.RootFiles[config.FolderIndex].Name.Count) { return; }
+
+            string name = FileOperate.RootFiles[config.FolderIndex].Name[config.FileIndex];
+            int type = FileOperate.getFileType(FileOperate.getExtension(name));
+
+            bool lastE = key.E; key.E = false;
+
+            if (type == 1)
+            {
+                if (config.SubIndex < 0 || config.SubIndex >= config.SubFiles.Count) { return; }
+                name = config.SubFiles[config.SubIndex];
+                type = FileOperate.getFileType(FileOperate.getExtension(name));
+                if (type != 2) { ShowCurrent(); return; }
+
+                if (config.SourPicture == null) { return; }
+                if (ShowedBigPicture) { ShowCurrent(); return; }
+
+                this.HorizontalScroll.Value = 0;
+                this.VerticalScroll.Value = 0;
+                ShowedBigPicture = true;
+
+                int X = (this.Width - 18 - config.SourPicture.Width) / 2;
+                int Y = (this.Height - 42 - config.SourPicture.Height) / 2;
+                key.E = X < 0 || Y < 0;
+                if (X < 1) { X = 1; }
+                if (Y < 1) { Y = 1; }
+
+                this.pictureBox1.Image = config.SourPicture;
+                this.pictureBox1.Location = new Point(X, Y);
+                this.pictureBox1.Height = config.SourPicture.Height;
+                this.pictureBox1.Width = config.SourPicture.Width; return;
+            }
+
+            if (type == 2)
+            {
+                if (config.SourPicture == null) { return; }
+                if (ShowedBigPicture) { ShowCurrent(); return; }
+
+                this.HorizontalScroll.Value = 0;
+                this.VerticalScroll.Value = 0;
+                ShowedBigPicture = true;
+
+                int X = (this.Width - 18 - config.SourPicture.Width) / 2;
+                int Y = (this.Height - 42 - config.SourPicture.Height) / 2;
+                key.E = X < 0 || Y < 0;
+                if (X < 1) { X = 1; }
+                if (Y < 1) { Y = 1; }
+
+                this.pictureBox1.Image = config.SourPicture;
+                this.pictureBox1.Location = new Point(X, Y);
+                this.pictureBox1.Height = config.SourPicture.Height;
+                this.pictureBox1.Width = config.SourPicture.Width;
+            }
+
+            if (type == 3) { ShowCurrent(); }
+
+            if (type == 4)
+            {
+                this.axWindowsMediaPlayer1.Height = this.Height - 41;
+                this.axWindowsMediaPlayer1.Width = this.Width - 18;
+
+                this.axWindowsMediaPlayer1.Ctlcontrols.play();
+            }
+        }
+        private void Page_U(object sender, EventArgs e)
+        {
+            if (config.SubFiles == null || config.SubFiles.Count == 0) { return; }
+            config.SubIndex--;
+            if (config.SubIndex < 0) { config.SubIndex = config.SubFiles.Count - 1; }
+
+            ShowCurrent();
+        }
+        private void Page_D(object sender, EventArgs e)
+        {
+            if (config.SubFiles == null || config.SubFiles.Count == 0) { return; }
+            config.SubIndex++;
+            if (config.SubIndex >= config.SubFiles.Count) { config.SubIndex = 0; }
+
+            ShowCurrent();
+        }
+        private void Page_L(object sender, EventArgs e)
+        {
+            if (FileOperate.RootFiles.Count == 0) { return; }
+
+            config.FileIndex--; if (config.FileIndex < 0) { config.FolderIndex--; }
+            if (config.FolderIndex < 0)
+            { config.FolderIndex = FileOperate.RootFiles.Count - 1; }
+            if (config.FileIndex < 0)
+            { config.FileIndex = FileOperate.RootFiles[config.FolderIndex].Name.Count - 1; }
+
+            config.SubFiles = new List<string>(); config.SubIndex = 0; ShowCurrent();
+        }
+        private void Page_R(object sender, EventArgs e)
+        {
+            if (FileOperate.RootFiles.Count == 0) { return; }
+
+            config.FileIndex++;
+            if (config.FileIndex >= FileOperate.RootFiles[config.FolderIndex].Name.Count)
+            { config.FileIndex = 0; config.FolderIndex++; }
+            if (config.FolderIndex >= FileOperate.RootFiles.Count) { config.FolderIndex = 0; }
+
+            config.SubFiles = new List<string>(); config.SubIndex = 0; ShowCurrent();
+        }
+
         private void Updata(object source, System.Timers.ElapsedEventArgs e)
         {
             this.BeginInvoke((EventHandler)delegate
             {
+                int ptX = MousePosition.X - this.Location.X;
+                int ptY = MousePosition.Y - this.Location.Y;
+                this.label1.Visible = false;
+                this.label2.Visible = false;
+                this.label3.Visible = false;
+                this.label4.Visible = false;
+                bool showPageMark = this.Width > 150 && this.Height > 150;
+
+                // 左翻页
+                int setW = this.Width / 20;
+                int setH = this.Height / 5;
+                int font = setW * 3 / 4;
+                int bgW = this.Width / 20;
+                int edW = bgW + setW;
+                int bgH = this.Height / 2 - setH / 2;
+                int edH = bgH + setH;
+                if (showPageMark && bgW <= ptX && ptX <= edW && bgH <= ptY && ptY <= edH)
+                {
+                    this.label1.Location = new Point(bgW - 10, bgH - 30);
+                    this.label1.Width = setW;
+                    this.label1.Height = setH;
+                    this.label1.Visible = true;
+                    this.label1.Font = new Font("宋体", font);
+                }
+                // 右翻页
+                setW = this.Width / 20;
+                setH = this.Height / 5;
+                font = setW * 3 / 4;
+                bgW = this.Width - setW - this.Width / 20;
+                if (this.VerticalScroll.Visible) { bgW -= 12; }
+                edW = bgW + setW;
+                bgH = this.Height / 2 - setH / 2;
+                edH = bgH + setH;
+                if (showPageMark && bgW <= ptX && ptX <= edW && bgH <= ptY && ptY <= edH)
+                {
+                    this.label2.Location = new Point(bgW - 10, bgH - 30);
+                    this.label2.Width = setW;
+                    this.label2.Height = setH;
+                    this.label2.Visible = true;
+                    this.label2.Font = new Font("宋体", font);
+                }
+                // 上翻页
+                setW = this.Width / 8;
+                setH = this.Height / 12;
+                font = setH * 3 / 4;
+                bgW = this.Width / 2 - setW / 2;
+                edW = bgW + setW;
+                bgH = this.Height / 20 + 30;
+                edH = bgH + setH;
+                if (showPageMark && bgW <= ptX && ptX <= edW && bgH <= ptY && ptY <= edH)
+                {
+                    this.label3.Location = new Point(bgW - 10, bgH - 30);
+                    this.label3.Width = setW;
+                    this.label3.Height = setH;
+                    this.label3.Visible = true;
+                    this.label3.Font = new Font("宋体", font);
+                }
+                // 下翻页
+                setW = this.Width / 8;
+                setH = this.Height / 12;
+                font = setH * 3 / 4;
+                bgW = this.Width / 2 - setW / 2;
+                edW = bgW + setW;
+                bgH = this.Height - this.Height / 20 - setH - 10;
+                if (this.HorizontalScroll.Visible) { bgH -= 10; }
+                edH = bgH + setH;
+                if (showPageMark && bgW <= ptX && ptX <= edW && bgH <= ptY && ptY <= edH)
+                {
+                    this.label4.Location = new Point(bgW - 10, bgH - 30);
+                    this.label4.Width = setW;
+                    this.label4.Height = setH;
+                    this.label4.Visible = true;
+                    this.label4.Font = new Font("宋体", font);
+                }
+
+                // 滚屏
                 if (!key.Down || (!this.HorizontalScroll.Visible && !this.VerticalScroll.Visible)) { return; }
                 if (this.lockToolStripMenuItem.Checked) { return; }
 
@@ -507,6 +690,7 @@ namespace PictureViewer
             string full = path + "\\" + name;
             int type = FileOperate.getFileType(FileOperate.getExtension(name));
 
+            if (type == 0) { this.Text = "[" + Index + "/" + Total + "] File Error >> " + Name; ShowOff(); return; }
             if (type == 1 && !Directory.Exists(full)) { ShowOff(); return; }
             if (type != 1 && !File.Exists(full)) { ShowOff(); return; }
 
