@@ -102,6 +102,7 @@ namespace PictureViewer.Class
         /// <returns></returns>
         public static int getFileType(string extension)
         {
+            // show files
             if (extension == "") { return 1; }
             if (extension == ".jpg") { return 2; }
             if (extension == ".jpeg") { return 2; }
@@ -111,6 +112,16 @@ namespace PictureViewer.Class
             if (extension == ".avi") { return 4; }
             if (extension == ".mp4") { return 4; }
             if (extension == ".webm") { return 0; } // 未被处理的文件
+            // hide files
+            if (extension == ".pv1") { return 2; }
+            if (extension == ".pv2") { return 2; }
+            if (extension == ".pv3") { return 2; }
+            if (extension == ".pv4") { return 2; }
+            if (extension == ".pv5") { return 3; }
+            if (extension == ".pv6") { return 4; }
+            if (extension == ".pv7") { return 4; }
+            if (extension == ".pv8") { return 0; }
+
             return -1;
         }
 
@@ -121,6 +132,7 @@ namespace PictureViewer.Class
         /// <returns></returns>
         public static bool IsSupport(string extension)
         {
+            // show file
             if (extension == ".jpg") { return true; }
             if (extension == ".jpeg") { return true; }
             if (extension == ".png") { return true; }
@@ -129,6 +141,15 @@ namespace PictureViewer.Class
             if (extension == ".avi") { return true; }
             if (extension == ".mp4") { return true; }
             if (extension == ".webm") { return true; }
+            // hide file
+            if (extension == ".pv1") { return true; }
+            if (extension == ".pv2") { return true; }
+            if (extension == ".pv3") { return true; }
+            if (extension == ".pv4") { return true; }
+            if (extension == ".pv5") { return true; }
+            if (extension == ".pv6") { return true; }
+            if (extension == ".pv7") { return true; }
+            if (extension == ".pv8") { return true; }
             return false;
         }
 
