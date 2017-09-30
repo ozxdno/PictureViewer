@@ -354,10 +354,10 @@ namespace PictureViewer
 
                 if (type == 4)
                 {
-                    this.axWindowsMediaPlayer1.Height = this.Height - 41;
-                    this.axWindowsMediaPlayer1.Width = this.Width - 18;
-
-                    this.axWindowsMediaPlayer1.Ctlcontrols.play(); return;
+                    ShowCurrent(); return;
+                    //this.axWindowsMediaPlayer1.Height = this.Height - 41;
+                    //this.axWindowsMediaPlayer1.Width = this.Width - 18;
+                    //this.axWindowsMediaPlayer1.Ctlcontrols.play(); return;
                 }
 
                 #endregion
@@ -737,10 +737,11 @@ namespace PictureViewer
 
             if (type == 4)
             {
-                this.axWindowsMediaPlayer1.Height = this.Height - 41;
-                this.axWindowsMediaPlayer1.Width = this.Width - 18;
+                ShowCurrent(); return;
 
-                this.axWindowsMediaPlayer1.Ctlcontrols.play(); return;
+                //this.axWindowsMediaPlayer1.Height = this.Height - 41;
+                //this.axWindowsMediaPlayer1.Width = this.Width - 18;
+                //this.axWindowsMediaPlayer1.Ctlcontrols.play(); return;
             }
 
             #endregion
