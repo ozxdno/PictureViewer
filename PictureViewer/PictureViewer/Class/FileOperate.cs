@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.IO;
 
+
 namespace PictureViewer.Class
 {
     class FileOperate
@@ -112,6 +113,7 @@ namespace PictureViewer.Class
             if (extension == ".avi") { return 4; }
             if (extension == ".mp4") { return 4; }
             if (extension == ".webm") { return 0; } // 未被处理的文件
+            if (extension == ".zip") { return 5; }
             // hide files
             if (extension == ".pv1") { return 2; }
             if (extension == ".pv2") { return 2; }
@@ -121,6 +123,7 @@ namespace PictureViewer.Class
             if (extension == ".pv6") { return 4; }
             if (extension == ".pv7") { return 4; }
             if (extension == ".pv8") { return 0; }
+            if (extension == ".pv9") { return 5; }
 
             return -1;
         }
@@ -141,6 +144,7 @@ namespace PictureViewer.Class
             if (extension == ".avi") { return true; }
             if (extension == ".mp4") { return true; }
             if (extension == ".webm") { return true; }
+            if (extension == ".zip") { return true; }
             // hide file
             if (extension == ".pv1") { return true; }
             if (extension == ".pv2") { return true; }
@@ -150,6 +154,7 @@ namespace PictureViewer.Class
             if (extension == ".pv6") { return true; }
             if (extension == ".pv7") { return true; }
             if (extension == ".pv8") { return true; }
+            if (extension == ".pv9") { return true; }
             return false;
         }
 
@@ -168,6 +173,7 @@ namespace PictureViewer.Class
             if (extension == ".pv6") { return true; }
             if (extension == ".pv7") { return true; }
             if (extension == ".pv8") { return true; }
+            if (extension == ".pv9") { return true; }
             return false;
         }
 
@@ -205,6 +211,40 @@ namespace PictureViewer.Class
             Form_Main.config.SubIndex = 0;
 
             return root.Path;
+        }
+        /// <summary>
+        /// 重新加载指定路径下的文件，文件流指向第一个文件。
+        /// </summary>
+        /// <param name="fullpath">指定路径</param>
+        public static void Cover(string fullpath)
+        {
+            // 覆盖路径是否已经存在，若不存在，新建路径。
+            int index = Search(fullpath);
+            if (index != -1) { RootFiles[index].Name.Clear(); }
+            if (index == -1)
+            {
+                return; // 不允许重建
+                index = RootFiles.Count; ROOT newRoot = new ROOT();
+                newRoot.Path = fullpath;
+                newRoot.Name = new List<string>();
+                RootFiles.Add(newRoot);
+            }
+
+            // 重新加载该路径下所有文件
+            ROOT cover = RootFiles[index]; if (!Directory.Exists(cover.Path)) { return; }
+            DirectoryInfo dir = new DirectoryInfo(cover.Path);
+            FileInfo[] files = dir.GetFiles();
+            DirectoryInfo[] folders = dir.GetDirectories();
+
+            foreach (DirectoryInfo folder in folders) { cover.Name.Add(folder.Name); }
+            foreach (FileInfo file in files)
+            { if (FileOperate.IsSupport(FileOperate.getExtension(file.Name))) { cover.Name.Add(file.Name); } }
+
+            RootFiles[index] = cover;
+
+            Form_Main.config.FolderIndex = RootFiles.Count - 1;
+            Form_Main.config.FileIndex = cover.Name.Count == 0 ? -1 : 0;
+            Form_Main.config.SubIndex = 0;
         }
 
         /// <summary>
@@ -246,6 +286,17 @@ namespace PictureViewer.Class
             if (hideExtension == ".pv6") { return ".avi"; }
             if (hideExtension == ".pv7") { return ".mp4"; }
             if (hideExtension == ".pv8") { return ".webm"; }
+            if (hideExtension == ".pv9") { return ".zip"; }
+            //
+            if (hideExtension == ".jpg") { return ".jpg"; }
+            if (hideExtension == ".jpeg") { return ".jpeg"; }
+            if (hideExtension == ".png") { return ".png"; }
+            if (hideExtension == ".bmp") { return ".bmp"; }
+            if (hideExtension == ".gif") { return ".gif"; }
+            if (hideExtension == ".avi") { return ".avi"; }
+            if (hideExtension == ".mp4") { return ".mp4"; }
+            if (hideExtension == ".webm") { return ".webm"; }
+            if (hideExtension == ".zip") { return ".zip"; }
 
             return null;
         }
@@ -266,6 +317,17 @@ namespace PictureViewer.Class
             if (showExtension == ".avi") { return ".pv6"; }
             if (showExtension == ".mp4") { return ".pv7"; }
             if (showExtension == ".webm") { return ".pv8"; }
+            if (showExtension == ".zip") { return ".pv9"; }
+            //
+            if (showExtension == ".pv1") { return ".pv1"; }
+            if (showExtension == ".pv2") { return ".pv2"; }
+            if (showExtension == ".pv3") { return ".pv3"; }
+            if (showExtension == ".pv4") { return ".pv4"; }
+            if (showExtension == ".pv5") { return ".pv5"; }
+            if (showExtension == ".pv6") { return ".pv6"; }
+            if (showExtension == ".pv7") { return ".pv7"; }
+            if (showExtension == ".pv8") { return ".pv8"; }
+            if (showExtension == ".pv9") { return ".pv9"; }
 
             return null;
         }
@@ -301,10 +363,14 @@ namespace PictureViewer.Class
             int type = getFileType(extension);
             if (type == -1 || type == 1) { return; }
 
+            // 已经存在，无法重命名回去。
+            string newName = path + "\\" + name.Substring(0, name.Length - extension.Length) + getHideExtension(extension);
+            if (File.Exists(newName)) { return; }
+
             FileInfo file = new FileInfo(path + "\\" + name);
             file.MoveTo(path + "\\" + name.Substring(0, name.Length - extension.Length) + getHideExtension(extension));
         }
-
+        
         /// <summary>
         /// 显示文件
         /// </summary>
@@ -334,6 +400,10 @@ namespace PictureViewer.Class
         {
             string extension = getExtension(name);
             if (!IsSupportHide(extension)) { return; }
+
+            // 已经存在，无法重命名回去。
+            string newName = path + "\\" + name.Substring(0, name.Length - extension.Length) + getShowExtension(extension);
+            if (File.Exists(newName)) { return; }
 
             FileInfo file = new FileInfo(path + "\\" + name);
             file.MoveTo(path + "\\" + name.Substring(0, name.Length - extension.Length) + getShowExtension(extension));
