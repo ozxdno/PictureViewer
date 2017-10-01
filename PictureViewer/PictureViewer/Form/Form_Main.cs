@@ -525,9 +525,9 @@ namespace PictureViewer
                 if (input.Input == "#hide2") { HideFiles(); return; }
                 if (input.Input == "#show hide") { NoHide = true; ShowCurrent(); return; }
                 if (input.Input == "#hide hide") { NoHide = false; ShowCurrent();  return; }
-                if (input.Input.Length > 1 && input.Input[0] == '$' && input.Input[0] != '-')
+                if (input.Input.Length != 0 && input.Input[0] != '-')
                 { ZipOperate.A_PassWord(input.Input); ShowCurrent(); }
-                if (input.Input.Length > 1 && input.Input[0] == '$' && input.Input[0] == '-')
+                if (input.Input.Length != 0 && input.Input[0] == '-')
                 { ZipOperate.D_PassWord(input.Input); }
             }
 
@@ -914,7 +914,7 @@ namespace PictureViewer
                 edW = bgW + setW;
                 bgH = this.Height / 20 + 30;
                 edH = bgH + setH;
-                if (showPageMark && !hideU && bgW <= ptX && ptX <= edW && bgH <= ptY && ptY <= edH)
+                if (showPageMark && !hideU && bgW <= ptX && ptX <= edW && bgH <= ptY && ptY <= edH && config.SubFiles.Count != 0)
                 {
                     this.label3.Location = new Point(bgW - 10, bgH - 30);
                     this.label3.Width = setW;
@@ -932,7 +932,7 @@ namespace PictureViewer
                 bgH = this.Height - this.Height / 20 - setH - 10;
                 if (this.HorizontalScroll.Visible) { bgH -= 10; }
                 edH = bgH + setH;
-                if (showPageMark && !hideD && bgW <= ptX && ptX <= edW && bgH <= ptY && ptY <= edH)
+                if (showPageMark && !hideD && bgW <= ptX && ptX <= edW && bgH <= ptY && ptY <= edH && config.SubFiles.Count != 0)
                 {
                     this.label4.Location = new Point(bgW - 10, bgH - 30);
                     this.label4.Width = setW;
@@ -1039,7 +1039,7 @@ namespace PictureViewer
             if (Exist && config.FileIndex >= FileOperate.RootFiles[config.FolderIndex].Name.Count) { Exist = false; }
 
             // 给出提示
-            string Name = Exist ? FileOperate.RootFiles[config.FolderIndex].Name[config.FileIndex] : "文件不存在！";
+            string Name = Exist ? FileOperate.RootFiles[config.FolderIndex].Name[config.FileIndex] : "[Not Exist]";
             string Index = (config.FileIndex + 1).ToString();
             string Total = FileOperate.RootFiles.Count == 0 || config.FolderIndex >= FileOperate.RootFiles.Count ?
                 "0" : FileOperate.RootFiles[config.FolderIndex].Name.Count.ToString();
@@ -1059,6 +1059,7 @@ namespace PictureViewer
             #region 0 型文件
             if (type == 0)
             {
+                if (!File.Exists(full)) { this.Text = "[" + Index + "/" + Total + "] [Not Exist]"; ShowOff("err"); }
                 this.Text = "[" + Index + "/" + Total + "] [Unsupport] " + Name; ShowOff("unp"); return;
             }
             #endregion
@@ -1067,17 +1068,20 @@ namespace PictureViewer
 
             if (type == 1)
             {
-                if (!Directory.Exists(full)) { ShowOff("err"); return; }
-
+                if (!Directory.Exists(full)) { this.Text = "[" + Index + "/" + Total + "] [Not Exist] " + full; ShowOff("err"); return; }
+                
                 config.SubFiles = FileOperate.getSubFiles(full);
-                if (config.SubFiles.Count == 0) { ShowOff(); return; }
-                if (config.SubIndex < 0 || config.SubIndex >= config.SubFiles.Count) { ShowOff("err"); return; }
+                if (config.SubIndex < 0 || config.SubIndex >= config.SubFiles.Count)
+                {
+                    this.Text = "[" + Index + "/" + Total + "] [" + (config.SubIndex + 1).ToString() + "/" + config.SubFiles.Count + "] [Not Exist]";
+                    ShowOff("err"); return;
+                }
 
                 isHide = FileOperate.IsSupportHide(FileOperate.getExtension(config.SubFiles[config.SubIndex]));
                 if (isHide && !NoHide)
-                { this.Text = "[" + Index + "/" + Total + "] [" + (config.SubIndex + 1).ToString() + "/" + config.SubFiles.Count + "] [Unknow] " + Name + "：" + config.SubFiles[config.SubIndex]; ShowOff("unk"); return; }
+                { this.Text = "[" + Index + "/" + Total + "] [" + (config.SubIndex + 1).ToString() + "/" + config.SubFiles.Count + "] [Unknow] " + name + "：" + config.SubFiles[config.SubIndex]; ShowOff("unk"); return; }
 
-                this.Text = "[" + Index + "/" + Total + "] [" + (config.SubIndex + 1).ToString() + "/" + config.SubFiles.Count + "] " + Name + "：" + config.SubFiles[config.SubIndex];
+                this.Text = "[" + Index + "/" + Total + "] [" + (config.SubIndex + 1).ToString() + "/" + config.SubFiles.Count + "] " + name + "：" + config.SubFiles[config.SubIndex];
 
                 name = config.SubFiles[config.SubIndex];
                 type = FileOperate.getFileType(FileOperate.getExtension(name));
@@ -1085,6 +1089,7 @@ namespace PictureViewer
                 if (type == 2) { ShowPicture(full, name); return; }
                 if (type == 3) { ShowGif(full, name); return; }
                 if (type == 4) { ShowVideo(full, name); return; }
+                this.Text = "[" + Index + "/" + Total + "] [" + (config.SubIndex + 1).ToString() + "/" + config.SubFiles.Count + "] [Unsupport] " + Name + "：" + config.SubFiles[config.SubIndex];
                 ShowOff("unp"); return;
             }
 
@@ -1094,7 +1099,7 @@ namespace PictureViewer
 
             if (type == 2)
             {
-                if (!File.Exists(full)) { ShowOff("err"); return; }
+                if (!File.Exists(full)) { this.Text = "[" + Index + "/" + Total + "] [Not Exist] " + name; ShowOff("err"); return; }
                 ShowPicture(path, name); return;
             }
 
@@ -1104,7 +1109,7 @@ namespace PictureViewer
 
             if (type == 3)
             {
-                if (!File.Exists(full)) { ShowOff("err"); return; }
+                if (!File.Exists(full)) { this.Text = "[" + Index + "/" + Total + "] [Not Exist] " + name; ShowOff("err"); return; }
                 ShowGif(path,name); return;
             }
 
@@ -1114,7 +1119,7 @@ namespace PictureViewer
 
             if (type == 4)
             {
-                if (!File.Exists(full)) { ShowOff("err"); return; }
+                if (!File.Exists(full)) { this.Text = "[" + Index + "/" + Total + "] [Not Exist] " + name; ShowOff("err"); return; }
                 ShowVideo(path,name); return;
             }
 
@@ -1124,18 +1129,22 @@ namespace PictureViewer
 
             if (type == 5)
             {
-                if (!File.Exists(full)) { ShowOff("err"); return; }
+                if (!File.Exists(full)) { this.Text = "[" + Index + "/" + Total + "] [Not Exist] " + name; ShowOff("err"); return; }
 
-                ZipOperate.ReadZipEX(full);
+                int err = ZipOperate.ReadZipEX(full);
+                if (!isHide && err == 1) { this.Text = "[" + Index + "/" + Total + "] [Wrong PassWord] " + name; ShowOff("err"); return; }
                 
-                if (config.SubFiles.Count == 0) { ShowOff("unk"); return; }
-                if (config.SubIndex < 0 || config.SubIndex >= config.SubFiles.Count) { ShowOff("unk"); return; }
+                if (config.SubIndex < 0 || config.SubIndex >= config.SubFiles.Count)
+                {
+                    this.Text = "[" + Index + "/" + Total + "] [" + (config.SubIndex + 1).ToString() + "/" + config.SubFiles.Count + "] [Not Exist]";
+                    ShowOff("err"); return;
+                }
 
                 isHide = FileOperate.IsSupportHide(FileOperate.getExtension(config.SubFiles[config.SubIndex]));
                 if (isHide && !NoHide)
-                { this.Text = "[" + Index + "/" + Total + "] [" + (config.SubIndex + 1).ToString() + "/" + config.SubFiles.Count + "] [Unknow] " + Name + "：" + config.SubFiles[config.SubIndex]; ShowOff("unk"); return; }
+                { this.Text = "[" + Index + "/" + Total + "] [" + (config.SubIndex + 1).ToString() + "/" + config.SubFiles.Count + "] [Unknow] " + name + "：" + config.SubFiles[config.SubIndex]; ShowOff("unk"); return; }
                 
-                this.Text = "[" + Index + "/" + Total + "] [" + (config.SubIndex + 1).ToString() + "/" + config.SubFiles.Count + "] " + Name + "：" + config.SubFiles[config.SubIndex];
+                this.Text = "[" + Index + "/" + Total + "] [" + (config.SubIndex + 1).ToString() + "/" + config.SubFiles.Count + "] " + name + "：" + config.SubFiles[config.SubIndex];
 
                 name = config.SubFiles[config.SubIndex];
                 type = FileOperate.getFileType(FileOperate.getExtension(name));
@@ -1143,6 +1152,7 @@ namespace PictureViewer
                 if (type == 2 && ZipOperate.LoadPictureEX()) { ShowPicture(full, name, false); return; }
                 if (type == 3 && ZipOperate.LoadGifEX()) { ShowGif(full, name, false); return; }
 
+                this.Text = "[" + Index + "/" + Total + "] [" + (config.SubIndex + 1).ToString() + "/" + config.SubFiles.Count + "] [Unsupport] " + Name + "：" + config.SubFiles[config.SubIndex];
                 ShowOff("unp"); return;
             }
 
@@ -1150,7 +1160,7 @@ namespace PictureViewer
 
             #region 其他文件（不支持）
 
-            this.Text = "[" + Index + "/" + Total + "] [Unknow] " + Name; ShowOff("unk");
+            this.Text = "[" + Index + "/" + Total + "] [Unknow] " + name; ShowOff("unk");
 
             #endregion
         }
@@ -1391,14 +1401,30 @@ namespace PictureViewer
             input.Location = MousePosition;
             input.ShowDialog();
 
-            int togo = -1;
-            try { togo = int.Parse(input.Input); } catch { MessageBox.Show("输入错误位置！"); return; }
+            string indexStr = input.Input.Replace(" ", "");
+            string subindexStr = "0";
+            if (indexStr.Length == 0) { return; }
 
+            int cut = indexStr.IndexOf(':');
+            if (cut == -1) { cut = indexStr.IndexOf('：'); }
+            if (cut != -1) { subindexStr = indexStr.Substring(cut + 1); indexStr = indexStr.Substring(0, cut); }
+            if (indexStr.Length == 0) { indexStr = (config.FileIndex + 1).ToString(); }
+
+            int index = 0, subindex = 0;
+            try { index = int.Parse(indexStr); } catch { MessageBox.Show("输入错误位置！"); return; }
+            try { subindex = int.Parse(subindexStr); } catch { MessageBox.Show("输入错误位置！"); return; }
+            
             if (config.FolderIndex < 0 || config.FolderIndex >= FileOperate.RootFiles.Count) { return; }
-            if (togo < 1) { togo = 1; }
-            if (togo > FileOperate.RootFiles[config.FolderIndex].Name.Count) { togo = FileOperate.RootFiles[config.FolderIndex].Name.Count; }
+            if (index < 1) { index = 1; }
+            if (index > FileOperate.RootFiles[config.FolderIndex].Name.Count) { index = FileOperate.RootFiles[config.FolderIndex].Name.Count; }
+            if (subindex < 1) { subindex = 1; }
+            //if (subindex > config.SubFiles.Count) { subindex = config.SubFiles.Count; }
 
-            config.FileIndex = togo - 1; ShowCurrent();
+            if (index - 1 == config.FileIndex && config.SubIndex == subindex - 1) { return; }
+            if (index - 1 == config.FileIndex && config.SubFiles.Count == 0) { return; }
+
+            config.FileIndex = index - 1; config.SubIndex = subindex - 1;
+            ShowCurrent();
         }
         private void RightMenu_Delete(object sender, EventArgs e)
         {

@@ -34,9 +34,6 @@ namespace PictureViewer.Class
         public static void A_PassWord(string pw)
         {
             // 去除头部
-            if (pw.Length < 2) { return; }
-            if (pw[0] != '$' || pw[1] == '-') { return; }
-            pw = pw.Substring(1);
             if (pw[0] == '+') { pw = pw.Substring(1); }
 
             // 分割并加入密码列表
@@ -50,9 +47,7 @@ namespace PictureViewer.Class
         public static void D_PassWord(string pw)
         {
             // 去除头部
-            if (pw.Length < 2) { return; }
-            if (pw[0] != '$' || pw[1] != '-') { return; }
-            pw = pw.Substring(2);
+            pw = pw.Substring(1);
 
             // 分割并去除
             string[] newpws = pw.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
@@ -130,14 +125,14 @@ namespace PictureViewer.Class
 
 
         /// <summary>
-        /// 读取 ZIP 文件中的所有支持文件（有密码）
+        /// 读取 ZIP 文件中的所有支持文件（有密码），返回错误类型：1-密码错误
         /// </summary>
         /// <param name="fullpath"></param>
-        public static void ReadZipEX(string fullpath)
+        public static int ReadZipEX(string fullpath)
         {
             Form_Main.config.SubFiles = new List<string>();
             zip2 = fullpath;
-            if (!TestPassWords()) { return; }
+            if (!TestPassWords()) { return 1; }
 
             FileStream sIn = new FileStream(fullpath, FileMode.Open, FileAccess.Read);
             ICSharpCode.SharpZipLib.Zip.ZipInputStream zip = new ZipInputStream(sIn);
@@ -147,11 +142,14 @@ namespace PictureViewer.Class
             while (e != null)
             {
                 int type = FileOperate.getFileType(FileOperate.getExtension(e.Name));
-                if (type == -1 || type == 0 || type == 1 || type == 5 || type == 4)
-                { e = zip.GetNextEntry(); continue; }
 
-                Form_Main.config.SubFiles.Add(e.Name); e = zip.GetNextEntry();
+                if (type == 2) { Form_Main.config.SubFiles.Add(e.Name); }
+                if (type == 3) { Form_Main.config.SubFiles.Add(e.Name); }
+
+                e = zip.GetNextEntry();
             }
+
+            return 0;
         }
         /// <summary>
         /// 读取 ZIP 压缩包中的指定图片文件加载至缓存中，返回加载是否成功（有密码）
