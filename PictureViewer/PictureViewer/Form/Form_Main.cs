@@ -569,7 +569,7 @@ namespace PictureViewer
 
             if (type == 1)
             {
-                if (config.SubIndex < 0 || config.SubIndex >= config.SubFiles.Count) { return; }
+                if (config.SubIndex < 0 || config.SubIndex >= config.SubFiles.Count) { ShowCurrent(); return; }
                 name = config.SubFiles[config.SubIndex];
                 type = FileOperate.getFileType(FileOperate.getExtension(name));
                 if (type != 2) { ShowCurrent(); return; }
@@ -580,6 +580,12 @@ namespace PictureViewer
                 // 聚焦点
                 int xF = MousePosition.X - this.Location.X - this.pictureBox1.Location.X;
                 int yF = MousePosition.Y - this.Location.Y - this.pictureBox1.Location.Y;
+                double xR = (double)xF / config.DestPicture.Width;
+                if (xR < 0) { xR = 0; }
+                if (xR > 1) { xR = 1; }
+                double yR = (double)yF / config.DestPicture.Height;
+                if (yR < 0) { yR = 0; }
+                if (yR > 1) { yR = 1; }
 
                 //this.HorizontalScroll.Value = 0;
                 //this.VerticalScroll.Value = 0;
@@ -597,26 +603,13 @@ namespace PictureViewer
                 this.pictureBox1.Width = config.SourPicture.Width;
 
                 // 把聚焦点放到屏幕中央
-                int max = this.HorizontalScroll.Maximum;
-                int min = this.HorizontalScroll.Minimum;
-                double xRate = (double)xF / config.DestPicture.Width;
-                if (xRate < 0) { xRate = 0; }
-                if (xRate > 1) { xRate = 1; }
-                int xS = (int)(min + xRate * (max - min));
-                xRate = (double)this.Width / 2 / (double)config.SourPicture.Width;
-                xS -= (int)(xRate * (max - min));
-                if (xS < 0) { xS = 0; }
-                if (xS > max) { xS = max; }
-                max = this.VerticalScroll.Maximum;
-                min = this.VerticalScroll.Minimum;
-                double yRate = (double)yF / config.DestPicture.Height;
-                if (yRate < 0) { yRate = 0; }
-                if (yRate > 1) { yRate = 1; }
-                int yS = (int)(min + yRate * (max - min));
-                yRate = (double)this.Height / 2 / (double)config.SourPicture.Width;
-                yS -= (int)(yRate * (max - min));
-                if (yS < 0) { yS = 0; }
-                if (yS > max) { yS = max; }
+                int xS = (int)(config.SourPicture.Width * xR - this.Width / 2 + 40);
+                if (xS < this.HorizontalScroll.Minimum) { xS = this.HorizontalScroll.Minimum; }
+                if (xS > this.HorizontalScroll.Maximum) { xS = this.HorizontalScroll.Maximum; }
+
+                int yS = (int)(config.SourPicture.Height * yR - this.Height / 2 + 20);
+                if (yS < this.VerticalScroll.Minimum) { yS = this.VerticalScroll.Minimum; }
+                if (yS > this.VerticalScroll.Maximum) { yS = this.VerticalScroll.Maximum; }
 
                 // 调整滑动量，使其可以被接受
                 if (X == 1)
@@ -655,8 +648,14 @@ namespace PictureViewer
                 if (ShowedBigPicture) { ShowCurrent(); return; }
 
                 // 聚焦点
-                int xF = MousePosition.X - this.Location.X - this.pictureBox1.Location.X;
-                int yF = MousePosition.Y - this.Location.Y - this.pictureBox1.Location.Y;
+                int xF = MousePosition.X - this.Location.X - this.pictureBox1.Location.X - 10;
+                int yF = MousePosition.Y - this.Location.Y - this.pictureBox1.Location.Y - 30;
+                double xR = (double)xF / config.DestPicture.Width;
+                if (xR < 0) { xR = 0; }
+                if (xR > 1) { xR = 1; }
+                double yR = (double)yF / config.DestPicture.Height;
+                if (yR < 0) { yR = 0; }
+                if (yR > 1) { yR = 1; }
 
                 //this.HorizontalScroll.Value = 0;
                 //this.VerticalScroll.Value = 0;
@@ -667,35 +666,24 @@ namespace PictureViewer
                 key.E = X < 0 || Y < 0;
                 if (X < 1) { X = 1; }
                 if (Y < 1) { Y = 1; }
-
-                this.pictureBox1.Image = config.SourPicture;
-                this.pictureBox1.Location = new Point(X, Y);
+                
                 this.pictureBox1.Height = config.SourPicture.Height;
                 this.pictureBox1.Width = config.SourPicture.Width;
+                this.pictureBox1.Location = new Point(X, Y);
+                this.pictureBox1.Image = config.SourPicture;
 
                 // 把聚焦点放到屏幕中央
-                int max = this.HorizontalScroll.Maximum;
-                int min = this.HorizontalScroll.Minimum;
-                double xRate = (double)xF / config.DestPicture.Width;
-                if (xRate < 0) { xRate = 0; }
-                if (xRate > 1) { xRate = 1; }
-                int xS = (int)(min + xRate * (max - min));
-                xRate = (double)this.Width / 2 / (double)config.SourPicture.Width;
-                xS -= (int)(xRate * (max - min));
-                if (xS < 0) { xS = 0; }
-                if (xS > max) { xS = max; }
-                max = this.VerticalScroll.Maximum;
-                min = this.VerticalScroll.Minimum;
-                double yRate = (double)yF / config.DestPicture.Height;
-                if (yRate < 0) { yRate = 0; }
-                if (yRate > 1) { yRate = 1; }
-                int yS = (int)(min + yRate * (max - min));
-                yRate = (double)this.Height /2 / (double)config.SourPicture.Width;
-                yS -= (int)(yRate * (max - min));
-                if (yS < 0) { yS = 0; }
-                if (yS > max) { yS = max; }
+                int xS = (int)(config.SourPicture.Width * xR - this.Width / 2 + 40);
+                if (xS < this.HorizontalScroll.Minimum) { xS = this.HorizontalScroll.Minimum; }
+                if (xS > this.HorizontalScroll.Maximum) { xS = this.HorizontalScroll.Maximum; }
 
-                // 调整滑动量，使其可以被接受
+                int yS = (int)(config.SourPicture.Height * yR - this.Height / 2 + 20);
+                if (yS < this.VerticalScroll.Minimum) { yS = this.VerticalScroll.Minimum; }
+                if (yS > this.VerticalScroll.Maximum) { yS = this.VerticalScroll.Maximum; }
+
+
+                #region 调整滑动量，使其可以被接受
+
                 if (X == 1)
                 {
                     int adjust = xS - this.HorizontalScroll.Value;
@@ -720,6 +708,8 @@ namespace PictureViewer
                 }
                 this.HorizontalScroll.Value = xS;
                 this.VerticalScroll.Value = yS; return;
+
+                #endregion
             }
 
             #endregion
@@ -750,7 +740,7 @@ namespace PictureViewer
 
             if (type == 5)
             {
-                if (config.SubIndex < 0 || config.SubIndex >= config.SubFiles.Count) { return; }
+                if (config.SubIndex < 0 || config.SubIndex >= config.SubFiles.Count) { ShowCurrent(); return; }
                 name = config.SubFiles[config.SubIndex];
                 type = FileOperate.getFileType(FileOperate.getExtension(name));
                 if (type != 2) { ShowCurrent(); return; }
@@ -761,6 +751,12 @@ namespace PictureViewer
                 // 聚焦点
                 int xF = MousePosition.X - this.Location.X - this.pictureBox1.Location.X;
                 int yF = MousePosition.Y - this.Location.Y - this.pictureBox1.Location.Y;
+                double xR = (double)xF / config.DestPicture.Width;
+                if (xR < 0) { xR = 0; }
+                if (xR > 1) { xR = 1; }
+                double yR = (double)yF / config.DestPicture.Height;
+                if (yR < 0) { yR = 0; }
+                if (yR > 1) { yR = 1; }
 
                 //this.HorizontalScroll.Value = 0;
                 //this.VerticalScroll.Value = 0;
@@ -778,26 +774,13 @@ namespace PictureViewer
                 this.pictureBox1.Width = config.SourPicture.Width;
 
                 // 把聚焦点放到屏幕中央
-                int max = this.HorizontalScroll.Maximum;
-                int min = this.HorizontalScroll.Minimum;
-                double xRate = (double)xF / config.DestPicture.Width;
-                if (xRate < 0) { xRate = 0; }
-                if (xRate > 1) { xRate = 1; }
-                int xS = (int)(min + xRate * (max - min));
-                xRate = (double)this.Width / 2 / (double)config.SourPicture.Width;
-                xS -= (int)(xRate * (max - min));
-                if (xS < 0) { xS = 0; }
-                if (xS > max) { xS = max; }
-                max = this.VerticalScroll.Maximum;
-                min = this.VerticalScroll.Minimum;
-                double yRate = (double)yF / config.DestPicture.Height;
-                if (yRate < 0) { yRate = 0; }
-                if (yRate > 1) { yRate = 1; }
-                int yS = (int)(min + yRate * (max - min));
-                yRate = (double)this.Height / 2 / (double)config.SourPicture.Width;
-                yS -= (int)(yRate * (max - min));
-                if (yS < 0) { yS = 0; }
-                if (yS > max) { yS = max; }
+                int xS = (int)(config.SourPicture.Width * xR - this.Width / 2 + 40);
+                if (xS < this.HorizontalScroll.Minimum) { xS = this.HorizontalScroll.Minimum; }
+                if (xS > this.HorizontalScroll.Maximum) { xS = this.HorizontalScroll.Maximum; }
+
+                int yS = (int)(config.SourPicture.Height * yR - this.Height / 2 + 20);
+                if (yS < this.VerticalScroll.Minimum) { yS = this.VerticalScroll.Minimum; }
+                if (yS > this.VerticalScroll.Maximum) { yS = this.VerticalScroll.Maximum; }
 
                 // 调整滑动量，使其可以被接受
                 if (X == 1)
@@ -878,9 +861,15 @@ namespace PictureViewer
         {
             this.BeginInvoke((EventHandler)delegate
             {
+                bool hideU = this.hideUToolStripMenuItem.Checked;
+                bool hideD = this.hideDToolStripMenuItem.Checked;
+                bool hideL = this.hideLToolStripMenuItem.Checked;
+                bool hideR = this.hideRToolStripMenuItem.Checked;
+                this.hideToolStripMenuItem.Checked = hideL && hideR && hideU && hideD;
+
                 int ptX = MousePosition.X - this.Location.X;
                 int ptY = MousePosition.Y - this.Location.Y;
-                bool showPageMark = this.Width > 150 && this.Height > 150 && !this.hideToolStripMenuItem.Checked;
+                bool showPageMark = this.Width > 150 && this.Height > 150;
 
                 // 左翻页
                 int setW = this.Width / 20;
@@ -890,7 +879,7 @@ namespace PictureViewer
                 int edW = bgW + setW;
                 int bgH = this.Height / 2 - setH / 2;
                 int edH = bgH + setH;
-                if (showPageMark && bgW <= ptX && ptX <= edW && bgH <= ptY && ptY <= edH)
+                if (showPageMark && !hideL && bgW <= ptX && ptX <= edW && bgH <= ptY && ptY <= edH)
                 {
                     this.label1.Location = new Point(bgW - 10, bgH - 30);
                     this.label1.Width = setW;
@@ -908,7 +897,7 @@ namespace PictureViewer
                 edW = bgW + setW;
                 bgH = this.Height / 2 - setH / 2;
                 edH = bgH + setH;
-                if (showPageMark && bgW <= ptX && ptX <= edW && bgH <= ptY && ptY <= edH)
+                if (showPageMark && !hideR && bgW <= ptX && ptX <= edW && bgH <= ptY && ptY <= edH)
                 {
                     this.label2.Location = new Point(bgW - 10, bgH - 30);
                     this.label2.Width = setW;
@@ -925,7 +914,7 @@ namespace PictureViewer
                 edW = bgW + setW;
                 bgH = this.Height / 20 + 30;
                 edH = bgH + setH;
-                if (showPageMark && bgW <= ptX && ptX <= edW && bgH <= ptY && ptY <= edH)
+                if (showPageMark && !hideU && bgW <= ptX && ptX <= edW && bgH <= ptY && ptY <= edH)
                 {
                     this.label3.Location = new Point(bgW - 10, bgH - 30);
                     this.label3.Width = setW;
@@ -943,7 +932,7 @@ namespace PictureViewer
                 bgH = this.Height - this.Height / 20 - setH - 10;
                 if (this.HorizontalScroll.Visible) { bgH -= 10; }
                 edH = bgH + setH;
-                if (showPageMark && bgW <= ptX && ptX <= edW && bgH <= ptY && ptY <= edH)
+                if (showPageMark && !hideD && bgW <= ptX && ptX <= edW && bgH <= ptY && ptY <= edH)
                 {
                     this.label4.Location = new Point(bgW - 10, bgH - 30);
                     this.label4.Width = setW;
@@ -1184,11 +1173,11 @@ namespace PictureViewer
             Graphics g = Graphics.FromImage(config.DestPicture);
             g.DrawImage(config.SourPicture, new Rectangle(0, 0, destX, destY), new Rectangle(0, 0, sourX, sourY), GraphicsUnit.Pixel);
             g.Dispose();
-
+            
             this.pictureBox1.Width = destX;
             this.pictureBox1.Height = destY;
-            this.pictureBox1.Image = config.DestPicture;
             this.pictureBox1.Location = new Point((this.Width - 18 - destX) / 2, (this.Height - 42 - destY) / 2);
+            this.pictureBox1.Image = config.DestPicture;
             
             this.axWindowsMediaPlayer1.Visible = false;
             this.pictureBox1.Visible = true;
@@ -1587,6 +1576,18 @@ namespace PictureViewer
 
             string file = FileOperate.RootFiles[config.FolderIndex].Name[config.FileIndex];
             System.Diagnostics.Process.Start("explorer.exe", file);
+        }
+        private void RightMenu_Hide(object sender, EventArgs e)
+        {
+            bool curr = this.hideToolStripMenuItem.Checked;
+            bool next = !curr;
+
+            this.hideUToolStripMenuItem.Checked = next;
+            this.hideDToolStripMenuItem.Checked = next;
+            this.hideLToolStripMenuItem.Checked = next;
+            this.hideRToolStripMenuItem.Checked = next;
+
+            this.hideToolStripMenuItem.Checked = next;
         }
 
         private void Form_DragEntre(object sender, DragEventArgs e)
