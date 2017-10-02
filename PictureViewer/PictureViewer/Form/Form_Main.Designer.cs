@@ -39,6 +39,10 @@
             this.gotoToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.lockToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.hideToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.hideUToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.hideDToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.hideLToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.hideRToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem2 = new System.Windows.Forms.ToolStripSeparator();
             this.filePathToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.deleteToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -48,15 +52,11 @@
             this.openRootToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.openComicToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
-            this.axWindowsMediaPlayer1 = new AxWMPLib.AxWindowsMediaPlayer();
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
             this.label4 = new System.Windows.Forms.Label();
-            this.hideUToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.hideDToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.hideLToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.hideRToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.axWindowsMediaPlayer1 = new AxWMPLib.AxWindowsMediaPlayer();
             this.contextMenuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.axWindowsMediaPlayer1)).BeginInit();
@@ -86,21 +86,21 @@
             // updataToolStripMenuItem
             // 
             this.updataToolStripMenuItem.Name = "updataToolStripMenuItem";
-            this.updataToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.updataToolStripMenuItem.Size = new System.Drawing.Size(150, 22);
             this.updataToolStripMenuItem.Text = "Refresh";
             this.updataToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Refresh);
             // 
             // renameToolStripMenuItem
             // 
             this.renameToolStripMenuItem.Name = "renameToolStripMenuItem";
-            this.renameToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.renameToolStripMenuItem.Size = new System.Drawing.Size(150, 22);
             this.renameToolStripMenuItem.Text = "Rename";
             this.renameToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Rename);
             // 
             // inputToolStripMenuItem
             // 
             this.inputToolStripMenuItem.Name = "inputToolStripMenuItem";
-            this.inputToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.inputToolStripMenuItem.Size = new System.Drawing.Size(150, 22);
             this.inputToolStripMenuItem.Text = "Input";
             this.inputToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Input);
             // 
@@ -109,7 +109,7 @@
             this.exportToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.pathToolStripMenuItem});
             this.exportToolStripMenuItem.Name = "exportToolStripMenuItem";
-            this.exportToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.exportToolStripMenuItem.Size = new System.Drawing.Size(150, 22);
             this.exportToolStripMenuItem.Text = "Export";
             this.exportToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Export);
             // 
@@ -123,7 +123,7 @@
             // gotoToolStripMenuItem
             // 
             this.gotoToolStripMenuItem.Name = "gotoToolStripMenuItem";
-            this.gotoToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.gotoToolStripMenuItem.Size = new System.Drawing.Size(150, 22);
             this.gotoToolStripMenuItem.Text = "Goto";
             this.gotoToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Goto);
             // 
@@ -131,7 +131,7 @@
             // 
             this.lockToolStripMenuItem.CheckOnClick = true;
             this.lockToolStripMenuItem.Name = "lockToolStripMenuItem";
-            this.lockToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.lockToolStripMenuItem.Size = new System.Drawing.Size(150, 22);
             this.lockToolStripMenuItem.Text = "Lock";
             // 
             // hideToolStripMenuItem
@@ -142,58 +142,86 @@
             this.hideLToolStripMenuItem,
             this.hideRToolStripMenuItem});
             this.hideToolStripMenuItem.Name = "hideToolStripMenuItem";
-            this.hideToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.hideToolStripMenuItem.Size = new System.Drawing.Size(150, 22);
             this.hideToolStripMenuItem.Text = "Hide";
             this.hideToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Hide);
+            // 
+            // hideUToolStripMenuItem
+            // 
+            this.hideUToolStripMenuItem.CheckOnClick = true;
+            this.hideUToolStripMenuItem.Name = "hideUToolStripMenuItem";
+            this.hideUToolStripMenuItem.Size = new System.Drawing.Size(116, 22);
+            this.hideUToolStripMenuItem.Text = "Hide U";
+            // 
+            // hideDToolStripMenuItem
+            // 
+            this.hideDToolStripMenuItem.CheckOnClick = true;
+            this.hideDToolStripMenuItem.Name = "hideDToolStripMenuItem";
+            this.hideDToolStripMenuItem.Size = new System.Drawing.Size(116, 22);
+            this.hideDToolStripMenuItem.Text = "Hide D";
+            // 
+            // hideLToolStripMenuItem
+            // 
+            this.hideLToolStripMenuItem.CheckOnClick = true;
+            this.hideLToolStripMenuItem.Name = "hideLToolStripMenuItem";
+            this.hideLToolStripMenuItem.Size = new System.Drawing.Size(116, 22);
+            this.hideLToolStripMenuItem.Text = "Hide L";
+            // 
+            // hideRToolStripMenuItem
+            // 
+            this.hideRToolStripMenuItem.CheckOnClick = true;
+            this.hideRToolStripMenuItem.Name = "hideRToolStripMenuItem";
+            this.hideRToolStripMenuItem.Size = new System.Drawing.Size(116, 22);
+            this.hideRToolStripMenuItem.Text = "Hide R";
             // 
             // toolStripMenuItem2
             // 
             this.toolStripMenuItem2.Name = "toolStripMenuItem2";
-            this.toolStripMenuItem2.Size = new System.Drawing.Size(149, 6);
+            this.toolStripMenuItem2.Size = new System.Drawing.Size(147, 6);
             // 
             // filePathToolStripMenuItem
             // 
             this.filePathToolStripMenuItem.Name = "filePathToolStripMenuItem";
-            this.filePathToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.filePathToolStripMenuItem.Size = new System.Drawing.Size(150, 22);
             this.filePathToolStripMenuItem.Text = "File Path";
             // 
             // deleteToolStripMenuItem
             // 
             this.deleteToolStripMenuItem.Name = "deleteToolStripMenuItem";
-            this.deleteToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.deleteToolStripMenuItem.Size = new System.Drawing.Size(150, 22);
             this.deleteToolStripMenuItem.Text = "Delete";
             this.deleteToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Delete);
             // 
             // searchToolStripMenuItem
             // 
             this.searchToolStripMenuItem.Name = "searchToolStripMenuItem";
-            this.searchToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.searchToolStripMenuItem.Size = new System.Drawing.Size(150, 22);
             this.searchToolStripMenuItem.Text = "Search";
             this.searchToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Search);
             // 
             // toolStripMenuItem1
             // 
             this.toolStripMenuItem1.Name = "toolStripMenuItem1";
-            this.toolStripMenuItem1.Size = new System.Drawing.Size(149, 6);
+            this.toolStripMenuItem1.Size = new System.Drawing.Size(147, 6);
             // 
             // openExportToolStripMenuItem
             // 
             this.openExportToolStripMenuItem.Name = "openExportToolStripMenuItem";
-            this.openExportToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.openExportToolStripMenuItem.Size = new System.Drawing.Size(150, 22);
             this.openExportToolStripMenuItem.Text = "Open Export";
             this.openExportToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_OpenExport);
             // 
             // openRootToolStripMenuItem
             // 
             this.openRootToolStripMenuItem.Name = "openRootToolStripMenuItem";
-            this.openRootToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.openRootToolStripMenuItem.Size = new System.Drawing.Size(150, 22);
             this.openRootToolStripMenuItem.Text = "Open Root";
             this.openRootToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_OpenRoot);
             // 
             // openComicToolStripMenuItem
             // 
             this.openComicToolStripMenuItem.Name = "openComicToolStripMenuItem";
-            this.openComicToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.openComicToolStripMenuItem.Size = new System.Drawing.Size(150, 22);
             this.openComicToolStripMenuItem.Text = "Open Comic";
             this.openComicToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_OpenComic);
             // 
@@ -205,18 +233,6 @@
             this.pictureBox1.TabIndex = 6;
             this.pictureBox1.TabStop = false;
             this.pictureBox1.DoubleClick += new System.EventHandler(this.Form_Main_DoubleClick);
-            // 
-            // axWindowsMediaPlayer1
-            // 
-            this.axWindowsMediaPlayer1.ContextMenuStrip = this.contextMenuStrip1;
-            this.axWindowsMediaPlayer1.Enabled = true;
-            this.axWindowsMediaPlayer1.Location = new System.Drawing.Point(12, 12);
-            this.axWindowsMediaPlayer1.Name = "axWindowsMediaPlayer1";
-            this.axWindowsMediaPlayer1.OcxState = ((System.Windows.Forms.AxHost.State)(resources.GetObject("axWindowsMediaPlayer1.OcxState")));
-            this.axWindowsMediaPlayer1.Size = new System.Drawing.Size(203, 51);
-            this.axWindowsMediaPlayer1.TabIndex = 4;
-            this.axWindowsMediaPlayer1.Visible = false;
-            this.axWindowsMediaPlayer1.MouseDownEvent += new AxWMPLib._WMPOCXEvents_MouseDownEventHandler(this.WMP_RightButtonClicked);
             // 
             // label1
             // 
@@ -258,33 +274,18 @@
             this.label4.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.label4.Click += new System.EventHandler(this.Page_D);
             // 
-            // hideUToolStripMenuItem
+            // axWindowsMediaPlayer1
             // 
-            this.hideUToolStripMenuItem.CheckOnClick = true;
-            this.hideUToolStripMenuItem.Name = "hideUToolStripMenuItem";
-            this.hideUToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
-            this.hideUToolStripMenuItem.Text = "Hide U";
-            // 
-            // hideDToolStripMenuItem
-            // 
-            this.hideDToolStripMenuItem.CheckOnClick = true;
-            this.hideDToolStripMenuItem.Name = "hideDToolStripMenuItem";
-            this.hideDToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
-            this.hideDToolStripMenuItem.Text = "Hide D";
-            // 
-            // hideLToolStripMenuItem
-            // 
-            this.hideLToolStripMenuItem.CheckOnClick = true;
-            this.hideLToolStripMenuItem.Name = "hideLToolStripMenuItem";
-            this.hideLToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
-            this.hideLToolStripMenuItem.Text = "Hide L";
-            // 
-            // hideRToolStripMenuItem
-            // 
-            this.hideRToolStripMenuItem.CheckOnClick = true;
-            this.hideRToolStripMenuItem.Name = "hideRToolStripMenuItem";
-            this.hideRToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
-            this.hideRToolStripMenuItem.Text = "Hide R";
+            this.axWindowsMediaPlayer1.ContextMenuStrip = this.contextMenuStrip1;
+            this.axWindowsMediaPlayer1.Enabled = true;
+            this.axWindowsMediaPlayer1.Location = new System.Drawing.Point(12, 12);
+            this.axWindowsMediaPlayer1.Name = "axWindowsMediaPlayer1";
+            this.axWindowsMediaPlayer1.OcxState = ((System.Windows.Forms.AxHost.State)(resources.GetObject("axWindowsMediaPlayer1.OcxState")));
+            this.axWindowsMediaPlayer1.Size = new System.Drawing.Size(203, 51);
+            this.axWindowsMediaPlayer1.TabIndex = 4;
+            this.axWindowsMediaPlayer1.Visible = false;
+            this.axWindowsMediaPlayer1.DoubleClickEvent += new AxWMPLib._WMPOCXEvents_DoubleClickEventHandler(this.WMP_RightButtonClicked);
+            this.axWindowsMediaPlayer1.MouseUpEvent += new AxWMPLib._WMPOCXEvents_MouseUpEventHandler(this.WMP_RightButtonClicked);
             // 
             // Form_Main
             // 

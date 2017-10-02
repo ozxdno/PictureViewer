@@ -547,12 +547,20 @@ namespace PictureViewer
             if (e.KeyValue == 40) { key.D = false; }
             key.Down = key.L || key.R || key.U || key.D;
         }
-        private void WMP_RightButtonClicked(object sender, AxWMPLib._WMPOCXEvents_MouseDownEvent e)
+        private void WMP_RightButtonClicked(object sender, AxWMPLib._WMPOCXEvents_DoubleClickEvent e)
         {
-            if (!MenuShowed_OnWMP) { this.contextMenuStrip1.Show(MousePosition); }
-            if (MenuShowed_OnWMP) { this.contextMenuStrip1.Hide(); }
+            Form_Main_DoubleClick(sender, null);
+        }
+        private void WMP_RightButtonClicked(object sender, AxWMPLib._WMPOCXEvents_MouseUpEvent e)
+        {
+            // 必须是右键按下
+            if (e.nButton != 2) { return; }
 
-            MenuShowed_OnWMP = !MenuShowed_OnWMP;
+            //if (!MenuShowed_OnWMP) { this.contextMenuStrip1.Show(MousePosition); }
+            //if (MenuShowed_OnWMP) { this.contextMenuStrip1.Hide(); }
+
+            //MenuShowed_OnWMP = !MenuShowed_OnWMP;
+            this.contextMenuStrip1.Show(MousePosition);
         }
 
         private void Form_Main_DoubleClick(object sender, EventArgs e)
@@ -1056,7 +1064,7 @@ namespace PictureViewer
             if(isHide && !NoHide) { this.Text = "[" + Index + "/" + Total + "] [Unknow] " + Name; ShowOff("unk"); return; }
 
             // 处理不同文件
-            #region 0 型文件
+            #region 0 型文件（暂不支持类型）
             if (type == 0)
             {
                 if (!File.Exists(full)) { this.Text = "[" + Index + "/" + Total + "] [Not Exist]"; ShowOff("err"); }
@@ -1417,8 +1425,13 @@ namespace PictureViewer
             if (config.FolderIndex < 0 || config.FolderIndex >= FileOperate.RootFiles.Count) { return; }
             if (index < 1) { index = 1; }
             if (index > FileOperate.RootFiles[config.FolderIndex].Name.Count) { index = FileOperate.RootFiles[config.FolderIndex].Name.Count; }
+
+            string path = FileOperate.RootFiles[config.FolderIndex].Path;
+            string name = FileOperate.RootFiles[config.FolderIndex].Name[index - 1];
+            List<string> subfiles = FileOperate.getSubFiles(path + "\\" + name);
+
             if (subindex < 1) { subindex = 1; }
-            //if (subindex > config.SubFiles.Count) { subindex = config.SubFiles.Count; }
+            if (subindex > subfiles.Count) { subindex = subfiles.Count; }
 
             if (index - 1 == config.FileIndex && config.SubIndex == subindex - 1) { return; }
             if (index - 1 == config.FileIndex && config.SubFiles.Count == 0) { return; }

@@ -114,6 +114,7 @@ namespace PictureViewer.Class
             if (extension == ".mp4") { return 4; }
             if (extension == ".webm") { return 0; } // 未被处理的文件
             if (extension == ".zip") { return 5; }
+            if (extension == ".mp3") { return 4; }
             // hide files
             if (extension == ".pv1") { return 2; }
             if (extension == ".pv2") { return 2; }
@@ -124,6 +125,7 @@ namespace PictureViewer.Class
             if (extension == ".pv7") { return 4; }
             if (extension == ".pv8") { return 0; }
             if (extension == ".pv9") { return 5; }
+            if (extension == ".pv10") { return 4; }
 
             return -1;
         }
@@ -145,6 +147,7 @@ namespace PictureViewer.Class
             if (extension == ".mp4") { return true; }
             if (extension == ".webm") { return true; }
             if (extension == ".zip") { return true; }
+            if (extension == ".mp3") { return true; }
             // hide file
             if (extension == ".pv1") { return true; }
             if (extension == ".pv2") { return true; }
@@ -155,6 +158,7 @@ namespace PictureViewer.Class
             if (extension == ".pv7") { return true; }
             if (extension == ".pv8") { return true; }
             if (extension == ".pv9") { return true; }
+            if (extension == ".pv10") { return true; }
             return false;
         }
 
@@ -174,6 +178,7 @@ namespace PictureViewer.Class
             if (extension == ".pv7") { return true; }
             if (extension == ".pv8") { return true; }
             if (extension == ".pv9") { return true; }
+            if (extension == ".pv10") { return true; }
             return false;
         }
 
@@ -287,6 +292,7 @@ namespace PictureViewer.Class
             if (hideExtension == ".pv7") { return ".mp4"; }
             if (hideExtension == ".pv8") { return ".webm"; }
             if (hideExtension == ".pv9") { return ".zip"; }
+            if (hideExtension == ".pv10") { return ".mp3"; }
             //
             if (hideExtension == ".jpg") { return ".jpg"; }
             if (hideExtension == ".jpeg") { return ".jpeg"; }
@@ -297,6 +303,7 @@ namespace PictureViewer.Class
             if (hideExtension == ".mp4") { return ".mp4"; }
             if (hideExtension == ".webm") { return ".webm"; }
             if (hideExtension == ".zip") { return ".zip"; }
+            if (hideExtension == ".mp3") { return ".mp3"; }
 
             return null;
         }
@@ -318,6 +325,7 @@ namespace PictureViewer.Class
             if (showExtension == ".mp4") { return ".pv7"; }
             if (showExtension == ".webm") { return ".pv8"; }
             if (showExtension == ".zip") { return ".pv9"; }
+            if (showExtension == ".mp3") { return ".pv10"; }
             //
             if (showExtension == ".pv1") { return ".pv1"; }
             if (showExtension == ".pv2") { return ".pv2"; }
@@ -328,6 +336,7 @@ namespace PictureViewer.Class
             if (showExtension == ".pv7") { return ".pv7"; }
             if (showExtension == ".pv8") { return ".pv8"; }
             if (showExtension == ".pv9") { return ".pv9"; }
+            if (showExtension == ".pv10") { return ".pv10"; }
 
             return null;
         }
