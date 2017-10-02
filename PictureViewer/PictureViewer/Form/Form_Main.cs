@@ -66,6 +66,8 @@ namespace PictureViewer
 
         private void Form_Loaded(object sender, EventArgs e)
         {
+            FileSupport.Initialize();
+
             config.ConfigPath = FileOperate.getExePath();
             config.ConfigName = "pv.pvini";
             if (!Class.Load.Load_CFG()) { MessageBox.Show("配置文件（pv.pvini）不存在或已损坏"); }
@@ -573,6 +575,15 @@ namespace PictureViewer
 
             bool lastE = key.E; key.E = false;
 
+            #region 0 型文件双击操作
+
+            if (type == 0)
+            {
+                ShowCurrent(); return;
+            }
+
+            #endregion
+
             #region 1 型文件的双击操作
 
             if (type == 1)
@@ -586,8 +597,8 @@ namespace PictureViewer
                 if (ShowedBigPicture) { ShowCurrent(); return; }
 
                 // 聚焦点
-                int xF = MousePosition.X - this.Location.X - this.pictureBox1.Location.X;
-                int yF = MousePosition.Y - this.Location.Y - this.pictureBox1.Location.Y;
+                int xF = MousePosition.X - this.Location.X - this.pictureBox1.Location.X - 10;
+                int yF = MousePosition.Y - this.Location.Y - this.pictureBox1.Location.Y - 30;
                 double xR = (double)xF / config.DestPicture.Width;
                 if (xR < 0) { xR = 0; }
                 if (xR > 1) { xR = 1; }
@@ -757,8 +768,8 @@ namespace PictureViewer
                 if (ShowedBigPicture) { ShowCurrent(); return; }
 
                 // 聚焦点
-                int xF = MousePosition.X - this.Location.X - this.pictureBox1.Location.X;
-                int yF = MousePosition.Y - this.Location.Y - this.pictureBox1.Location.Y;
+                int xF = MousePosition.X - this.Location.X - this.pictureBox1.Location.X - 10;
+                int yF = MousePosition.Y - this.Location.Y - this.pictureBox1.Location.Y - 30;
                 double xR = (double)xF / config.DestPicture.Width;
                 if (xR < 0) { xR = 0; }
                 if (xR > 1) { xR = 1; }
@@ -1079,6 +1090,14 @@ namespace PictureViewer
                 if (!Directory.Exists(full)) { this.Text = "[" + Index + "/" + Total + "] [Not Exist] " + full; ShowOff("err"); return; }
                 
                 config.SubFiles = FileOperate.getSubFiles(full);
+                if (config.SubFiles.Count == 0)
+                {
+                    this.Text = "[" + Index + "/" + Total + "] [ 0/0 ] [Empty Folder] Not found a file the process support in this folder";
+                    ShowOff("unk");
+                    //MessageBox.Show("在文件夹 " + full + " 中未能找到任何此程序支持的文件！", "提示");
+                    return;
+                }
+
                 if (config.SubIndex < 0 || config.SubIndex >= config.SubFiles.Count)
                 {
                     this.Text = "[" + Index + "/" + Total + "] [" + (config.SubIndex + 1).ToString() + "/" + config.SubFiles.Count + "] [Not Exist]";
@@ -1141,7 +1160,13 @@ namespace PictureViewer
 
                 int err = ZipOperate.ReadZipEX(full);
                 if (!isHide && err == 1) { this.Text = "[" + Index + "/" + Total + "] [Wrong PassWord] " + name; ShowOff("err"); return; }
-                
+
+                if (config.SubFiles.Count == 0)
+                {
+                    this.Text = "[" + Index + "/" + Total + "] [ 0/0 ] [Empty Zip File] Not found a file the process support in this zip file";
+                    ShowOff(); return;
+                }
+
                 if (config.SubIndex < 0 || config.SubIndex >= config.SubFiles.Count)
                 {
                     this.Text = "[" + Index + "/" + Total + "] [" + (config.SubIndex + 1).ToString() + "/" + config.SubFiles.Count + "] [Not Exist]";

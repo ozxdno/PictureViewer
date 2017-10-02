@@ -44,6 +44,15 @@ namespace PictureViewer.Class
                 for (int i = 1; i < FileOperate.RootFiles.Count; i++)
                 { RootPath += "|" + FileOperate.RootFiles[i].Path; }
                 swCFG.WriteLine("RootPath=" + RootPath);
+                swCFG.WriteLine("");
+
+                //swCFG.WriteLine("FileType0=" + FileSupport.O_FileType(0));
+                //swCFG.WriteLine("FileType1=" + FileSupport.O_FileType(1));
+                //swCFG.WriteLine("FileType2=" + FileSupport.O_FileType(2));
+                //swCFG.WriteLine("FileType3=" + FileSupport.O_FileType(3));
+                //swCFG.WriteLine("FileType4=" + FileSupport.O_FileType(4));
+                //swCFG.WriteLine("FileType5=" + FileSupport.O_FileType(5));
+                //swCFG.WriteLine("");
             }
             catch { swCFG.Close(); return false; } swCFG.Close(); return true;
         }

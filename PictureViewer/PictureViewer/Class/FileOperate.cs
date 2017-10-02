@@ -103,6 +103,10 @@ namespace PictureViewer.Class
         /// <returns></returns>
         public static int getFileType(string extension)
         {
+            return FileSupport.getFileType(extension);
+
+            // 以下为历史代码，已弃用。
+
             // show files
             if (extension == "") { return 1; }
             if (extension == ".jpg") { return 2; }
@@ -137,6 +141,10 @@ namespace PictureViewer.Class
         /// <returns></returns>
         public static bool IsSupport(string extension)
         {
+            return FileSupport.IsSupport(extension);
+
+            // 以下为历史代码，已弃用。
+
             // show file
             if (extension == ".jpg") { return true; }
             if (extension == ".jpeg") { return true; }
@@ -169,6 +177,10 @@ namespace PictureViewer.Class
         /// <returns></returns>
         public static bool IsSupportHide(string extension)
         {
+            return FileSupport.IsSupportHide(extension);
+
+            // 以下为历史代码，已弃用。
+
             if (extension == ".pv1") { return true; }
             if (extension == ".pv2") { return true; }
             if (extension == ".pv3") { return true; }
@@ -282,6 +294,10 @@ namespace PictureViewer.Class
         /// <returns></returns>
         public static string getShowExtension(string hideExtension)
         {
+            return FileSupport.getShowExtension(hideExtension);
+
+            // 以下为历史代码，已弃用。
+
             if (hideExtension == "") { return ""; }
             if (hideExtension == ".pv1") { return ".jpg"; }
             if (hideExtension == ".pv2") { return ".jpeg"; }
@@ -315,6 +331,10 @@ namespace PictureViewer.Class
         /// <returns></returns>
         public static string getHideExtension(string showExtension)
         {
+            return FileSupport.getHideExtension(showExtension);
+
+            // 以下为历史代码，已弃用。
+
             if (showExtension == "") { return ""; }
             if (showExtension == ".jpg") { return ".pv1"; }
             if (showExtension == ".jpeg") { return ".pv2"; }

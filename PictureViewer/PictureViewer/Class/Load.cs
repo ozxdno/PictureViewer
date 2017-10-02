@@ -57,6 +57,12 @@ namespace PictureViewer.Class
                         case "FileIndex": Form_Main.config.FileIndex = int.Parse(Item[1]); break;
                         case "SubIndex": Form_Main.config.SubIndex = int.Parse(Item[1]); break;
                         case "RootPath": RootPath = Item.Length == 1 ? new string[0] : Item[1].Split('|'); break;
+                        //case "FileType0": FileSupport.I_FileType(0, Item[1]); break;
+                        //case "FileType1": FileSupport.I_FileType(1, Item[1]); break;
+                        //case "FileType2": FileSupport.I_FileType(2, Item[1]); break;
+                        //case "FileType3": FileSupport.I_FileType(3, Item[1]); break;
+                        //case "FileType4": FileSupport.I_FileType(4, Item[1]); break;
+                        //case "FileType5": FileSupport.I_FileType(5, Item[1]); break;
                         default: break;
                     }
                 }
