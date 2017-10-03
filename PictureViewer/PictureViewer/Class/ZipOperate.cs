@@ -25,6 +25,9 @@ namespace PictureViewer.Class
         private static ZipArchive zip;
         private static string zip2;
 
+        private static List<string> knownPassWordFile = new List<string>();
+        private static List<string> knownPassWord = new List<string>();
+
         ////////////////////////////////////////////////////// public method /////////////////////////////////////////////////////
 
         /// <summary>
@@ -127,7 +130,7 @@ namespace PictureViewer.Class
         /// <summary>
         /// 读取 ZIP 文件中的所有支持文件（有密码），返回错误类型：1-密码错误
         /// </summary>
-        /// <param name="fullpath"></param>
+        /// <param name="fullpath">ZIP 文件绝对路径</param>
         public static int ReadZipEX(string fullpath)
         {
             Form_Main.config.SubFiles = new List<string>();
@@ -137,7 +140,7 @@ namespace PictureViewer.Class
             FileStream sIn = new FileStream(fullpath, FileMode.Open, FileAccess.Read);
             ICSharpCode.SharpZipLib.Zip.ZipInputStream zip = new ZipInputStream(sIn);
             zip.Password = PassWord;
-
+            
             ICSharpCode.SharpZipLib.Zip.ZipEntry e = zip.GetNextEntry();
             while (e != null)
             {
@@ -150,6 +153,34 @@ namespace PictureViewer.Class
             }
 
             return 0;
+        }
+        /// <summary>
+        /// 读取 ZIP 文件中的压缩文件列表。
+        /// </summary>
+        /// <param name="fullpath">ZIP 文件绝对路径</param>
+        /// <returns></returns>
+        public static List<string> getZipFileEX(string fullpath)
+        {
+            List<string> files = new List<string>();
+            zip2 = fullpath;
+            if (!TestPassWords()) { return files; }
+
+            FileStream sIn = new FileStream(fullpath, FileMode.Open, FileAccess.Read);
+            ICSharpCode.SharpZipLib.Zip.ZipInputStream zip = new ZipInputStream(sIn);
+            zip.Password = PassWord;
+
+            ICSharpCode.SharpZipLib.Zip.ZipEntry e = zip.GetNextEntry();
+            while (e != null)
+            {
+                int type = FileOperate.getFileType(FileOperate.getExtension(e.Name));
+
+                if (type == 2) { files.Add(e.Name); }
+                if (type == 3) { files.Add(e.Name); }
+
+                e = zip.GetNextEntry();
+            }
+
+            return files;
         }
         /// <summary>
         /// 读取 ZIP 压缩包中的指定图片文件加载至缓存中，返回加载是否成功（有密码）
@@ -204,6 +235,13 @@ namespace PictureViewer.Class
         {
             if (zipFilePath == null) { zipFilePath = zip2; }
 
+            // 若文件已经通过密码测试，则不再测试。
+            for (int i = 0; i < knownPassWordFile.Count; i++)
+            {
+                if (knownPassWordFile[i] == zipFilePath) { PassWord = knownPassWord[i]; return true; }
+            }
+
+            // 在已有密码中没找到，则测试密码。
             foreach (string pw in PassWords)
             {
                 try
@@ -215,10 +253,14 @@ namespace PictureViewer.Class
                     if (zip.Password.Length == 0) { zip.Password = null; }
 
                     ICSharpCode.SharpZipLib.Zip.ZipEntry e = zip.GetNextEntry();
-                    if (e == null) { return false; }
-                    e = zip.GetNextEntry();
+                    //if (e == null) { return false; }
+                    //e = zip.GetNextEntry();
+                    while (e != null) { e = zip.GetNextEntry(); }
 
-                    PassWord = pw; return true;
+                    PassWord = pw; if (PassWord.Length == 0) { PassWord = null; }
+                    knownPassWordFile.Add(zipFilePath);
+                    knownPassWord.Add(PassWord);
+                    return true;
                 }
                 catch { }
             }

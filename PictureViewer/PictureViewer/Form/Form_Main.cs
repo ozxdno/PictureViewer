@@ -41,7 +41,8 @@ namespace PictureViewer
 
         private System.Timers.Timer Timer = new System.Timers.Timer(10);
         private bool MenuShowed_OnWMP = false;
-        private bool ShowedBigPicture = false;
+        //private bool ShowedBigPicture = false;
+        private bool NextShowBigPicture = false;
         private bool NoHide = false;
         private int LastKeyValue = 35;
         private KEY key;
@@ -118,6 +119,7 @@ namespace PictureViewer
             {
                 if (config.FolderIndex < 0 || config.FolderIndex >= FileOperate.RootFiles.Count) { return; }
                 if (config.FileIndex < 0 || config.FileIndex >= FileOperate.RootFiles[config.FolderIndex].Name.Count) { return; }
+                if (this.bigPicToolStripMenuItem.Checked) { NextShowBigPicture = true; }
 
                 if (config.SubFiles != null && config.SubFiles.Count != 0) { config.SubIndex--; if (config.SubIndex < 0) { config.FileIndex--; config.SubIndex = -1; } }
                 else { config.FileIndex--; config.SubIndex = -1; }
@@ -150,6 +152,7 @@ namespace PictureViewer
             {
                 if (config.FolderIndex < 0 || config.FolderIndex >= FileOperate.RootFiles.Count) { return; }
                 if (config.FileIndex < 0 || config.FileIndex >= FileOperate.RootFiles[config.FolderIndex].Name.Count) { return; }
+                if (this.bigPicToolStripMenuItem.Checked) { NextShowBigPicture = true; }
 
                 if (config.SubFiles != null && config.SubIndex < config.SubFiles.Count - 1) { config.SubIndex++; if (config.SubIndex >= config.SubFiles.Count) { config.FileIndex++; config.SubIndex = -1; } }
                 else { config.FileIndex++; config.SubIndex = -1; }
@@ -178,7 +181,8 @@ namespace PictureViewer
             if (e.KeyValue == 37)
             {
                 if (FileOperate.RootFiles.Count == 0) { return; }
-                
+                if (this.bigPicToolStripMenuItem.Checked) { NextShowBigPicture = true; }
+
                 config.FileIndex--; if (config.FileIndex < 0) { config.FolderIndex--; }
                 if (config.FolderIndex < 0)
                 { config.FolderIndex = FileOperate.RootFiles.Count - 1; }
@@ -194,7 +198,8 @@ namespace PictureViewer
             if (e.KeyValue == 39)
             {
                 if (FileOperate.RootFiles.Count == 0) { return; }
-                
+                if (this.bigPicToolStripMenuItem.Checked) { NextShowBigPicture = true; }
+
                 config.FileIndex++;
                 if (config.FileIndex >= FileOperate.RootFiles[config.FolderIndex].Name.Count)
                 { config.FileIndex = 0; config.FolderIndex++; }
@@ -210,6 +215,7 @@ namespace PictureViewer
             if (e.KeyValue == 38)
             {
                 if (config.SubFiles == null || config.SubFiles.Count == 0) { return; }
+                if (this.bigPicToolStripMenuItem.Checked) { NextShowBigPicture = true; }
                 config.SubIndex--;
                 if (config.SubIndex < 0) { config.SubIndex = config.SubFiles.Count - 1; }
 
@@ -223,6 +229,7 @@ namespace PictureViewer
             if (e.KeyValue == 40)
             {
                 if (config.SubFiles == null || config.SubFiles.Count == 0) { return; }
+                if (this.bigPicToolStripMenuItem.Checked) { NextShowBigPicture = true; }
                 config.SubIndex++;
                 if (config.SubIndex >= config.SubFiles.Count) { config.SubIndex = 0; }
 
@@ -253,7 +260,9 @@ namespace PictureViewer
                     if (type != 2) { ShowCurrent(); return; }
 
                     if (config.SourPicture == null) { return; }
-                    if (ShowedBigPicture) { ShowCurrent(); return; }
+                    NextShowBigPicture = !NextShowBigPicture;
+                    if (!NextShowBigPicture) { ShowCurrent(); return; }
+                    ShowBig(true); return;
 
                     // 聚焦点
                     //int xF = MousePosition.X - this.Location.X - this.pictureBox1.Location.X;
@@ -261,7 +270,7 @@ namespace PictureViewer
 
                     this.HorizontalScroll.Value = 0;
                     this.VerticalScroll.Value = 0;
-                    ShowedBigPicture = true;
+                    //ShowedBigPicture = true;
 
                     int X = (this.Width - 18 - config.SourPicture.Width) / 2;
                     int Y = (this.Height - 42 - config.SourPicture.Height) / 2;
@@ -302,11 +311,13 @@ namespace PictureViewer
                 if (type == 2)
                 {
                     if (config.SourPicture == null) { return; }
-                    if (ShowedBigPicture) { ShowCurrent(); return; }
+                    NextShowBigPicture = !NextShowBigPicture;
+                    if (!NextShowBigPicture) { ShowCurrent(); return; }
+                    ShowBig(true); return;
 
                     this.HorizontalScroll.Value = 0;
                     this.VerticalScroll.Value = 0;
-                    ShowedBigPicture = true;
+                    //ShowedBigPicture = true;
 
                     // 聚焦点
                     //int xF = MousePosition.X - this.Location.X - this.pictureBox1.Location.X;
@@ -374,7 +385,9 @@ namespace PictureViewer
                     if (type != 2) { ShowCurrent(); return; }
 
                     if (config.SourPicture == null) { return; }
-                    if (ShowedBigPicture) { ShowCurrent(); return; }
+                    NextShowBigPicture = !NextShowBigPicture;
+                    if (!NextShowBigPicture) { ShowCurrent(); return; }
+                    ShowBig(true); return;
 
                     // 聚焦点
                     //int xF = MousePosition.X - this.Location.X - this.pictureBox1.Location.X;
@@ -382,7 +395,7 @@ namespace PictureViewer
 
                     this.HorizontalScroll.Value = 0;
                     this.VerticalScroll.Value = 0;
-                    ShowedBigPicture = true;
+                    //ShowedBigPicture = true;
 
                     int X = (this.Width - 18 - config.SourPicture.Width) / 2;
                     int Y = (this.Height - 42 - config.SourPicture.Height) / 2;
@@ -594,7 +607,8 @@ namespace PictureViewer
                 if (type != 2) { ShowCurrent(); return; }
 
                 if (config.SourPicture == null) { return; }
-                if (ShowedBigPicture) { ShowCurrent(); return; }
+                NextShowBigPicture = !NextShowBigPicture;
+                if (!NextShowBigPicture) { ShowCurrent(); return; }
 
                 // 聚焦点
                 int xF = MousePosition.X - this.Location.X - this.pictureBox1.Location.X - 10;
@@ -608,7 +622,7 @@ namespace PictureViewer
 
                 //this.HorizontalScroll.Value = 0;
                 //this.VerticalScroll.Value = 0;
-                ShowedBigPicture = true;
+                //ShowedBigPicture = true;
 
                 int X = (this.Width - 18 - config.SourPicture.Width) / 2;
                 int Y = (this.Height - 42 - config.SourPicture.Height) / 2;
@@ -664,7 +678,8 @@ namespace PictureViewer
             if (type == 2)
             {
                 if (config.SourPicture == null) { return; }
-                if (ShowedBigPicture) { ShowCurrent(); return; }
+                NextShowBigPicture = !NextShowBigPicture;
+                if (!NextShowBigPicture) { ShowCurrent(); return; }
 
                 // 聚焦点
                 int xF = MousePosition.X - this.Location.X - this.pictureBox1.Location.X - 10;
@@ -678,7 +693,7 @@ namespace PictureViewer
 
                 //this.HorizontalScroll.Value = 0;
                 //this.VerticalScroll.Value = 0;
-                ShowedBigPicture = true;
+                //ShowedBigPicture = true;
 
                 int X = (this.Width - 18 - config.SourPicture.Width) / 2;
                 int Y = (this.Height - 42 - config.SourPicture.Height) / 2;
@@ -765,7 +780,8 @@ namespace PictureViewer
                 if (type != 2) { ShowCurrent(); return; }
 
                 if (config.SourPicture == null) { return; }
-                if (ShowedBigPicture) { ShowCurrent(); return; }
+                NextShowBigPicture = !NextShowBigPicture;
+                if (!NextShowBigPicture) { ShowCurrent(); return; }
 
                 // 聚焦点
                 int xF = MousePosition.X - this.Location.X - this.pictureBox1.Location.X - 10;
@@ -779,7 +795,7 @@ namespace PictureViewer
 
                 //this.HorizontalScroll.Value = 0;
                 //this.VerticalScroll.Value = 0;
-                ShowedBigPicture = true;
+                //ShowedBigPicture = true;
 
                 int X = (this.Width - 18 - config.SourPicture.Width) / 2;
                 int Y = (this.Height - 42 - config.SourPicture.Height) / 2;
@@ -839,6 +855,7 @@ namespace PictureViewer
         private void Page_U(object sender, EventArgs e)
         {
             if (config.SubFiles == null || config.SubFiles.Count == 0) { return; }
+            if (this.bigPicToolStripMenuItem.Checked) { NextShowBigPicture = true; }
             config.SubIndex--;
             if (config.SubIndex < 0) { config.SubIndex = config.SubFiles.Count - 1; }
 
@@ -847,6 +864,7 @@ namespace PictureViewer
         private void Page_D(object sender, EventArgs e)
         {
             if (config.SubFiles == null || config.SubFiles.Count == 0) { return; }
+            if (this.bigPicToolStripMenuItem.Checked) { NextShowBigPicture = true; }
             config.SubIndex++;
             if (config.SubIndex >= config.SubFiles.Count) { config.SubIndex = 0; }
 
@@ -855,6 +873,7 @@ namespace PictureViewer
         private void Page_L(object sender, EventArgs e)
         {
             if (FileOperate.RootFiles.Count == 0) { return; }
+            if (this.bigPicToolStripMenuItem.Checked) { NextShowBigPicture = true; }
 
             config.FileIndex--; if (config.FileIndex < 0) { config.FolderIndex--; }
             if (config.FolderIndex < 0)
@@ -867,6 +886,7 @@ namespace PictureViewer
         private void Page_R(object sender, EventArgs e)
         {
             if (FileOperate.RootFiles.Count == 0) { return; }
+            if (this.bigPicToolStripMenuItem.Checked) { NextShowBigPicture = true; }
 
             config.FileIndex++;
             if (config.FileIndex >= FileOperate.RootFiles[config.FolderIndex].Name.Count)
@@ -1040,8 +1060,6 @@ namespace PictureViewer
 
             this.HorizontalScroll.Value = 0;
             this.VerticalScroll.Value = 0;
-
-            ShowedBigPicture = false;
             config.SubFiles.Clear();
 
             // 切到当前文件夹
@@ -1092,17 +1110,19 @@ namespace PictureViewer
                 config.SubFiles = FileOperate.getSubFiles(full);
                 if (config.SubFiles.Count == 0)
                 {
-                    this.Text = "[" + Index + "/" + Total + "] [ 0/0 ] [Empty Folder] Not found a file the process support in this folder";
+                    this.Text = "[" + Index + "/" + Total + "] [ 0/0 ] [Empty Folder] Not found any file the process support in this folder";
                     ShowOff("unk");
                     //MessageBox.Show("在文件夹 " + full + " 中未能找到任何此程序支持的文件！", "提示");
                     return;
                 }
 
-                if (config.SubIndex < 0 || config.SubIndex >= config.SubFiles.Count)
-                {
-                    this.Text = "[" + Index + "/" + Total + "] [" + (config.SubIndex + 1).ToString() + "/" + config.SubFiles.Count + "] [Not Exist]";
-                    ShowOff("err"); return;
-                }
+                if (config.SubIndex < 0) { config.SubIndex = 0; }
+                if (config.SubIndex >= config.SubFiles.Count) { config.SubIndex = config.SubFiles.Count - 1; }
+                //if (config.SubIndex < 0 || config.SubIndex >= config.SubFiles.Count)
+                //{
+                //    this.Text = "[" + Index + "/" + Total + "] [" + (config.SubIndex + 1).ToString() + "/" + config.SubFiles.Count + "] [Not Exist]";
+                //    ShowOff("err"); return;
+                //}
 
                 isHide = FileOperate.IsSupportHide(FileOperate.getExtension(config.SubFiles[config.SubIndex]));
                 if (isHide && !NoHide)
@@ -1163,15 +1183,17 @@ namespace PictureViewer
 
                 if (config.SubFiles.Count == 0)
                 {
-                    this.Text = "[" + Index + "/" + Total + "] [ 0/0 ] [Empty Zip File] Not found a file the process support in this zip file";
+                    this.Text = "[" + Index + "/" + Total + "] [ 0/0 ] [Empty Zip File] Not found any file the process support in this zip file";
                     ShowOff(); return;
                 }
 
-                if (config.SubIndex < 0 || config.SubIndex >= config.SubFiles.Count)
-                {
-                    this.Text = "[" + Index + "/" + Total + "] [" + (config.SubIndex + 1).ToString() + "/" + config.SubFiles.Count + "] [Not Exist]";
-                    ShowOff("err"); return;
-                }
+                if (config.SubIndex < 0) { config.SubIndex = 0; }
+                if (config.SubIndex >= config.SubFiles.Count) { config.SubIndex = config.SubFiles.Count - 1; }
+                //if (config.SubIndex < 0 || config.SubIndex >= config.SubFiles.Count)
+                //{
+                //    this.Text = "[" + Index + "/" + Total + "] [" + (config.SubIndex + 1).ToString() + "/" + config.SubFiles.Count + "] [Not Exist]";
+                //    ShowOff("err"); return;
+                //}
 
                 isHide = FileOperate.IsSupportHide(FileOperate.getExtension(config.SubFiles[config.SubIndex]));
                 if (isHide && !NoHide)
@@ -1216,6 +1238,9 @@ namespace PictureViewer
             Graphics g = Graphics.FromImage(config.DestPicture);
             g.DrawImage(config.SourPicture, new Rectangle(0, 0, destX, destY), new Rectangle(0, 0, sourX, sourY), GraphicsUnit.Pixel);
             g.Dispose();
+
+            if (NextShowBigPicture) { ShowBig(); return; }
+            //ShowedBigPicture = false;
             
             this.pictureBox1.Width = destX;
             this.pictureBox1.Height = destY;
@@ -1314,6 +1339,75 @@ namespace PictureViewer
                 return;
             }
             ShowPicture(errpath, errname);
+        }
+        private void ShowBig(bool focus = false)
+        {
+            if (config.SourPicture == null || this.pictureBox1.Visible == false) { return; }
+
+            //this.HorizontalScroll.Value = 0;
+            //this.VerticalScroll.Value = 0;
+            //ShowedBigPicture = true;
+            
+            // 聚焦点
+            int xF = MousePosition.X - this.Location.X - this.pictureBox1.Location.X - 10;
+            int yF = MousePosition.Y - this.Location.Y - this.pictureBox1.Location.Y - 30;
+            double xR = (double)xF / config.DestPicture.Width;
+            if (xR < 0) { xR = 0; }
+            if (xR > 1) { xR = 1; }
+            double yR = (double)yF / config.DestPicture.Height;
+            if (yR < 0) { yR = 0; }
+            if (yR > 1) { yR = 1; }
+            if (!focus) { xR = 0.0; yR = 0.0; }
+
+            // 显示图片
+            int X = (this.Width - 18 - config.SourPicture.Width) / 2;
+            int Y = (this.Height - 42 - config.SourPicture.Height) / 2;
+            key.E = X < 0 || Y < 0;
+            if (X < 1) { X = 1; }
+            if (Y < 1) { Y = 1; }
+
+            this.pictureBox1.Image = config.SourPicture;
+            this.pictureBox1.Location = new Point(X, Y);
+            this.pictureBox1.Height = config.SourPicture.Height;
+            this.pictureBox1.Width = config.SourPicture.Width;
+
+            // 把聚焦点放到屏幕中央
+            int xS = (int)(config.SourPicture.Width * xR - this.Width / 2 + 40);
+            if (xS < this.HorizontalScroll.Minimum) { xS = this.HorizontalScroll.Minimum; }
+            if (xS > this.HorizontalScroll.Maximum) { xS = this.HorizontalScroll.Maximum; }
+
+            int yS = (int)(config.SourPicture.Height * yR - this.Height / 2 + 20);
+            if (yS < this.VerticalScroll.Minimum) { yS = this.VerticalScroll.Minimum; }
+            if (yS > this.VerticalScroll.Maximum) { yS = this.VerticalScroll.Maximum; }
+            
+            #region 调整滑动量，使其可以被接受
+
+            if (X == 1)
+            {
+                int adjust = xS - this.HorizontalScroll.Value;
+                int maxChange = this.HorizontalScroll.LargeChange;
+                while (true)
+                {
+                    if (adjust > maxChange) { this.HorizontalScroll.Value += maxChange; adjust = xS - this.HorizontalScroll.Value; continue; }
+                    if (adjust < -maxChange) { this.HorizontalScroll.Value -= maxChange; adjust = xS - this.HorizontalScroll.Value; continue; }
+                    this.HorizontalScroll.Value = xS; break;
+                }
+            }
+            if (Y == 1)
+            {
+                int adjust = yS - this.VerticalScroll.Value;
+                int maxChange = this.VerticalScroll.LargeChange;
+                while (true)
+                {
+                    if (adjust > maxChange) { this.VerticalScroll.Value += maxChange; adjust = yS - this.VerticalScroll.Value; continue; }
+                    if (adjust < -maxChange) { this.VerticalScroll.Value -= maxChange; adjust = yS - this.VerticalScroll.Value; continue; }
+                    this.VerticalScroll.Value = yS; break;
+                }
+            }
+            this.HorizontalScroll.Value = xS;
+            this.VerticalScroll.Value = yS; return;
+
+            #endregion
         }
 
         private void HideFiles()
@@ -1444,8 +1538,8 @@ namespace PictureViewer
             if (indexStr.Length == 0) { indexStr = (config.FileIndex + 1).ToString(); }
 
             int index = 0, subindex = 0;
-            try { index = int.Parse(indexStr); } catch { MessageBox.Show("输入错误位置！"); return; }
-            try { subindex = int.Parse(subindexStr); } catch { MessageBox.Show("输入错误位置！"); return; }
+            try { index = int.Parse(indexStr); } catch { MessageBox.Show("输入错误位置！","提示"); return; }
+            try { subindex = int.Parse(subindexStr); } catch { MessageBox.Show("输入错误位置！", "提示"); return; }
             
             if (config.FolderIndex < 0 || config.FolderIndex >= FileOperate.RootFiles.Count) { return; }
             if (index < 1) { index = 1; }
@@ -1454,6 +1548,7 @@ namespace PictureViewer
             string path = FileOperate.RootFiles[config.FolderIndex].Path;
             string name = FileOperate.RootFiles[config.FolderIndex].Name[index - 1];
             List<string> subfiles = FileOperate.getSubFiles(path + "\\" + name);
+            if (subfiles.Count == 0) { subfiles = ZipOperate.getZipFileEX(path + "\\" + name); }
 
             if (subindex < 1) { subindex = 1; }
             if (subindex > subfiles.Count) { subindex = subfiles.Count; }
@@ -1652,6 +1747,13 @@ namespace PictureViewer
             this.hideRToolStripMenuItem.Checked = next;
 
             this.hideToolStripMenuItem.Checked = next;
+            this.contextMenuStrip1.Hide();
+        }
+        private void RightMenu_BigPicture(object sender, EventArgs e)
+        {
+            this.bigPicToolStripMenuItem.Checked = !this.bigPicToolStripMenuItem.Checked;
+            NextShowBigPicture = this.bigPicToolStripMenuItem.Checked;
+            ShowCurrent();
         }
 
         private void Form_DragEntre(object sender, DragEventArgs e)
