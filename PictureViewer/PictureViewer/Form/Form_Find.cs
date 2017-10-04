@@ -183,11 +183,11 @@ namespace PictureViewer
 
                 xbg = this.label1.Location.X + 10; xed = xbg + this.label1.Width;
                 ybg = this.label1.Location.Y + 30; yed = ybg + this.label1.Height;
-                this.label1.Visible = xbg <= ptX && ptX <= xed && ybg <= ptY && ptY <= yed;
+                this.label1.Visible = xbg <= ptX && ptX <= xed && ybg <= ptY && ptY <= yed && config.Current.Count > 0;
 
                 xbg = this.label2.Location.X + 10; xed = xbg + this.label2.Width;
                 ybg = this.label2.Location.Y + 30; yed = ybg + this.label2.Height;
-                this.label2.Visible = xbg <= ptX && ptX <= xed && ybg <= ptY && ptY <= yed;
+                this.label2.Visible = xbg <= ptX && ptX <= xed && ybg <= ptY && ptY <= yed && config.Current.Count > 0;
 
                 //if (this.label1.Visible || this.label2.Visible || this.label4.Visible || this.label5.Visible)
                 //{
@@ -310,8 +310,11 @@ namespace PictureViewer
             string path = config.Sour.Substring(0, cut);
             string name = config.Sour.Substring(cut + 1);
 
+            FileInfo file = new FileInfo(config.Sour);
+            long size = file.Length / 1000;
+
             this.toolTip2.ToolTipTitle = path;
-            this.toolTip2.SetToolTip(this.pictureBox2, name);
+            this.toolTip2.SetToolTip(this.pictureBox2, "[" + size.ToString() + " KB] " + name);
         }
         private void ShowDestPic()
         {
@@ -328,6 +331,9 @@ namespace PictureViewer
                 else { DestPic = null; }
 
                 this.pictureBox1.BackgroundImage = DestPic;
+
+                this.toolTip1.ToolTipTitle = config.Path;
+                this.toolTip1.SetToolTip(this.listBox1, config.Name);
             }
             else
             {
@@ -343,10 +349,13 @@ namespace PictureViewer
                 double rate = Math.Min((double)hBox / hPic, (double)wBox / wPic);
                 Bitmap dest = CopyPicture(DestPic, rate);
                 this.pictureBox1.BackgroundImage = dest;
+
+                FileInfo file = new FileInfo(config.Path + "\\" + config.Name);
+                long size = file.Length / 1000;
+
+                this.toolTip1.ToolTipTitle = config.Path;
+                this.toolTip1.SetToolTip(this.listBox1, "[" + size.ToString() + " KB] " + config.Name);
             }
-            
-            this.toolTip1.ToolTipTitle = config.Path;
-            this.toolTip1.SetToolTip(this.listBox1, config.Name);
         }
         private void ShowList()
         {
@@ -641,7 +650,7 @@ namespace PictureViewer
 
                 IsSame = false;
 
-                if (config.IsRow)
+                if (config.IsRow && dest.Width > config.MinCmpPix + 20)
                 {
                     for (int j = 10; j < dest.Height - 10; j += 1)
                     {
@@ -649,7 +658,7 @@ namespace PictureViewer
                         if (err < 3) { IsSame = true; break; }
                     }
                 }
-                if (!config.IsRow)
+                if (!config.IsRow && dest.Height > config.MinCmpPix + 20)
                 {
                     for (int j = 10; j < dest.Width - 10; j += 1)
                     {
@@ -692,7 +701,7 @@ namespace PictureViewer
 
                 IsSame = false;
 
-                if (config.IsRow)
+                if (config.IsRow && dest.Width > config.MinCmpPix + 20)
                 {
                     for (int j = 10; j < dest.Height - 10; j += 1)
                     {
@@ -700,7 +709,7 @@ namespace PictureViewer
                         if (err < 3) { IsSame = true; break; }
                     }
                 }
-                if (!config.IsRow)
+                if (!config.IsRow && dest.Height > config.MinCmpPix + 20)
                 {
                     for (int j = 10; j < dest.Width - 10; j += 1)
                     {
@@ -743,7 +752,7 @@ namespace PictureViewer
 
                 IsSame = false;
 
-                if (config.IsRow)
+                if (config.IsRow && dest.Width > config.MinCmpPix + 20)
                 {
                     for (int j = 10; j < dest.Height - 10; j += 1)
                     {
@@ -751,7 +760,7 @@ namespace PictureViewer
                         if (err < 3) { IsSame = true; break; }
                     }
                 }
-                if (!config.IsRow)
+                if (!config.IsRow && dest.Height > config.MinCmpPix + 20)
                 {
                     for (int j = 10; j < dest.Width - 10; j += 1)
                     {
@@ -794,7 +803,7 @@ namespace PictureViewer
 
                 IsSame = false;
 
-                if (config.IsRow)
+                if (config.IsRow && dest.Width > config.MinCmpPix + 20)
                 {
                     for (int j = 10; j < dest.Height - 10; j += 1)
                     {
@@ -802,7 +811,7 @@ namespace PictureViewer
                         if (err < 3) { IsSame = true; break; }
                     }
                 }
-                if (!config.IsRow)
+                if (!config.IsRow && dest.Height > config.MinCmpPix + 20)
                 {
                     for (int j = 10; j < dest.Width - 10; j += 1)
                     {

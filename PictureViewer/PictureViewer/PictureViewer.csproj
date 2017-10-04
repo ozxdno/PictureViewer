@@ -55,7 +55,6 @@
   <ItemGroup>
     <Compile Include="Class\FileOperate.cs" />
     <Compile Include="Class\FileSupport.cs" />
-    <Compile Include="Class\FindPicture.cs" />
     <Compile Include="Class\Load.cs" />
     <Compile Include="Class\Save.cs" />
     <Compile Include="Class\ZipOperate.cs" />
