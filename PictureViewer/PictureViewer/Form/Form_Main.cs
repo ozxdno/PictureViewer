@@ -20,6 +20,8 @@ namespace PictureViewer
     {
         ///////////////////////////////////////////////////// public attribute ///////////////////////////////////////////////
 
+        public static bool NoHide = false;
+
         public static CONFIG config;
         public struct CONFIG
         {
@@ -43,7 +45,6 @@ namespace PictureViewer
         private bool MenuShowed_OnWMP = false;
         //private bool ShowedBigPicture = false;
         private bool NextShowBigPicture = false;
-        private bool NoHide = false;
         private int LastKeyValue = 35;
         private KEY key;
         private struct KEY
@@ -953,7 +954,7 @@ namespace PictureViewer
                 edW = bgW + setW;
                 bgH = this.Height / 20 + 30;
                 edH = bgH + setH;
-                if (showPageMark && !hideU && bgW <= ptX && ptX <= edW && bgH <= ptY && ptY <= edH && config.SubFiles.Count != 0)
+                if (showPageMark && !hideU && bgW <= ptX && ptX <= edW && bgH <= ptY && ptY <= edH && config.SubFiles.Count > 1)
                 {
                     this.label3.Location = new Point(bgW - 10, bgH - 30);
                     this.label3.Width = setW;
@@ -971,7 +972,7 @@ namespace PictureViewer
                 bgH = this.Height - this.Height / 20 - setH - 10;
                 if (this.HorizontalScroll.Visible) { bgH -= 10; }
                 edH = bgH + setH;
-                if (showPageMark && !hideD && bgW <= ptX && ptX <= edW && bgH <= ptY && ptY <= edH && config.SubFiles.Count != 0)
+                if (showPageMark && !hideD && bgW <= ptX && ptX <= edW && bgH <= ptY && ptY <= edH && config.SubFiles.Count > 1)
                 {
                     this.label4.Location = new Point(bgW - 10, bgH - 30);
                     this.label4.Width = setW;
@@ -1221,7 +1222,7 @@ namespace PictureViewer
         }
         private void ShowPicture(string path, string name, bool load = true)
         {
-            if (load) { config.SourPicture = Image.FromFile(path + "\\" + name); }
+            if (load) { config.SourPicture = (Bitmap)Image.FromFile(path + "\\" + name); }
             
             int sourX = config.SourPicture.Width;
             int sourY = config.SourPicture.Height;
@@ -1667,34 +1668,126 @@ namespace PictureViewer
             if (config.FileIndex < 0 || config.FileIndex >= FileOperate.RootFiles[config.FolderIndex].Name.Count) { return; }
 
             // 判断当前文件类型
+            string path = FileOperate.RootFiles[config.FolderIndex].Path;
             string name = FileOperate.RootFiles[config.FolderIndex].Name[config.FileIndex];
             int type = FileOperate.getFileType(FileOperate.getExtension(name));
-            if (type != 1) { MessageBox.Show("只有文件夹允许重命名！"); return; }
+            if (type == 1) { if (config.SubIndex < 0 || config.SubIndex >= config.SubFiles.Count) { return; } }
 
-            // 获取源路径
-            string sourpath = FileOperate.RootFiles[config.FolderIndex].Path;
-            string sourname = name;
+            // 获取提示信息
+            string tip = name;
+            if (type == 1) { tip += ":" + config.SubFiles[config.SubIndex]; }
 
-            // 给出输入框
-            Form_Input input = new Form_Input(sourname);
+            // 获取输入
+            Form_Input input = new Form_Input(tip);
             input.Location = MousePosition;
             input.ShowDialog();
+            if (input.Input == "" || input.Input == tip) { return; }
 
-            // 名称相同，无需重命名
-            if (input.Input == sourname) { return; }
+            int cut = input.Input.IndexOf(":");
+            if (cut == -1) { cut = input.Input.IndexOf("："); }
+            string foldername = cut == -1 ? "" : input.Input.Substring(0, cut);
+            string filename = cut == -1 ? input.Input : input.Input.Substring(cut + 1);
 
-            // 点号被保留
-            if (input.Input.IndexOf('.') >= 0) { MessageBox.Show("文件夹重命名失败！"); return; }
+            // 变量
+            string sourpath, sourname, destpath, destname, sour, dest;
 
-            // 更改文件夹名称
-            DirectoryInfo dir = new DirectoryInfo(sourpath + "\\" + sourname);
-            if (config.SourPicture != null) { config.SourPicture.Dispose(); }
-            if (config.DestPicture != null) { config.DestPicture.Dispose(); }
-            try { dir.MoveTo(sourpath + "\\" + input.Input); } catch { MessageBox.Show("文件夹重命名失败！"); ShowCurrent(); return; }
+            // 重命名文件
+            if (filename.Length != 0 && filename != name)
+            {
+                sourpath = type == 1 ? path + "\\" + name : path;
+                sourname = type == 1 ? config.SubFiles[config.SubIndex] : name;
+                destpath = sourpath;
+                destname = filename;
 
-            // 更新当前文件夹名称
-            FileOperate.RootFiles[config.FolderIndex].Name[config.FileIndex] = input.Input;
-            ShowCurrent();
+                string sourex = FileOperate.getExtension(sourname);
+                string destex = FileOperate.getExtension(destname);
+                if (destex != sourex) { destname += sourex; }
+
+                sour = sourpath + "\\" + sourname;
+                dest = destpath + "\\" + destname;
+
+                if (!File.Exists(sour)) { MessageBox.Show("源文件不存在！", "提示"); return; }
+                if (File.Exists(dest)) { MessageBox.Show("目标文件已存在！", "提示"); return; }
+
+                try { config.SourPicture.Dispose(); } catch { }
+                try { config.DestPicture.Dispose(); } catch { }
+
+                try { File.Move(sour, dest); } catch { MessageBox.Show("文件重命名失败！", "提示"); ShowCurrent(); return; }
+                //try { File.Move(sour, dest); } catch { ShowCurrent(); return; }
+                if (type != 1) { FileOperate.RootFiles[config.FolderIndex].Name[config.FileIndex] = destname; }
+                else { config.SubFiles[config.SubIndex] = destname; }
+
+                ShowCurrent();
+            }
+
+            // 重命名文件夹
+            if (type == 1 && foldername.Length != 0 && foldername != name)
+            {
+                sourpath = path + "\\" + name;
+                destpath = path + "\\" + foldername;
+
+                if (!Directory.Exists(sourpath)) { MessageBox.Show("源文件夹不存在！", "提示"); return; }
+                if (Directory.Exists(destpath)) { MessageBox.Show("文件夹已存在！", "提示"); return; }
+
+                // 点号被保留
+                if (foldername.IndexOf('.') >= 0) { MessageBox.Show("存在非法字符“.”，文件夹重命名失败！", "提示"); return; }
+                if (foldername.IndexOf('\\') >= 0) { MessageBox.Show("存在非法字符“\\”，文件夹重命名失败！", "提示"); return; }
+                if (foldername.IndexOf('/') >= 0) { MessageBox.Show("存在非法字符“/”，文件夹重命名失败！", "提示"); return; }
+                if (foldername.IndexOf(':') >= 0) { MessageBox.Show("存在非法字符“:”，文件夹重命名失败！", "提示"); return; }
+                if (foldername.IndexOf('?') >= 0) { MessageBox.Show("存在非法字符“?”，文件夹重命名失败！", "提示"); return; }
+                if (foldername.IndexOf('*') >= 0) { MessageBox.Show("存在非法字符“*”，文件夹重命名失败！", "提示"); return; }
+                if (foldername.IndexOf('<') >= 0) { MessageBox.Show("存在非法字符“<”，文件夹重命名失败！", "提示"); return; }
+                if (foldername.IndexOf('>') >= 0) { MessageBox.Show("存在非法字符“>”，文件夹重命名失败！", "提示"); return; }
+                if (foldername.IndexOf('|') >= 0) { MessageBox.Show("存在非法字符“|”，文件夹重命名失败！", "提示"); return; }
+
+                DirectoryInfo dir = new DirectoryInfo(sourpath);
+                try { config.SourPicture.Dispose(); } catch { }
+                try { config.DestPicture.Dispose(); } catch { }
+                try { dir.MoveTo(destpath); }
+                catch
+                {
+                    //MessageBox.Show("文件夹重命名失败！", "提示");
+                    ShowCurrent(); return;
+                }
+
+                FileOperate.RootFiles[config.FolderIndex].Name[config.FileIndex] = foldername;
+                ShowCurrent();
+            }
+
+            // 以前的代码，只能重命名文件夹。
+            //// 判断是否存在文件
+            //if (config.FolderIndex < 0 || config.FolderIndex >= FileOperate.RootFiles.Count) { return; }
+            //if (config.FileIndex < 0 || config.FileIndex >= FileOperate.RootFiles[config.FolderIndex].Name.Count) { return; }
+
+            //// 判断当前文件类型
+            //string name = FileOperate.RootFiles[config.FolderIndex].Name[config.FileIndex];
+            //int type = FileOperate.getFileType(FileOperate.getExtension(name));
+            //if (type != 1) { MessageBox.Show("只有文件夹允许重命名！"); return; }
+
+            //// 获取源路径
+            //string sourpath = FileOperate.RootFiles[config.FolderIndex].Path;
+            //string sourname = name;
+
+            //// 给出输入框
+            //Form_Input input = new Form_Input(sourname);
+            //input.Location = MousePosition;
+            //input.ShowDialog();
+
+            //// 名称相同，无需重命名
+            //if (input.Input == sourname) { return; }
+
+            //// 点号被保留
+            ////if (input.Input.IndexOf('.') >= 0) { MessageBox.Show("文件夹重命名失败！"); return; }
+
+            //// 更改文件夹名称
+            //DirectoryInfo dir = new DirectoryInfo(sourpath + "\\" + sourname);
+            //if (config.SourPicture != null) { config.SourPicture.Dispose(); }
+            //if (config.DestPicture != null) { config.DestPicture.Dispose(); }
+            //try { dir.MoveTo(sourpath + "\\" + input.Input); } catch { MessageBox.Show("文件夹重命名失败！"); ShowCurrent(); return; }
+
+            //// 更新当前文件夹名称
+            //FileOperate.RootFiles[config.FolderIndex].Name[config.FileIndex] = input.Input;
+            //ShowCurrent();
         }
         private void RightMenu_Search(object sender, EventArgs e)
         {
@@ -1754,6 +1847,50 @@ namespace PictureViewer
             this.bigPicToolStripMenuItem.Checked = !this.bigPicToolStripMenuItem.Checked;
             NextShowBigPicture = this.bigPicToolStripMenuItem.Checked;
             ShowCurrent();
+        }
+        private void RightMenu_Find(object sender, EventArgs e)
+        {
+            this.contextMenuStrip1.Hide();
+
+            if (config.FolderIndex < 0 || config.FolderIndex >= FileOperate.RootFiles.Count) { MessageBox.Show("文件不存在！", "提示"); return; }
+            if (config.FileIndex < 0 || config.FileIndex >= FileOperate.RootFiles[config.FolderIndex].Name.Count) { MessageBox.Show("文件不存在！", "提示"); return; }
+
+            string path = FileOperate.RootFiles[config.FolderIndex].Path;
+            string name = FileOperate.RootFiles[config.FolderIndex].Name[config.FileIndex];
+            int type = FileOperate.getFileType(FileOperate.getExtension(name));
+
+            if (type == 1)
+            {
+                path += "\\" + name;
+                if (config.SubIndex < 0 || config.SubIndex >= config.SubFiles.Count) { MessageBox.Show("文件不存在！", "提示"); return; }
+                name = config.SubFiles[config.SubIndex];
+                type = FileOperate.getFileType(FileOperate.getExtension(name));
+            }
+
+            if (type != 2) { MessageBox.Show("不能匹配图片之外的文件", "提示"); return; }
+
+            // 确保没有重复路径
+            for (int i = 0; i < FileOperate.RootFiles.Count; i++)
+            {
+                for (int j = i + 1; j < FileOperate.RootFiles.Count; j++)
+                {
+                    string iroot = FileOperate.RootFiles[i].Path;
+                    string jroot = FileOperate.RootFiles[j].Path;
+
+                    if (iroot.Length >= jroot.Length)
+                    {
+                        if (iroot.Substring(0, jroot.Length) == jroot) { MessageBox.Show("存在重复路径，不允许搜索！\n" + iroot + "\n" + jroot, "提示"); return; }
+                    }
+                    else
+                    {
+                        if (jroot.Substring(0, iroot.Length) == iroot) { MessageBox.Show("存在重复路径，不允许搜索！\n" + iroot + "\n" + jroot, "提示"); return; }
+                    }
+                }
+            }
+
+            // 开始寻找
+            Form_Find find = new Form_Find(config.SourPicture, path + "\\" + name);
+            find.ShowDialog();
         }
 
         private void Form_DragEntre(object sender, DragEventArgs e)
