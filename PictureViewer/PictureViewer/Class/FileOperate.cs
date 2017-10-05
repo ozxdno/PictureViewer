@@ -49,6 +49,21 @@ namespace PictureViewer.Class
             int indexofmark = exe_path.LastIndexOf('\\');
             return exe_path.Substring(0, indexofmark);
         }
+        /// <summary>
+        /// 对一个完整的文件进行分割，分别获取文件路径和文件名
+        /// </summary>
+        /// <param name="fullname">全路径</param>
+        /// <param name="path">所在路径</param>
+        /// <param name="name">文件名</param>
+        public static void getPathName(string fullname, ref string path, ref string name)
+        {
+            int cut = fullname.LastIndexOf('\\');
+            if (cut == -1) { path = ""; name = fullname; return; }
+
+            path = fullname.Substring(0, cut);
+            name = fullname.Substring(cut + 1);
+            return;
+        }
 
         /// <summary>
         /// 搜索根目录

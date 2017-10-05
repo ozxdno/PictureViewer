@@ -1889,8 +1889,49 @@ namespace PictureViewer
             }
 
             // 开始寻找
-            Form_Find find = new Form_Find(config.SourPicture, path + "\\" + name);
+            ushort mode = 0;
+            if (this.fullToolStripMenuItem.Checked) { mode += (ushort)Form_Find.MODE.FULL; }
+            if (this.partToolStripMenuItem.Checked) { mode += (ushort)Form_Find.MODE.PART; }
+            if (this.sameToolStripMenuItem.Checked) { mode += (ushort)Form_Find.MODE.SAME; }
+            if (this.likeToolStripMenuItem.Checked) { mode += (ushort)Form_Find.MODE.LIKE; }
+            if (this.turnToolStripMenuItem.Checked) { mode += (ushort)Form_Find.MODE.TURN; }
+
+            Form_Find find = new Form_Find(config.SourPicture, path + "\\" + name, (Form_Find.MODE)mode);
             find.ShowDialog();
+        }
+        private void RightMenu_Find_Full(object sender, EventArgs e)
+        {
+            bool curr = this.fullToolStripMenuItem.Checked;
+
+            this.fullToolStripMenuItem.Checked = !curr;
+            this.partToolStripMenuItem.Checked = curr;
+        }
+        private void RightMenu_Find_Part(object sender, EventArgs e)
+        {
+            bool curr = this.partToolStripMenuItem.Checked;
+
+            this.fullToolStripMenuItem.Checked = curr;
+            this.partToolStripMenuItem.Checked = !curr;
+        }
+        private void RightMenu_Find_Same(object sender, EventArgs e)
+        {
+            bool curr = this.sameToolStripMenuItem.Checked;
+
+            this.sameToolStripMenuItem.Checked = !curr;
+            this.likeToolStripMenuItem.Checked = curr;
+        }
+        private void RightMenu_Find_Like(object sender, EventArgs e)
+        {
+            bool curr = this.likeToolStripMenuItem.Checked;
+
+            this.sameToolStripMenuItem.Checked = curr;
+            this.likeToolStripMenuItem.Checked = !curr;
+        }
+        private void RightMenu_Find_Turn(object sender, EventArgs e)
+        {
+            bool curr = this.turnToolStripMenuItem.Checked;
+            
+            this.turnToolStripMenuItem.Checked = !curr;
         }
 
         private void Form_DragEntre(object sender, DragEventArgs e)

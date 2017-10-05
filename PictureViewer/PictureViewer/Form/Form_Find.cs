@@ -28,7 +28,37 @@ namespace PictureViewer
         /// <summary>
         /// 查找是否已经结束
         /// </summary>
-        public static bool IsFinish;
+        public static bool IsFinish = false;
+        /// <summary>
+        /// 查找模式
+        /// </summary>
+        public enum MODE : ushort
+        {
+            /// <summary>
+            /// 默认：FULL + SAME + NO_TURN
+            /// </summary>
+            DEFAULT = 0x0000,
+            /// <summary>
+            /// 大小必须相同
+            /// </summary>
+            FULL = 0x0001,
+            /// <summary>
+            /// 大小可以不同
+            /// </summary>
+            PART = 0x0002,
+            /// <summary>
+            /// 完全相同
+            /// </summary>
+            SAME = 0x0004,
+            /// <summary>
+            /// 部分相似
+            /// </summary>
+            LIKE = 0x0010,
+            /// <summary>
+            /// 经过了旋转和翻转
+            /// </summary>
+            TURN = 0x0020
+        }
 
         /////////////////////////////////////////////////////////// private attribute //////////////////////////////////////////////////
 
@@ -38,10 +68,11 @@ namespace PictureViewer
         private static List<string> Names = new List<string>();
         private static CONFIG config;
         private static THREAD[] Threads = new THREAD[4];
-    
+
         private struct THREAD
         {
             public Thread thread;
+            public Bitmap sour;
             public bool finish;
             public int begin;
             public int end;
@@ -50,13 +81,9 @@ namespace PictureViewer
         private struct CONFIG
         {
             /// <summary>
-            /// 线程锁
+            /// 当前的显示结果
             /// </summary>
-            public object Lock;
-            /// <summary>
-            /// 是否比较行信息
-            /// </summary>
-            public bool IsRow;
+            public List<int> Current;
             /// <summary>
             /// 当前显示结果的索引号
             /// </summary>
@@ -73,6 +100,15 @@ namespace PictureViewer
             /// 当前显示结果的名称
             /// </summary>
             public string Name;
+
+            /// <summary>
+            /// 线程锁
+            /// </summary>
+            public object Lock;
+            /// <summary>
+            /// 匹配模式
+            /// </summary>
+            public MODE Mode;
             /// <summary>
             /// 最小比较元素个数
             /// </summary>
@@ -82,13 +118,18 @@ namespace PictureViewer
             /// </summary>
             public int[] Grays;
             /// <summary>
+            /// Grays 所在行
+            /// </summary>
+            public int Row;
+            /// <summary>
+            /// Grays 所在列
+            /// </summary>
+            public int Col;
+            /// <summary>
             /// 比对结果
             /// </summary>
             public List<int> Results;
-            /// <summary>
-            /// 当前的显示结果
-            /// </summary>
-            public List<int> Current;
+            
             /// <summary>
             /// 计时起点
             /// </summary>
@@ -98,27 +139,30 @@ namespace PictureViewer
             /// </summary>
             public long TimeED;
             /// <summary>
-            /// 计数器
+            /// 时间计数器
             /// </summary>
-            public long Time;
+            public long CountTime;
+            /// <summary>
+            /// 文件计数器
+            /// </summary>
+            public int CountFiles;
         }
 
         /////////////////////////////////////////////////////////// public method //////////////////////////////////////////////////
 
-        public Form_Find(Image pic, string fullpath = "")
+        public Form_Find(Image pic, string fullpath, MODE mode = MODE.DEFAULT)
         {
             InitializeComponent();
 
             SourPic = CopyPicture((Bitmap)pic, 1);
             config.Sour = fullpath;
+            config.Mode = mode;
         }
         
         /////////////////////////////////////////////////////////// private method //////////////////////////////////////////////////
 
         private void Form_Load(object sender, EventArgs e)
         {
-            config.Lock = new object();
-
             InitializeForm();
             ShowSourPic();
             //ShowDestPic();
@@ -137,23 +181,28 @@ namespace PictureViewer
             while (Threads[3].thread != null && Threads[0].thread.ThreadState == ThreadState.Running) { Threads[3].thread.Abort(); }
 
             Timer.Close();
+
+            try { SourPic.Dispose(); } catch { }
+            try { DestPic.Dispose(); } catch { }
+            for (int i = 0; i < Threads.Length; i++) { try { Threads[i].sour.Dispose(); } catch { } }
         }
         private void Form_Updata(object source, System.Timers.ElapsedEventArgs e)
         {
             this.BeginInvoke((EventHandler)delegate{
 
-                config.Time++;
+                config.CountTime++;
 
                 bool prevState = IsFinish;
                 IsFinish = Threads[0].finish && Threads[1].finish && Threads[2].finish && Threads[3].finish;
 
-                if (!IsFinish) { config.TimeED = config.Time; }
+                if (!IsFinish) { config.TimeED = config.CountTime; }
                 double usedTime = (double)(config.TimeED - config.TimeBG) / 10;
                 string usedtime = usedTime.ToString();
                 if (usedtime.Length < 2 || usedtime[usedtime.Length - 2] != '.') { usedtime += ".0"; }
+                int findfiles = 0; lock (config.Lock) { findfiles = config.CountFiles; }
                 this.Text = IsFinish ?
-                    "[Total]: " + Names.Count.ToString() + " Files [State]: Finished [Used Time]: " + usedtime + " s" :
-                    "[Total]: " + Names.Count.ToString() + " Files [State]: Finding... [Used Time]: " + usedtime + " s";
+                    "[Find]: " + findfiles.ToString() + "/" + Names.Count.ToString() + " Files [State]: Finished [Used Time]: " + usedtime + " s" :
+                    "[Find]: " + findfiles.ToString() + "/" + Names.Count.ToString() + " Files [State]: Finding... [Used Time]: " + usedtime + " s";
 
                 ShowList();
 
@@ -217,6 +266,7 @@ namespace PictureViewer
         private void ListClicked(object sender, EventArgs e)
         {
             int index = this.listBox1.SelectedIndex;
+            if (index == -1) { return; }
             config.Index = index;
             ShowDestPic();
         }
@@ -292,7 +342,7 @@ namespace PictureViewer
             try { MinCmpPixes = int.Parse(input.Input); } catch { MessageBox.Show("必须输入正整数！", "提示"); return; }
             if (MinCmpPixes < 0) { MessageBox.Show("必须输入正整数！", "提示"); return; }
 
-            config.MinCmpPix = MinCmpPixes;
+            config.MinCmpPix = Math.Min(Math.Max(SourPic.Height, SourPic.Width), MinCmpPixes);
         }
 
         private void ShowSourPic()
@@ -394,6 +444,7 @@ namespace PictureViewer
 
             bg = ed; ed = bg + pace;
             Threads[0].thread = new Thread(TH_CMP1);
+            Threads[0].sour = CopyPicture(SourPic, 1);
             Threads[0].finish = false;
             Threads[0].begin = 1;
             Threads[0].end = (int)ed;
@@ -401,6 +452,7 @@ namespace PictureViewer
 
             bg = ed; ed = bg + pace;
             Threads[1].thread = new Thread(TH_CMP2);
+            Threads[1].sour = CopyPicture(SourPic, 1);
             Threads[1].finish = false;
             Threads[1].begin = (int)bg + 1;
             Threads[1].end = (int)ed;
@@ -408,6 +460,7 @@ namespace PictureViewer
 
             bg = ed; ed = bg + pace;
             Threads[2].thread = new Thread(TH_CMP3);
+            Threads[2].sour = CopyPicture(SourPic, 1);
             Threads[2].finish = false;
             Threads[2].begin = (int)bg + 1;
             Threads[2].end = (int)ed;
@@ -415,12 +468,25 @@ namespace PictureViewer
 
             bg = ed; ed = bg + pace;
             Threads[3].thread = new Thread(TH_CMP4);
+            Threads[3].sour = CopyPicture(SourPic, 1);
             Threads[3].finish = false;
             Threads[3].begin = (int)bg + 1;
             Threads[3].end = (int)ed;
             Threads[3].result = new List<int>();
 
-            config.TimeBG = config.Time;
+            config.TimeBG = config.CountTime;
+
+            //Threads[0].begin = 1;
+            //Threads[0].end = Names.Count;
+            //Threads[1].begin = 1;
+            //Threads[1].end = 0;
+            //Threads[2].begin = 1;
+            //Threads[2].end = 0;
+            //Threads[3].begin = 1;
+            //Threads[3].end = 0;
+            //Threads[1].finish = true;
+            //Threads[2].finish = true;
+            //Threads[3].finish = true;
 
             Threads[0].thread.Start();
             Threads[1].thread.Start();
@@ -443,13 +509,26 @@ namespace PictureViewer
         {
             #region 填充 config
 
-            config.Index = 0;
-            config.MinCmpPix = 50;
-            config.Results = new List<int>();
             config.Current = new List<int>();
+            config.Index = 0;
+            config.Path = "Not Exist";
+            config.Name = "Unknow";
+
+            config.Lock = new object();
+            if ((config.Mode & MODE.PART) == 0) { config.Mode |= MODE.FULL; }
+            else { config.Mode &= (~MODE.FULL); }
+            if ((config.Mode & MODE.LIKE) == 0) { config.Mode |= MODE.SAME; }
+            else { config.Mode &= (~MODE.SAME); }
+            config.MinCmpPix = Math.Min(Math.Max(SourPic.Height, SourPic.Width), 50);
+            config.Grays = new int[config.MinCmpPix];
+            config.Row = -1;
+            config.Col = -1;
+            config.Results = new List<int>();
+            
             config.TimeBG = 0;
             config.TimeED = 0;
-            config.Time = 0;
+            config.CountTime = 0;
+            config.CountFiles = 0;
 
             #endregion
 
@@ -516,59 +595,7 @@ namespace PictureViewer
             #region 填充灰度值
 
             int H = SourPic.Height, W = SourPic.Width;
-            config.IsRow = W > H;
-
-            if (config.IsRow)
-            {
-                config.Grays = new int[W];
-                
-                int row1 = H / 2;
-                int row2 = H / 4;
-                int row3 = H * 3 / 4;
-
-                int d1 = GetDiffRow(row1);
-                int d2 = GetDiffRow(row2);
-                int d3 = GetDiffRow(row3);
-
-                int srow = 0;
-                if (d1 >= d2 && d1 >= d3) { srow = row1; }
-                if (d2 >= d1 && d2 >= d3) { srow = row2; }
-                if (d3 >= d2 && d3 >= d1) { srow = row3; }
-
-                for (int i = 0; i < W; i++) { config.Grays[i] = ToGray(SourPic.GetPixel(i, srow)); }
-            }
-            else
-            {
-                config.Grays = new int[H];
-
-                int col1 = W / 2;
-                int col2 = W / 4;
-                int col3 = W * 3 / 4;
-
-                int d1 = GetDiffCol(col1);
-                int d2 = GetDiffCol(col2);
-                int d3 = GetDiffCol(col3);
-
-                int scol = 0;
-                if (d1 >= d2 && d1 >= d3) { scol = col1; }
-                if (d2 >= d1 && d2 >= d3) { scol = col2; }
-                if (d3 >= d2 && d3 >= d1) { scol = col3; }
-
-                for (int i = 0; i < H; i++) { config.Grays[i] = ToGray(SourPic.GetPixel(scol,i)); }
-            }
-
-            if (config.Grays.Length > config.MinCmpPix)
-            {
-                double pace = (double)config.Grays.Length / config.MinCmpPix;
-                List<int> grays = new List<int>();
-
-                for (double i = 0; i < config.Grays.Length; i += pace)
-                {
-                    grays.Add(config.Grays[(int)i]);
-                }
-
-                config.Grays = grays.ToArray();
-            }
+            if (H > W) { GetBestCol(); } else { GetBestRow(); }
 
             #endregion
         }
@@ -581,43 +608,140 @@ namespace PictureViewer
 
             Graphics g = Graphics.FromImage(dest);
             g.DrawImage(sour, new Rectangle(0, 0, W, H), new Rectangle(0, 0, sour.Width, sour.Height), GraphicsUnit.Pixel);
-            g.Dispose();
+
+            try { g.ReleaseHdc(); } catch { }
+            try { g.Dispose(); } catch { }
 
             return dest;
         }
+        private Bitmap CopyPicture(Bitmap sour, int destW, int destH)
+        {
+            Bitmap dest = new Bitmap(destW, destH);
+
+            Graphics g = Graphics.FromImage(dest);
+            g.DrawImage(sour, new Rectangle(0, 0, destW, destH), new Rectangle(0, 0, sour.Width, sour.Height), GraphicsUnit.Pixel);
+
+            try { g.ReleaseHdc(); } catch { }
+            try { g.Dispose(); } catch { }
+
+            return dest;
+        }
+
+        private void GetBestRow()
+        {
+            int bg = SourPic.Height * 1 / 4;
+            int ed = SourPic.Height * 3 / 4;
+
+            int dif = 0, max = 0, idx = bg;
+            for (int i = bg; i < ed; i++)
+            {
+                dif = GetDiffRow(i);
+                if (dif > max) { max = dif; idx = i; }
+            }
+
+            config.Row = idx;
+            List<int> grays = new List<int>(); GetRowGrays(idx, ref grays);
+            config.Grays = grays.ToArray();
+        }
+        private void GetBestCol()
+        {
+            int bg = SourPic.Width * 1 / 4;
+            int ed = SourPic.Width * 3 / 4;
+
+            int dif = 0, max = 0, idx = bg;
+            for (int i = bg; i < ed; i++)
+            {
+                dif = GetDiffCol(i);
+                if (dif > max) { max = dif; idx = i; }
+            }
+
+            config.Col = idx;
+            List<int> grays = new List<int>(); GetColGrays(idx, ref grays);
+            config.Grays = grays.ToArray();
+        }
         private int GetDiffRow(int row)
         {
-            List<int> indexes = new List<int>();
-            for (int i = 0; i < SourPic.Width; i++) { indexes.Add(i); }
-
-            for (int i = 0; i < indexes.Count; i++)
+            List<int> grays = new List<int>();
+            GetRowGrays(row, ref grays);
+            
+            for (int i = 0; i < grays.Count; i++)
             {
-                int c1 = ToGray(SourPic.GetPixel(indexes[i], row));
-                for (int j = indexes.Count - 1; j > i; j--)
+                for (int j = grays.Count - 1; j > i; j--)
                 {
-                    int c2 = ToGray(SourPic.GetPixel(indexes[j], row));
-                    if (c1 == c2) { indexes.RemoveAt(j); continue; }
+                    if (grays[i] == grays[j]) { grays.RemoveAt(j); }
                 }
             }
 
-            return indexes.Count;
+            return grays.Count;
+
+            //List<int> indexes = new List<int>();
+            //for (int i = 0; i < SourPic.Width; i++) { indexes.Add(i); }
+
+            //for (int i = 0; i < indexes.Count; i++)
+            //{
+            //    int c1 = ToGray(SourPic.GetPixel(indexes[i], row));
+            //    for (int j = indexes.Count - 1; j > i; j--)
+            //    {
+            //        int c2 = ToGray(SourPic.GetPixel(indexes[j], row));
+            //        if (c1 == c2) { indexes.RemoveAt(j); continue; }
+            //    }
+            //}
+
+            //return indexes.Count;
         }
         private int GetDiffCol(int col)
         {
-            List<int> indexes = new List<int>();
-            for (int i = 0; i < SourPic.Height; i++) { indexes.Add(i); }
-            
-            for (int i = 0; i < indexes.Count; i++)
+            List<int> grays = new List<int>();
+            GetColGrays(col, ref grays);
+
+            for (int i = 0; i < grays.Count; i++)
             {
-                int c1 = ToGray(SourPic.GetPixel(col, indexes[i]));
-                for (int j = indexes.Count - 1; j > i; j--)
+                for (int j = grays.Count - 1; j > i; j--)
                 {
-                    int c2 = ToGray(SourPic.GetPixel(col, indexes[j]));
-                    if (c1 == c2) { indexes.RemoveAt(j); continue; }
+                    if (grays[i] == grays[j]) { grays.RemoveAt(j); }
                 }
             }
 
-            return indexes.Count;
+            return grays.Count;
+
+            //List<int> indexes = new List<int>();
+            //for (int i = 0; i < SourPic.Height; i++) { indexes.Add(i); }
+
+            //for (int i = 0; i < indexes.Count; i++)
+            //{
+            //    int c1 = ToGray(SourPic.GetPixel(col, indexes[i]));
+            //    for (int j = indexes.Count - 1; j > i; j--)
+            //    {
+            //        int c2 = ToGray(SourPic.GetPixel(col, indexes[j]));
+            //        if (c1 == c2) { indexes.RemoveAt(j); continue; }
+            //    }
+            //}
+
+            //return indexes.Count;
+        }
+        private void GetRowGrays(int row, ref List<int> grays)
+        {
+            double pace = (double)SourPic.Width / config.MinCmpPix;
+            if (grays == null) { grays = new List<int>(); } else { grays.Clear(); }
+            int idx = 0;
+
+            for (double i = 0; i < SourPic.Width; i += pace, idx++)
+            {
+                if (idx == config.MinCmpPix - 1) { idx--; break; }
+                grays.Add(ToGray(SourPic.GetPixel((int)i, row)));
+            }
+        }
+        private void GetColGrays(int col, ref List<int> grays)
+        {
+            double pace = (double)SourPic.Height / config.MinCmpPix;
+            if (grays == null) { grays = new List<int>(); } else { grays.Clear(); }
+            int idx = 0;
+
+            for (double i = 0; i < SourPic.Height; i += pace, idx++)
+            {
+                if (idx == config.MinCmpPix - 1) { idx--; break; }
+                grays.Add(ToGray(SourPic.GetPixel(col, (int)i)));
+            }
         }
         
         private int ToGray(Color c)
@@ -633,260 +757,4251 @@ namespace PictureViewer
 
         private void TH_CMP1()
         {
-            int bg = Threads[0].begin, ed = Threads[0].end;
-            string path;
-            string name;
-            bool IsSame;
-            Image dest;
-
-            for (int i = bg - 1; i < ed; i++)
+            Bitmap sour = Threads[0].sour;
+            Bitmap dest;
+            int sourh = sour.Height, sourw = sour.Width;
+            int desth = 0, destw = 0;
+            bool found = false;
+            
+            for (int i = Threads[0].begin - 1; i < Threads[0].end; ++i)
             {
-                path = Paths[i];
-                name = Names[i];
+                #region 初始化变量
+                
+                dest  = (Bitmap)Image.FromFile(Paths[i] + "\\" + Names[i]);
+                desth = dest.Height;
+                destw = dest.Width;
+                found = false;
 
-                dest = Image.FromFile(path + "\\" + name);
+                #endregion
 
-                #region 比较两幅图片
+                #region 行比较
 
-                IsSame = false;
-
-                if (config.IsRow && dest.Width > config.MinCmpPix + 20)
+                if (config.Row != -1)
                 {
-                    for (int j = 10; j < dest.Height - 10; j += 1)
+                    #region FULL SAME NO_TURN
+
+                    if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) == 0))
                     {
-                        double err = CmpRow((Bitmap)dest, j);
-                        if (err < 3) { IsSame = true; break; }
+                        if (sourh != desth || sourw != destw) { goto End; }
+                        
+                        double pace = (double)sourw / config.MinCmpPix;
+                        int permitcnterr = config.MinCmpPix / 10;
+                        int permiterr = 10;
+                        int cnterr = 0;
+                        double x = 0;
+                        int cnt = 0;
+                        int len = config.Grays.Length;
+
+                        for (; cnt < len; x += pace, ++cnt)
+                        {
+                            Color dc = dest.GetPixel((int)x, config.Row);
+                            int sgray = config.Grays[cnt];
+                            int dgray = (dc.R + dc.G + dc.B) / 3;
+
+                            int ierr = sgray - dgray;
+                            if (ierr < 0) { ierr = -ierr; }
+                            if (ierr > permiterr) { ++cnterr; }
+                            if (cnterr > permitcnterr) { break; }
+                        }
+
+                        found = cnterr <= permitcnterr;
                     }
-                }
-                if (!config.IsRow && dest.Height > config.MinCmpPix + 20)
-                {
-                    for (int j = 10; j < dest.Width - 10; j += 1)
+
+                    #endregion
+
+                    #region FULL SAME TURN
+
+                    else if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) != 0))
                     {
-                        double err = CmpCol((Bitmap)dest, j);
-                        if (err < 3) { IsSame = true; break; }
+                        #region 原样
+
+                        if (sourh == desth && sourw == destw)
+                        {
+                            double pace = (double)sourw / config.MinCmpPix;
+                            int permitcnterr = config.MinCmpPix / 10;
+                            int permiterr = 10;
+                            int cnterr = 0;
+                            double x = 0;
+                            int cnt = 0;
+                            int len = config.Grays.Length;
+
+                            for (; cnt < len; x += pace, ++cnt)
+                            {
+                                Color dc = dest.GetPixel((int)x, config.Row);
+                                int sgray = config.Grays[cnt];
+                                int dgray = (dc.R + dc.G + dc.B) / 3;
+
+                                int ierr = sgray - dgray;
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+
+                        #region 逆时针旋转 180 度
+
+                        if (sourh == desth && sourw == destw)
+                        {
+                            double pace = (double)sourw / config.MinCmpPix;
+                            int cmprow = sourh - 1 - config.Row;
+                            int permitcnterr = config.MinCmpPix / 10;
+                            int permiterr = 10;
+                            int cnterr = 0;
+                            double x = 0;
+                            int cnt = 0;
+                            int len = config.Grays.Length;
+
+                            for (; cnt < len; x += pace, ++cnt)
+                            {
+                                Color dc = dest.GetPixel(sourw - 1 - (int)x, cmprow);
+                                int sgray = config.Grays[cnt];
+                                int dgray = (dc.R + dc.G + dc.B) / 3;
+
+                                int ierr = sgray - dgray;
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+
+                        #region 逆时针旋转90度
+
+                        if (sourh == destw && sourw == desth)
+                        {
+                            double pace = (double)sourw / config.MinCmpPix;
+                            int permitcnterr = config.MinCmpPix / 10;
+                            int permiterr = 10;
+                            int cnterr = 0;
+                            double y = 0;
+                            int cnt = 0;
+                            int len = config.Grays.Length;
+
+                            for (; cnt < len; y += pace, ++cnt)
+                            {
+                                Color dc = dest.GetPixel(config.Row, sourw - 1 - (int)y);
+                                int sgray = config.Grays[cnt];
+                                int dgray = (dc.R + dc.G + dc.B) / 3;
+
+                                int ierr = sgray - dgray;
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+
+                        #region 逆时针旋转 270 度
+
+                        if (sourh == destw && sourw == desth)
+                        {
+                            double pace = (double)sourw / config.MinCmpPix;
+                            int cmprow = sourh - 1 - config.Row;
+                            int permitcnterr = config.MinCmpPix / 10;
+                            int permiterr = 10;
+                            int cnterr = 0;
+                            double y = 0;
+                            int cnt = 0;
+                            int len = config.Grays.Length;
+
+                            for (; cnt < len; y += pace, ++cnt)
+                            {
+                                Color dc = dest.GetPixel(cmprow, (int)y);
+                                int sgray = config.Grays[cnt];
+                                int dgray = (dc.R + dc.G + dc.B) / 3;
+
+                                int ierr = sgray - dgray;
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
                     }
+
+                    #endregion
+
+                    #region FULL LIKE NO_TURN
+
+                    else if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    {
+
+                    }
+
+                    #endregion
+
+                    #region FULL LIKE TURN
+
+                    else if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    {
+
+                    }
+
+                    #endregion
+
+                    #region PART SAME NO_TURN
+
+                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    {
+                        // 比例相同
+                        double h2w = (double)sourh / sourw;
+                        int err = (int)(h2w * destw) - desth; if (err < 0) { err = -err; }
+                        if (err > 3) { goto End; }
+
+                        // 缩放
+                        Bitmap smap, dmap;
+                        double rate = 0;
+                        if (sourh > desth)
+                        {
+                            smap = new Bitmap(destw, desth);
+                            Graphics g = Graphics.FromImage(smap);
+                            g.DrawImage(sour, new Rectangle(0, 0, destw, desth), new Rectangle(0, 0, sourw, sourh), GraphicsUnit.Pixel);
+                            g.Dispose();
+
+                            rate = sourh / desth;
+                        }
+                        else { smap = sour; }
+                        if (sourh < desth)
+                        {
+                            dmap = new Bitmap(sourw, sourh);
+                            Graphics g = Graphics.FromImage(dmap);
+                            g.DrawImage(dest, new Rectangle(0, 0, sourw, sourh), new Rectangle(0, 0, destw, desth), GraphicsUnit.Pixel);
+                            g.Dispose();
+
+                            rate = desth / sourh;
+                        }
+                        else { dmap = dest; }
+
+                        desth = dmap.Height;
+                        destw = dmap.Width;
+                        int cmprow = (int)((double)config.Row / sourh * desth);
+                        
+                        //List<long> errlist = new List<long>();
+                        int permitcnterr = destw / 10 + (int)(rate * 10);
+                        int permiterr = 10;
+                        int cnterr = 0;
+                        
+                        for (int x = 0; x < destw; ++x)
+                        {
+                            Color sc = smap.GetPixel(x, cmprow);
+                            Color dc = dmap.GetPixel(x, cmprow);
+                            int sgray = sc.R + sc.G + sc.B;
+                            int dgray = dc.R + dc.G + dc.B;
+
+                            int ierr = (sgray - dgray) / 3;
+                            //errlist.Add(ierr);
+                            if (ierr < 0) { ierr = -ierr; }
+                            if (ierr > permiterr) { ++cnterr; }
+                            if (cnterr > permitcnterr) { break; }
+                        }
+
+                        found = cnterr <= permitcnterr;
+                        if (sourh > desth) { smap.Dispose(); }
+                        if (sourh < desth) { dmap.Dispose(); }
+                    }
+
+                    #endregion
+
+                    #region PART SAME TURN
+
+                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    {
+                        double h2w = (double)sourh / sourw;
+
+                        #region 原样
+
+                        desth = dest.Height;
+                        destw = dest.Width;
+
+                        if (h2w * destw - desth < 3 && desth - h2w * destw < 3)
+                        {
+                            Bitmap smap, dmap;
+                            double rate = 0;
+                            if (sourh > desth)
+                            {
+                                smap = new Bitmap(destw, desth);
+                                Graphics g = Graphics.FromImage(smap);
+                                g.DrawImage(sour, new Rectangle(0, 0, destw, desth), new Rectangle(0, 0, sourw, sourh), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = sourh / desth;
+                            }
+                            else { smap = sour; }
+                            if (sourh < desth)
+                            {
+                                dmap = new Bitmap(sourw, sourh);
+                                Graphics g = Graphics.FromImage(dmap);
+                                g.DrawImage(dest, new Rectangle(0, 0, sourw, sourh), new Rectangle(0, 0, destw, desth), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = desth / sourh;
+                            }
+                            else { dmap = dest; }
+
+                            desth = dmap.Height;
+                            destw = dmap.Width;
+                            int cmprow = (int)((double)config.Row / sourh * desth);
+
+                            //List<long> errlist = new List<long>();
+                            int permitcnterr = destw / 10 + (int)(rate * 10);
+                            int permiterr = 10;
+                            int cnterr = 0;
+
+                            for (int x = 0; x < destw; ++x)
+                            {
+                                Color sc = smap.GetPixel(x, cmprow);
+                                Color dc = dmap.GetPixel(x, cmprow);
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
+
+                                int ierr = (sgray - dgray) / 3;
+                                //errlist.Add(ierr);
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            if (sourh > desth) { smap.Dispose(); }
+                            if (sourh < desth) { dmap.Dispose(); }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+
+                        #region 逆时针旋转 180 度
+
+                        desth = dest.Height;
+                        destw = dest.Width;
+
+                        if (h2w * destw - desth < 3 && desth - h2w * destw < 3)
+                        {
+                            Bitmap smap, dmap;
+                            double rate = 0;
+                            if (sourh > desth)
+                            {
+                                smap = new Bitmap(destw, desth);
+                                Graphics g = Graphics.FromImage(smap);
+                                g.DrawImage(sour, new Rectangle(0, 0, destw, desth), new Rectangle(0, 0, sourw, sourh), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = sourh / desth;
+                            }
+                            else { smap = sour; }
+                            if (sourh < desth)
+                            {
+                                dmap = new Bitmap(sourw, sourh);
+                                Graphics g = Graphics.FromImage(dmap);
+                                g.DrawImage(dest, new Rectangle(0, 0, sourw, sourh), new Rectangle(0, 0, destw, desth), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = desth / sourh;
+                            }
+                            else { dmap = dest; }
+
+                            desth = dmap.Height;
+                            destw = dmap.Width;
+                            int srow = (int)((double)config.Row / sourh * desth);
+                            int drow = desth - 1 - srow;
+
+                            //List<long> errlist = new List<long>();
+                            int permitcnterr = destw / 10 + (int)(rate * 10);
+                            int permiterr = 10;
+                            int cnterr = 0;
+
+                            for (int x = 0; x < destw; ++x)
+                            {
+                                Color sc = smap.GetPixel(x, srow);
+                                Color dc = dmap.GetPixel(destw - 1 - x, drow);
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
+
+                                int ierr = (sgray - dgray) / 3;
+                                //errlist.Add(ierr);
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            if (sourh > desth) { smap.Dispose(); }
+                            if (sourh < desth) { dmap.Dispose(); }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+
+                        #region 逆时针旋转90度
+
+                        desth = dest.Height;
+                        destw = dest.Width;
+
+                        if (h2w * desth - destw < 3 && destw - h2w * desth < 3)
+                        {
+                            Bitmap smap, dmap;
+                            double rate = 0;
+                            if (sourh > destw)
+                            {
+                                smap = new Bitmap(desth, destw);
+                                Graphics g = Graphics.FromImage(smap);
+                                g.DrawImage(sour, new Rectangle(0, 0, desth, destw), new Rectangle(0, 0, sourw, sourh), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = sourh / destw;
+                            }
+                            else { smap = sour; }
+                            if (sourh < destw)
+                            {
+                                dmap = new Bitmap(sourh, sourw);
+                                Graphics g = Graphics.FromImage(dmap);
+                                g.DrawImage(dest, new Rectangle(0, 0, sourh, sourw), new Rectangle(0, 0, destw, desth), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = desth / sourw;
+                            }
+                            else { dmap = dest; }
+
+                            desth = dmap.Height;
+                            destw = dmap.Width;
+                            int srow = (int)((double)config.Row / sourh * destw);
+                            int drow = srow;
+
+                            //List<long> errlist = new List<long>();
+                            int permitcnterr = desth / 10 + (int)(rate * 10);
+                            int permiterr = 10;
+                            int cnterr = 0;
+
+                            for (int y = 0; y < desth; ++y)
+                            {
+                                Color sc = smap.GetPixel(y, srow);
+                                Color dc = dmap.GetPixel(drow, desth - 1 - y);
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
+
+                                int ierr = (sgray - dgray) / 3;
+                                //errlist.Add(ierr);
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            if (sourh > destw) { smap.Dispose(); }
+                            if (sourh < destw) { dmap.Dispose(); }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+
+                        #region 逆时针旋转 270 度
+
+                        desth = dest.Height;
+                        destw = dest.Width;
+
+                        if (h2w * desth - destw < 3 && destw - h2w * desth < 3)
+                        {
+                            Bitmap smap, dmap;
+                            double rate = 0;
+                            if (sourh > destw)
+                            {
+                                smap = new Bitmap(desth, destw);
+                                Graphics g = Graphics.FromImage(smap);
+                                g.DrawImage(sour, new Rectangle(0, 0, desth, destw), new Rectangle(0, 0, sourw, sourh), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = sourh / destw;
+                            }
+                            else { smap = sour; }
+                            if (sourh < destw)
+                            {
+                                dmap = new Bitmap(sourh, sourw);
+                                Graphics g = Graphics.FromImage(dmap);
+                                g.DrawImage(dest, new Rectangle(0, 0, sourh, sourw), new Rectangle(0, 0, destw, desth), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = desth / sourw;
+                            }
+                            else { dmap = dest; }
+
+                            desth = dmap.Height;
+                            destw = dmap.Width;
+                            int srow = (int)((double)config.Row / sourh * destw);
+                            int drow = destw - 1 - srow;
+
+                            //List<long> errlist = new List<long>();
+                            int permitcnterr = desth / 10 + (int)(rate * 10);
+                            int permiterr = 10;
+                            int cnterr = 0;
+
+                            for (int y = 0; y < desth; ++y)
+                            {
+                                Color sc = smap.GetPixel(y, srow);
+                                Color dc = dmap.GetPixel(drow, y);
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
+
+                                int ierr = (sgray - dgray) / 3;
+                                //errlist.Add(ierr);
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            if (sourh > destw) { smap.Dispose(); }
+                            if (sourh < destw) { dmap.Dispose(); }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+                    }
+
+                    #endregion
+
+                    #region PATR LIKE NO_TURN
+
+                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    {
+
+                    }
+
+                    #endregion
+
+                    #region PART LIKE TURN
+
+                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    {
+
+                    }
+
+                    #endregion
                 }
 
                 #endregion
 
-                if (IsSame)
+                #region 列比较
+
+                if (config.Col != -1)
                 {
-                    Threads[0].result.Add(i);
-                    int total = 0;
-                    lock (config.Lock) { config.Results.Add(i); total = config.Results.Count; }
+                    #region FULL SAME NO_TURN
+
+                    if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    {
+                        if (sourh != desth || sourw != destw) { goto End; }
+
+                        double pace = (double)sourh / config.MinCmpPix;
+                        int permitcnterr = config.MinCmpPix / 10;
+                        int permiterr = 10;
+                        int cnterr = 0;
+                        double y = 0;
+                        int cnt = 0;
+                        int len = config.Grays.Length;
+
+                        for (; cnt < len; y += pace, ++cnt)
+                        {
+                            Color dc = dest.GetPixel(config.Col, (int)y);
+                            int sgray = config.Grays[cnt];
+                            int dgray = (dc.R + dc.G + dc.B) / 3;
+
+                            int ierr = sgray - dgray;
+                            if (ierr < 0) { ierr = -ierr; }
+                            if (ierr > permiterr) { ++cnterr; }
+                            if (cnterr > permitcnterr) { break; }
+                        }
+
+                        found = cnterr <= permitcnterr;
+                    }
+
+                    #endregion
+
+                    #region FULL SAME TURN
+
+                    else if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    {
+                        #region 原样
+
+                        if (sourh == desth && sourw == destw)
+                        {
+                            double pace = (double)sourh / config.MinCmpPix;
+                            int permitcnterr = config.MinCmpPix / 10;
+                            int permiterr = 10;
+                            int cnterr = 0;
+                            double y = 0;
+                            int cnt = 0;
+                            int len = config.Grays.Length;
+
+                            for (; cnt < len; y += pace, ++cnt)
+                            {
+                                Color dc = dest.GetPixel(config.Col, (int)y);
+                                int sgray = config.Grays[cnt];
+                                int dgray = (dc.R + dc.G + dc.B) / 3;
+
+                                int ierr = sgray - dgray;
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+
+                        #region 逆时针旋转 180 度
+
+                        if (sourh == desth && sourw == destw)
+                        {
+                            double pace = (double)sourh / config.MinCmpPix;
+                            int cmpcol = sourw - config.Col - 1;
+                            int permitcnterr = config.MinCmpPix / 10;
+                            int permiterr = 10;
+                            int cnterr = 0;
+                            double y = 0;
+                            int cnt = 0;
+                            int len = config.Grays.Length;
+
+                            for (; cnt < len; y += pace, ++cnt)
+                            {
+                                Color dc = dest.GetPixel(cmpcol, sourh - 1 - (int)y);
+                                int sgray = config.Grays[cnt];
+                                int dgray = (dc.R + dc.G + dc.B) / 3;
+
+                                int ierr = sgray - dgray;
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+
+                        #region 逆时针旋转90度
+
+                        if (sourh == destw && sourw == desth)
+                        {
+                            double pace = (double)sourh / config.MinCmpPix;
+                            int cmpcol = sourw - config.Col - 1;
+                            int permitcnterr = config.MinCmpPix / 10;
+                            int permiterr = 10;
+                            int cnterr = 0;
+                            double x = 0;
+                            int cnt = 0;
+                            int len = config.Grays.Length;
+
+                            for (; cnt < len; x += pace, ++cnt)
+                            {
+                                Color dc = dest.GetPixel((int)x, cmpcol);
+                                int sgray = config.Grays[cnt];
+                                int dgray = (dc.R + dc.G + dc.B) / 3;
+
+                                int ierr = sgray - dgray;
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+
+                        #region 逆时针旋转 270 度
+
+                        if (sourh == destw && sourw == desth)
+                        {
+                            double pace = (double)sourh / config.MinCmpPix;
+                            int permitcnterr = config.MinCmpPix / 10;
+                            int permiterr = 10;
+                            int cnterr = 0;
+                            double x = 0;
+                            int cnt = 0;
+                            int len = config.Grays.Length;
+
+                            for (; cnt < len; x += pace, ++cnt)
+                            {
+                                Color dc = dest.GetPixel(sourh - 1 - (int)x, config.Col);
+                                int sgray = config.Grays[cnt];
+                                int dgray = (dc.R + dc.G + dc.B) / 3;
+
+                                int ierr = sgray - dgray;
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+                    }
+
+                    #endregion
+
+                    #region FULL LIKE NO_TURN
+
+                    else if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    {
+
+                    }
+
+                    #endregion
+
+                    #region FULL LIKE TURN
+
+                    else if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    {
+
+                    }
+
+                    #endregion
+
+                    #region PART SAME NO_TURN
+
+                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    {
+                        // 比例相同
+                        double h2w = (double)sourh / sourw;
+                        int err = (int)(h2w * destw) - desth; if (err < 0) { err = -err; }
+                        if (err > 3) { goto End; }
+
+                        // 缩放
+                        Bitmap smap, dmap;
+                        double rate = 0;
+                        if (sourh > desth)
+                        {
+                            smap = new Bitmap(destw, desth);
+                            Graphics g = Graphics.FromImage(smap);
+                            g.DrawImage(sour, new Rectangle(0, 0, destw, desth), new Rectangle(0, 0, sourw, sourh), GraphicsUnit.Pixel);
+                            g.Dispose();
+
+                            rate = sourh / desth;
+                        }
+                        else { smap = sour; }
+                        if (sourh < desth)
+                        {
+                            dmap = new Bitmap(sourw, sourh);
+                            Graphics g = Graphics.FromImage(dmap);
+                            g.DrawImage(dest, new Rectangle(0, 0, sourw, sourh), new Rectangle(0, 0, destw, desth), GraphicsUnit.Pixel);
+                            g.Dispose();
+
+                            rate = desth / sourh;
+                        }
+                        else { dmap = dest; }
+
+                        desth = dmap.Height;
+                        destw = dmap.Width;
+                        int cmpcol = (int)((double)config.Col / sourw * destw);
+
+                        //List<long> errlist = new List<long>();
+                        int permitcnterr = desth / 10 + (int)(rate * 10);
+                        int permiterr = 10;
+                        int cnterr = 0;
+
+                        for (int y = 0; y < desth; ++y)
+                        {
+                            Color sc = smap.GetPixel(cmpcol, y);
+                            Color dc = dmap.GetPixel(cmpcol, y);
+                            int sgray = sc.R + sc.G + sc.B;
+                            int dgray = dc.R + dc.G + dc.B;
+
+                            int ierr = (sgray - dgray) / 3;
+                            //errlist.Add(ierr);
+                            if (ierr < 0) { ierr = -ierr; }
+                            if (ierr > permiterr) { ++cnterr; }
+                            if (cnterr > permitcnterr) { break; }
+                        }
+
+                        found = cnterr <= permitcnterr;
+                        if (sourh > desth) { smap.Dispose(); }
+                        if (sourh < desth) { dmap.Dispose(); }
+                    }
+
+                    #endregion
+
+                    #region PART SAME TURN
+
+                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    {
+                        double h2w = (double)sourh / sourw;
+
+                        #region 原样
+
+                        desth = dest.Height;
+                        destw = dest.Width;
+
+                        if (h2w * destw - desth < 3 && desth - h2w * destw < 3)
+                        {
+                            Bitmap smap, dmap;
+                            double rate = 0;
+                            if (sourh > desth)
+                            {
+                                smap = new Bitmap(destw, desth);
+                                Graphics g = Graphics.FromImage(smap);
+                                g.DrawImage(sour, new Rectangle(0, 0, destw, desth), new Rectangle(0, 0, sourw, sourh), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = sourh / desth;
+                            }
+                            else { smap = sour; }
+                            if (sourh < desth)
+                            {
+                                dmap = new Bitmap(sourw, sourh);
+                                Graphics g = Graphics.FromImage(dmap);
+                                g.DrawImage(dest, new Rectangle(0, 0, sourw, sourh), new Rectangle(0, 0, destw, desth), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = desth / sourh;
+                            }
+                            else { dmap = dest; }
+
+                            desth = dmap.Height;
+                            destw = dmap.Width;
+                            int cmpcol = (int)((double)config.Col / sourw * destw);
+
+                            //List<long> errlist = new List<long>();
+                            int permitcnterr = desth / 10 + (int)(rate * 10);
+                            int permiterr = 10;
+                            int cnterr = 0;
+
+                            for (int y = 0; y < desth; ++y)
+                            {
+                                Color sc = smap.GetPixel(cmpcol, y);
+                                Color dc = dmap.GetPixel(cmpcol, y);
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
+
+                                int ierr = (sgray - dgray) / 3;
+                                //errlist.Add(ierr);
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            if (sourh > desth) { smap.Dispose(); }
+                            if (sourh < desth) { dmap.Dispose(); }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+
+                        #region 逆时针旋转 180 度
+
+                        desth = dest.Height;
+                        destw = dest.Width;
+
+                        if (h2w * destw - desth < 3 && desth - h2w * destw < 3)
+                        {
+                            Bitmap smap, dmap;
+                            double rate = 0;
+                            if (sourh > desth)
+                            {
+                                smap = new Bitmap(destw, desth);
+                                Graphics g = Graphics.FromImage(smap);
+                                g.DrawImage(sour, new Rectangle(0, 0, destw, desth), new Rectangle(0, 0, sourw, sourh), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = sourh / desth;
+                            }
+                            else { smap = sour; }
+                            if (sourh < desth)
+                            {
+                                dmap = new Bitmap(sourw, sourh);
+                                Graphics g = Graphics.FromImage(dmap);
+                                g.DrawImage(dest, new Rectangle(0, 0, sourw, sourh), new Rectangle(0, 0, destw, desth), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = desth / sourh;
+                            }
+                            else { dmap = dest; }
+
+                            desth = dmap.Height;
+                            destw = dmap.Width;
+                            int scol = (int)((double)config.Col / sourw * destw);
+                            int dcol = destw - 1 - scol;
+
+                            //List<long> errlist = new List<long>();
+                            int permitcnterr = desth / 10 + (int)(rate * 10);
+                            int permiterr = 10;
+                            int cnterr = 0;
+
+                            for (int y = 0; y < desth; ++y)
+                            {
+                                Color sc = smap.GetPixel(scol, y);
+                                Color dc = dmap.GetPixel(dcol, desth - 1 - y);
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
+
+                                int ierr = (sgray - dgray) / 3;
+                                //errlist.Add(ierr);
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            if (sourh > desth) { smap.Dispose(); }
+                            if (sourh < desth) { dmap.Dispose(); }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+
+                        #region 逆时针旋转90度
+
+                        desth = dest.Height;
+                        destw = dest.Width;
+
+                        if (h2w * desth - destw < 3 && destw - h2w * desth < 3)
+                        {
+                            Bitmap smap, dmap;
+                            double rate = 0;
+                            if (sourh > destw)
+                            {
+                                smap = new Bitmap(desth, destw);
+                                Graphics g = Graphics.FromImage(smap);
+                                g.DrawImage(sour, new Rectangle(0, 0, desth, destw), new Rectangle(0, 0, sourw, sourh), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = sourh / destw;
+                            }
+                            else { smap = sour; }
+                            if (sourh < destw)
+                            {
+                                dmap = new Bitmap(sourh, sourw);
+                                Graphics g = Graphics.FromImage(dmap);
+                                g.DrawImage(dest, new Rectangle(0, 0, sourh, sourw), new Rectangle(0, 0, destw, desth), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = desth / sourw;
+                            }
+                            else { dmap = dest; }
+
+                            desth = dmap.Height;
+                            destw = dmap.Width;
+                            int scol = (int)((double)config.Col / sourw * desth);
+                            int dcol = desth - 1 - scol;
+
+                            //List<long> errlist = new List<long>();
+                            int permitcnterr = destw / 10 + (int)(rate * 10);
+                            int permiterr = 10;
+                            int cnterr = 0;
+
+                            for (int y = 0; y < destw; ++y)
+                            {
+                                Color sc = smap.GetPixel(scol, y);
+                                Color dc = dmap.GetPixel(y, dcol);
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
+
+                                int ierr = (sgray - dgray) / 3;
+                                //errlist.Add(ierr);
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            if (sourh > destw) { smap.Dispose(); }
+                            if (sourh < destw) { dmap.Dispose(); }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+
+                        #region 逆时针旋转 270 度
+
+                        desth = dest.Height;
+                        destw = dest.Width;
+
+                        if (h2w * desth - destw < 3 && destw - h2w * desth < 3)
+                        {
+                            Bitmap smap, dmap;
+                            double rate = 0;
+                            if (sourh > destw)
+                            {
+                                smap = new Bitmap(desth, destw);
+                                Graphics g = Graphics.FromImage(smap);
+                                g.DrawImage(sour, new Rectangle(0, 0, desth, destw), new Rectangle(0, 0, sourw, sourh), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = sourh / destw;
+                            }
+                            else { smap = sour; }
+                            if (sourh < destw)
+                            {
+                                dmap = new Bitmap(sourh, sourw);
+                                Graphics g = Graphics.FromImage(dmap);
+                                g.DrawImage(dest, new Rectangle(0, 0, sourh, sourw), new Rectangle(0, 0, destw, desth), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = desth / sourw;
+                            }
+                            else { dmap = dest; }
+
+                            desth = dmap.Height;
+                            destw = dmap.Width;
+                            int scol = (int)((double)config.Col / sourw * desth);
+                            int dcol = scol;
+
+                            //List<long> errlist = new List<long>();
+                            int permitcnterr = destw / 10 + (int)(rate * 10);
+                            int permiterr = 10;
+                            int cnterr = 0;
+
+                            for (int y = 0; y < destw; ++y)
+                            {
+                                Color sc = smap.GetPixel(scol, y);
+                                Color dc = dmap.GetPixel(destw - 1 - y, dcol);
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
+
+                                int ierr = (sgray - dgray) / 3;
+                                //errlist.Add(ierr);
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            if (sourh > destw) { smap.Dispose(); }
+                            if (sourh < destw) { dmap.Dispose(); }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+                    }
+
+                    #endregion
+
+                    #region PATR LIKE NO_TURN
+
+                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    {
+
+                    }
+
+                    #endregion
+
+                    #region PART LIKE TURN
+
+                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    {
+
+                    }
+
+                    #endregion
                 }
+
+                #endregion
+
+                End:
+                lock (config.Lock) { if (found) { config.Results.Add(i); } config.CountFiles++; }
                 dest.Dispose();
             }
 
             Threads[0].finish = true;
-            //if (Threads[0].finish && Threads[1].finish && Threads[2].finish && Threads[3].finish)
-            //{ config.TimeED = config.Time; }
         }
         private void TH_CMP2()
         {
-            int bg = Threads[1].begin, ed = Threads[1].end;
-            string path;
-            string name;
-            bool IsSame;
-            Image dest;
+            Bitmap sour = Threads[1].sour;
+            Bitmap dest;
+            int sourh = sour.Height, sourw = sour.Width;
+            int desth = 0, destw = 0;
+            bool found = false;
 
-            for (int i = bg - 1; i < ed; i++)
+            for (int i = Threads[1].begin - 1; i < Threads[1].end; ++i)
             {
-                path = Paths[i];
-                name = Names[i];
+                #region 初始化变量
 
-                dest = Image.FromFile(path + "\\" + name);
+                dest = (Bitmap)Image.FromFile(Paths[i] + "\\" + Names[i]);
+                desth = dest.Height;
+                destw = dest.Width;
+                found = false;
 
-                #region 比较两幅图片
+                #endregion
 
-                IsSame = false;
+                #region 行比较
 
-                if (config.IsRow && dest.Width > config.MinCmpPix + 20)
+                if (config.Row != -1)
                 {
-                    for (int j = 10; j < dest.Height - 10; j += 1)
+                    #region FULL SAME NO_TURN
+
+                    if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) == 0))
                     {
-                        double err = CmpRow((Bitmap)dest, j);
-                        if (err < 3) { IsSame = true; break; }
+                        if (sourh != desth || sourw != destw) { goto End; }
+
+                        double pace = (double)sourw / config.MinCmpPix;
+                        int permitcnterr = config.MinCmpPix / 10;
+                        int permiterr = 10;
+                        int cnterr = 0;
+                        double x = 0;
+                        int cnt = 0;
+                        int len = config.Grays.Length;
+
+                        for (; cnt < len; x += pace, ++cnt)
+                        {
+                            Color dc = dest.GetPixel((int)x, config.Row);
+                            int sgray = config.Grays[cnt];
+                            int dgray = (dc.R + dc.G + dc.B) / 3;
+
+                            int ierr = sgray - dgray;
+                            if (ierr < 0) { ierr = -ierr; }
+                            if (ierr > permiterr) { ++cnterr; }
+                            if (cnterr > permitcnterr) { break; }
+                        }
+
+                        found = cnterr <= permitcnterr;
                     }
-                }
-                if (!config.IsRow && dest.Height > config.MinCmpPix + 20)
-                {
-                    for (int j = 10; j < dest.Width - 10; j += 1)
+
+                    #endregion
+
+                    #region FULL SAME TURN
+
+                    else if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) != 0))
                     {
-                        double err = CmpCol((Bitmap)dest, j);
-                        if (err < 3) { IsSame = true; break; }
+                        #region 原样
+
+                        if (sourh == desth && sourw == destw)
+                        {
+                            double pace = (double)sourw / config.MinCmpPix;
+                            int permitcnterr = config.MinCmpPix / 10;
+                            int permiterr = 10;
+                            int cnterr = 0;
+                            double x = 0;
+                            int cnt = 0;
+                            int len = config.Grays.Length;
+
+                            for (; cnt < len; x += pace, ++cnt)
+                            {
+                                Color dc = dest.GetPixel((int)x, config.Row);
+                                int sgray = config.Grays[cnt];
+                                int dgray = (dc.R + dc.G + dc.B) / 3;
+
+                                int ierr = sgray - dgray;
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+
+                        #region 逆时针旋转 180 度
+
+                        if (sourh == desth && sourw == destw)
+                        {
+                            double pace = (double)sourw / config.MinCmpPix;
+                            int cmprow = sourh - 1 - config.Row;
+                            int permitcnterr = config.MinCmpPix / 10;
+                            int permiterr = 10;
+                            int cnterr = 0;
+                            double x = 0;
+                            int cnt = 0;
+                            int len = config.Grays.Length;
+
+                            for (; cnt < len; x += pace, ++cnt)
+                            {
+                                Color dc = dest.GetPixel(sourw - 1 - (int)x, cmprow);
+                                int sgray = config.Grays[cnt];
+                                int dgray = (dc.R + dc.G + dc.B) / 3;
+
+                                int ierr = sgray - dgray;
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+
+                        #region 逆时针旋转90度
+
+                        if (sourh == destw && sourw == desth)
+                        {
+                            double pace = (double)sourw / config.MinCmpPix;
+                            int permitcnterr = config.MinCmpPix / 10;
+                            int permiterr = 10;
+                            int cnterr = 0;
+                            double y = 0;
+                            int cnt = 0;
+                            int len = config.Grays.Length;
+
+                            for (; cnt < len; y += pace, ++cnt)
+                            {
+                                Color dc = dest.GetPixel(config.Row, sourw - 1 - (int)y);
+                                int sgray = config.Grays[cnt];
+                                int dgray = (dc.R + dc.G + dc.B) / 3;
+
+                                int ierr = sgray - dgray;
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+
+                        #region 逆时针旋转 270 度
+
+                        if (sourh == destw && sourw == desth)
+                        {
+                            double pace = (double)sourw / config.MinCmpPix;
+                            int cmprow = sourh - 1 - config.Row;
+                            int permitcnterr = config.MinCmpPix / 10;
+                            int permiterr = 10;
+                            int cnterr = 0;
+                            double y = 0;
+                            int cnt = 0;
+                            int len = config.Grays.Length;
+
+                            for (; cnt < len; y += pace, ++cnt)
+                            {
+                                Color dc = dest.GetPixel(cmprow, (int)y);
+                                int sgray = config.Grays[cnt];
+                                int dgray = (dc.R + dc.G + dc.B) / 3;
+
+                                int ierr = sgray - dgray;
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
                     }
+
+                    #endregion
+
+                    #region FULL LIKE NO_TURN
+
+                    else if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    {
+
+                    }
+
+                    #endregion
+
+                    #region FULL LIKE TURN
+
+                    else if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    {
+
+                    }
+
+                    #endregion
+
+                    #region PART SAME NO_TURN
+
+                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    {
+                        // 比例相同
+                        double h2w = (double)sourh / sourw;
+                        int err = (int)(h2w * destw) - desth; if (err < 0) { err = -err; }
+                        if (err > 3) { goto End; }
+
+                        // 缩放
+                        Bitmap smap, dmap;
+                        double rate = 0;
+                        if (sourh > desth)
+                        {
+                            smap = new Bitmap(destw, desth);
+                            Graphics g = Graphics.FromImage(smap);
+                            g.DrawImage(sour, new Rectangle(0, 0, destw, desth), new Rectangle(0, 0, sourw, sourh), GraphicsUnit.Pixel);
+                            g.Dispose();
+
+                            rate = sourh / desth;
+                        }
+                        else { smap = sour; }
+                        if (sourh < desth)
+                        {
+                            dmap = new Bitmap(sourw, sourh);
+                            Graphics g = Graphics.FromImage(dmap);
+                            g.DrawImage(dest, new Rectangle(0, 0, sourw, sourh), new Rectangle(0, 0, destw, desth), GraphicsUnit.Pixel);
+                            g.Dispose();
+
+                            rate = desth / sourh;
+                        }
+                        else { dmap = dest; }
+
+                        desth = dmap.Height;
+                        destw = dmap.Width;
+                        int cmprow = (int)((double)config.Row / sourh * desth);
+
+                        //List<long> errlist = new List<long>();
+                        int permitcnterr = destw / 10 + (int)(rate * 10);
+                        int permiterr = 10;
+                        int cnterr = 0;
+
+                        for (int x = 0; x < destw; ++x)
+                        {
+                            Color sc = smap.GetPixel(x, cmprow);
+                            Color dc = dmap.GetPixel(x, cmprow);
+                            int sgray = sc.R + sc.G + sc.B;
+                            int dgray = dc.R + dc.G + dc.B;
+
+                            int ierr = (sgray - dgray) / 3;
+                            //errlist.Add(ierr);
+                            if (ierr < 0) { ierr = -ierr; }
+                            if (ierr > permiterr) { ++cnterr; }
+                            if (cnterr > permitcnterr) { break; }
+                        }
+
+                        found = cnterr <= permitcnterr;
+                        if (sourh > desth) { smap.Dispose(); }
+                        if (sourh < desth) { dmap.Dispose(); }
+                    }
+
+                    #endregion
+
+                    #region PART SAME TURN
+
+                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    {
+                        double h2w = (double)sourh / sourw;
+
+                        #region 原样
+
+                        desth = dest.Height;
+                        destw = dest.Width;
+
+                        if (h2w * destw - desth < 3 && desth - h2w * destw < 3)
+                        {
+                            Bitmap smap, dmap;
+                            double rate = 0;
+                            if (sourh > desth)
+                            {
+                                smap = new Bitmap(destw, desth);
+                                Graphics g = Graphics.FromImage(smap);
+                                g.DrawImage(sour, new Rectangle(0, 0, destw, desth), new Rectangle(0, 0, sourw, sourh), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = sourh / desth;
+                            }
+                            else { smap = sour; }
+                            if (sourh < desth)
+                            {
+                                dmap = new Bitmap(sourw, sourh);
+                                Graphics g = Graphics.FromImage(dmap);
+                                g.DrawImage(dest, new Rectangle(0, 0, sourw, sourh), new Rectangle(0, 0, destw, desth), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = desth / sourh;
+                            }
+                            else { dmap = dest; }
+
+                            desth = dmap.Height;
+                            destw = dmap.Width;
+                            int cmprow = (int)((double)config.Row / sourh * desth);
+
+                            //List<long> errlist = new List<long>();
+                            int permitcnterr = destw / 10 + (int)(rate * 10);
+                            int permiterr = 10;
+                            int cnterr = 0;
+
+                            for (int x = 0; x < destw; ++x)
+                            {
+                                Color sc = smap.GetPixel(x, cmprow);
+                                Color dc = dmap.GetPixel(x, cmprow);
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
+
+                                int ierr = (sgray - dgray) / 3;
+                                //errlist.Add(ierr);
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            if (sourh > desth) { smap.Dispose(); }
+                            if (sourh < desth) { dmap.Dispose(); }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+
+                        #region 逆时针旋转 180 度
+
+                        desth = dest.Height;
+                        destw = dest.Width;
+
+                        if (h2w * destw - desth < 3 && desth - h2w * destw < 3)
+                        {
+                            Bitmap smap, dmap;
+                            double rate = 0;
+                            if (sourh > desth)
+                            {
+                                smap = new Bitmap(destw, desth);
+                                Graphics g = Graphics.FromImage(smap);
+                                g.DrawImage(sour, new Rectangle(0, 0, destw, desth), new Rectangle(0, 0, sourw, sourh), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = sourh / desth;
+                            }
+                            else { smap = sour; }
+                            if (sourh < desth)
+                            {
+                                dmap = new Bitmap(sourw, sourh);
+                                Graphics g = Graphics.FromImage(dmap);
+                                g.DrawImage(dest, new Rectangle(0, 0, sourw, sourh), new Rectangle(0, 0, destw, desth), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = desth / sourh;
+                            }
+                            else { dmap = dest; }
+
+                            desth = dmap.Height;
+                            destw = dmap.Width;
+                            int srow = (int)((double)config.Row / sourh * desth);
+                            int drow = desth - 1 - srow;
+
+                            //List<long> errlist = new List<long>();
+                            int permitcnterr = destw / 10 + (int)(rate * 10);
+                            int permiterr = 10;
+                            int cnterr = 0;
+
+                            for (int x = 0; x < destw; ++x)
+                            {
+                                Color sc = smap.GetPixel(x, srow);
+                                Color dc = dmap.GetPixel(destw - 1 - x, drow);
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
+
+                                int ierr = (sgray - dgray) / 3;
+                                //errlist.Add(ierr);
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            if (sourh > desth) { smap.Dispose(); }
+                            if (sourh < desth) { dmap.Dispose(); }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+
+                        #region 逆时针旋转90度
+
+                        desth = dest.Height;
+                        destw = dest.Width;
+
+                        if (h2w * desth - destw < 3 && destw - h2w * desth < 3)
+                        {
+                            Bitmap smap, dmap;
+                            double rate = 0;
+                            if (sourh > destw)
+                            {
+                                smap = new Bitmap(desth, destw);
+                                Graphics g = Graphics.FromImage(smap);
+                                g.DrawImage(sour, new Rectangle(0, 0, desth, destw), new Rectangle(0, 0, sourw, sourh), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = sourh / destw;
+                            }
+                            else { smap = sour; }
+                            if (sourh < destw)
+                            {
+                                dmap = new Bitmap(sourh, sourw);
+                                Graphics g = Graphics.FromImage(dmap);
+                                g.DrawImage(dest, new Rectangle(0, 0, sourh, sourw), new Rectangle(0, 0, destw, desth), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = desth / sourw;
+                            }
+                            else { dmap = dest; }
+
+                            desth = dmap.Height;
+                            destw = dmap.Width;
+                            int srow = (int)((double)config.Row / sourh * destw);
+                            int drow = srow;
+
+                            //List<long> errlist = new List<long>();
+                            int permitcnterr = desth / 10 + (int)(rate * 10);
+                            int permiterr = 10;
+                            int cnterr = 0;
+
+                            for (int y = 0; y < desth; ++y)
+                            {
+                                Color sc = smap.GetPixel(y, srow);
+                                Color dc = dmap.GetPixel(drow, desth - 1 - y);
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
+
+                                int ierr = (sgray - dgray) / 3;
+                                //errlist.Add(ierr);
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            if (sourh > destw) { smap.Dispose(); }
+                            if (sourh < destw) { dmap.Dispose(); }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+
+                        #region 逆时针旋转 270 度
+
+                        desth = dest.Height;
+                        destw = dest.Width;
+
+                        if (h2w * desth - destw < 3 && destw - h2w * desth < 3)
+                        {
+                            Bitmap smap, dmap;
+                            double rate = 0;
+                            if (sourh > destw)
+                            {
+                                smap = new Bitmap(desth, destw);
+                                Graphics g = Graphics.FromImage(smap);
+                                g.DrawImage(sour, new Rectangle(0, 0, desth, destw), new Rectangle(0, 0, sourw, sourh), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = sourh / destw;
+                            }
+                            else { smap = sour; }
+                            if (sourh < destw)
+                            {
+                                dmap = new Bitmap(sourh, sourw);
+                                Graphics g = Graphics.FromImage(dmap);
+                                g.DrawImage(dest, new Rectangle(0, 0, sourh, sourw), new Rectangle(0, 0, destw, desth), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = desth / sourw;
+                            }
+                            else { dmap = dest; }
+
+                            desth = dmap.Height;
+                            destw = dmap.Width;
+                            int srow = (int)((double)config.Row / sourh * destw);
+                            int drow = destw - 1 - srow;
+
+                            //List<long> errlist = new List<long>();
+                            int permitcnterr = desth / 10 + (int)(rate * 10);
+                            int permiterr = 10;
+                            int cnterr = 0;
+
+                            for (int y = 0; y < desth; ++y)
+                            {
+                                Color sc = smap.GetPixel(y, srow);
+                                Color dc = dmap.GetPixel(drow, y);
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
+
+                                int ierr = (sgray - dgray) / 3;
+                                //errlist.Add(ierr);
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            if (sourh > destw) { smap.Dispose(); }
+                            if (sourh < destw) { dmap.Dispose(); }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+                    }
+
+                    #endregion
+
+                    #region PATR LIKE NO_TURN
+
+                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    {
+
+                    }
+
+                    #endregion
+
+                    #region PART LIKE TURN
+
+                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    {
+
+                    }
+
+                    #endregion
                 }
 
                 #endregion
 
-                if (IsSame)
+                #region 列比较
+
+                if (config.Col != -1)
                 {
-                    Threads[0].result.Add(i);
-                    int total = 0;
-                    lock (config.Lock) { config.Results.Add(i); total = config.Results.Count; }
+                    #region FULL SAME NO_TURN
+
+                    if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    {
+                        if (sourh != desth || sourw != destw) { goto End; }
+
+                        double pace = (double)sourh / config.MinCmpPix;
+                        int permitcnterr = config.MinCmpPix / 10;
+                        int permiterr = 10;
+                        int cnterr = 0;
+                        double y = 0;
+                        int cnt = 0;
+                        int len = config.Grays.Length;
+
+                        for (; cnt < len; y += pace, ++cnt)
+                        {
+                            Color dc = dest.GetPixel(config.Col, (int)y);
+                            int sgray = config.Grays[cnt];
+                            int dgray = (dc.R + dc.G + dc.B) / 3;
+
+                            int ierr = sgray - dgray;
+                            if (ierr < 0) { ierr = -ierr; }
+                            if (ierr > permiterr) { ++cnterr; }
+                            if (cnterr > permitcnterr) { break; }
+                        }
+
+                        found = cnterr <= permitcnterr;
+                    }
+
+                    #endregion
+
+                    #region FULL SAME TURN
+
+                    else if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    {
+                        #region 原样
+
+                        if (sourh == desth && sourw == destw)
+                        {
+                            double pace = (double)sourh / config.MinCmpPix;
+                            int permitcnterr = config.MinCmpPix / 10;
+                            int permiterr = 10;
+                            int cnterr = 0;
+                            double y = 0;
+                            int cnt = 0;
+                            int len = config.Grays.Length;
+
+                            for (; cnt < len; y += pace, ++cnt)
+                            {
+                                Color dc = dest.GetPixel(config.Col, (int)y);
+                                int sgray = config.Grays[cnt];
+                                int dgray = (dc.R + dc.G + dc.B) / 3;
+
+                                int ierr = sgray - dgray;
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+
+                        #region 逆时针旋转 180 度
+
+                        if (sourh == desth && sourw == destw)
+                        {
+                            double pace = (double)sourh / config.MinCmpPix;
+                            int cmpcol = sourw - config.Col - 1;
+                            int permitcnterr = config.MinCmpPix / 10;
+                            int permiterr = 10;
+                            int cnterr = 0;
+                            double y = 0;
+                            int cnt = 0;
+                            int len = config.Grays.Length;
+
+                            for (; cnt < len; y += pace, ++cnt)
+                            {
+                                Color dc = dest.GetPixel(cmpcol, sourh - 1 - (int)y);
+                                int sgray = config.Grays[cnt];
+                                int dgray = (dc.R + dc.G + dc.B) / 3;
+
+                                int ierr = sgray - dgray;
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+
+                        #region 逆时针旋转90度
+
+                        if (sourh == destw && sourw == desth)
+                        {
+                            double pace = (double)sourh / config.MinCmpPix;
+                            int cmpcol = sourw - config.Col - 1;
+                            int permitcnterr = config.MinCmpPix / 10;
+                            int permiterr = 10;
+                            int cnterr = 0;
+                            double x = 0;
+                            int cnt = 0;
+                            int len = config.Grays.Length;
+
+                            for (; cnt < len; x += pace, ++cnt)
+                            {
+                                Color dc = dest.GetPixel((int)x, cmpcol);
+                                int sgray = config.Grays[cnt];
+                                int dgray = (dc.R + dc.G + dc.B) / 3;
+
+                                int ierr = sgray - dgray;
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+
+                        #region 逆时针旋转 270 度
+
+                        if (sourh == destw && sourw == desth)
+                        {
+                            double pace = (double)sourh / config.MinCmpPix;
+                            int permitcnterr = config.MinCmpPix / 10;
+                            int permiterr = 10;
+                            int cnterr = 0;
+                            double x = 0;
+                            int cnt = 0;
+                            int len = config.Grays.Length;
+
+                            for (; cnt < len; x += pace, ++cnt)
+                            {
+                                Color dc = dest.GetPixel(sourh - 1 - (int)x, config.Col);
+                                int sgray = config.Grays[cnt];
+                                int dgray = (dc.R + dc.G + dc.B) / 3;
+
+                                int ierr = sgray - dgray;
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+                    }
+
+                    #endregion
+
+                    #region FULL LIKE NO_TURN
+
+                    else if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    {
+
+                    }
+
+                    #endregion
+
+                    #region FULL LIKE TURN
+
+                    else if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    {
+
+                    }
+
+                    #endregion
+
+                    #region PART SAME NO_TURN
+
+                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    {
+                        // 比例相同
+                        double h2w = (double)sourh / sourw;
+                        int err = (int)(h2w * destw) - desth; if (err < 0) { err = -err; }
+                        if (err > 3) { goto End; }
+
+                        // 缩放
+                        Bitmap smap, dmap;
+                        double rate = 0;
+                        if (sourh > desth)
+                        {
+                            smap = new Bitmap(destw, desth);
+                            Graphics g = Graphics.FromImage(smap);
+                            g.DrawImage(sour, new Rectangle(0, 0, destw, desth), new Rectangle(0, 0, sourw, sourh), GraphicsUnit.Pixel);
+                            g.Dispose();
+
+                            rate = sourh / desth;
+                        }
+                        else { smap = sour; }
+                        if (sourh < desth)
+                        {
+                            dmap = new Bitmap(sourw, sourh);
+                            Graphics g = Graphics.FromImage(dmap);
+                            g.DrawImage(dest, new Rectangle(0, 0, sourw, sourh), new Rectangle(0, 0, destw, desth), GraphicsUnit.Pixel);
+                            g.Dispose();
+
+                            rate = desth / sourh;
+                        }
+                        else { dmap = dest; }
+
+                        desth = dmap.Height;
+                        destw = dmap.Width;
+                        int cmpcol = (int)((double)config.Col / sourw * destw);
+
+                        //List<long> errlist = new List<long>();
+                        int permitcnterr = desth / 10 + (int)(rate * 10);
+                        int permiterr = 10;
+                        int cnterr = 0;
+
+                        for (int y = 0; y < desth; ++y)
+                        {
+                            Color sc = smap.GetPixel(cmpcol, y);
+                            Color dc = dmap.GetPixel(cmpcol, y);
+                            int sgray = sc.R + sc.G + sc.B;
+                            int dgray = dc.R + dc.G + dc.B;
+
+                            int ierr = (sgray - dgray) / 3;
+                            //errlist.Add(ierr);
+                            if (ierr < 0) { ierr = -ierr; }
+                            if (ierr > permiterr) { ++cnterr; }
+                            if (cnterr > permitcnterr) { break; }
+                        }
+
+                        found = cnterr <= permitcnterr;
+                        if (sourh > desth) { smap.Dispose(); }
+                        if (sourh < desth) { dmap.Dispose(); }
+                    }
+
+                    #endregion
+
+                    #region PART SAME TURN
+
+                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    {
+                        double h2w = (double)sourh / sourw;
+
+                        #region 原样
+
+                        desth = dest.Height;
+                        destw = dest.Width;
+
+                        if (h2w * destw - desth < 3 && desth - h2w * destw < 3)
+                        {
+                            Bitmap smap, dmap;
+                            double rate = 0;
+                            if (sourh > desth)
+                            {
+                                smap = new Bitmap(destw, desth);
+                                Graphics g = Graphics.FromImage(smap);
+                                g.DrawImage(sour, new Rectangle(0, 0, destw, desth), new Rectangle(0, 0, sourw, sourh), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = sourh / desth;
+                            }
+                            else { smap = sour; }
+                            if (sourh < desth)
+                            {
+                                dmap = new Bitmap(sourw, sourh);
+                                Graphics g = Graphics.FromImage(dmap);
+                                g.DrawImage(dest, new Rectangle(0, 0, sourw, sourh), new Rectangle(0, 0, destw, desth), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = desth / sourh;
+                            }
+                            else { dmap = dest; }
+
+                            desth = dmap.Height;
+                            destw = dmap.Width;
+                            int cmpcol = (int)((double)config.Col / sourw * destw);
+
+                            //List<long> errlist = new List<long>();
+                            int permitcnterr = desth / 10 + (int)(rate * 10);
+                            int permiterr = 10;
+                            int cnterr = 0;
+
+                            for (int y = 0; y < desth; ++y)
+                            {
+                                Color sc = smap.GetPixel(cmpcol, y);
+                                Color dc = dmap.GetPixel(cmpcol, y);
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
+
+                                int ierr = (sgray - dgray) / 3;
+                                //errlist.Add(ierr);
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            if (sourh > desth) { smap.Dispose(); }
+                            if (sourh < desth) { dmap.Dispose(); }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+
+                        #region 逆时针旋转 180 度
+
+                        desth = dest.Height;
+                        destw = dest.Width;
+
+                        if (h2w * destw - desth < 3 && desth - h2w * destw < 3)
+                        {
+                            Bitmap smap, dmap;
+                            double rate = 0;
+                            if (sourh > desth)
+                            {
+                                smap = new Bitmap(destw, desth);
+                                Graphics g = Graphics.FromImage(smap);
+                                g.DrawImage(sour, new Rectangle(0, 0, destw, desth), new Rectangle(0, 0, sourw, sourh), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = sourh / desth;
+                            }
+                            else { smap = sour; }
+                            if (sourh < desth)
+                            {
+                                dmap = new Bitmap(sourw, sourh);
+                                Graphics g = Graphics.FromImage(dmap);
+                                g.DrawImage(dest, new Rectangle(0, 0, sourw, sourh), new Rectangle(0, 0, destw, desth), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = desth / sourh;
+                            }
+                            else { dmap = dest; }
+
+                            desth = dmap.Height;
+                            destw = dmap.Width;
+                            int scol = (int)((double)config.Col / sourw * destw);
+                            int dcol = destw - 1 - scol;
+
+                            //List<long> errlist = new List<long>();
+                            int permitcnterr = desth / 10 + (int)(rate * 10);
+                            int permiterr = 10;
+                            int cnterr = 0;
+
+                            for (int y = 0; y < desth; ++y)
+                            {
+                                Color sc = smap.GetPixel(scol, y);
+                                Color dc = dmap.GetPixel(dcol, desth - 1 - y);
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
+
+                                int ierr = (sgray - dgray) / 3;
+                                //errlist.Add(ierr);
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            if (sourh > desth) { smap.Dispose(); }
+                            if (sourh < desth) { dmap.Dispose(); }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+
+                        #region 逆时针旋转90度
+
+                        desth = dest.Height;
+                        destw = dest.Width;
+
+                        if (h2w * desth - destw < 3 && destw - h2w * desth < 3)
+                        {
+                            Bitmap smap, dmap;
+                            double rate = 0;
+                            if (sourh > destw)
+                            {
+                                smap = new Bitmap(desth, destw);
+                                Graphics g = Graphics.FromImage(smap);
+                                g.DrawImage(sour, new Rectangle(0, 0, desth, destw), new Rectangle(0, 0, sourw, sourh), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = sourh / destw;
+                            }
+                            else { smap = sour; }
+                            if (sourh < destw)
+                            {
+                                dmap = new Bitmap(sourh, sourw);
+                                Graphics g = Graphics.FromImage(dmap);
+                                g.DrawImage(dest, new Rectangle(0, 0, sourh, sourw), new Rectangle(0, 0, destw, desth), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = desth / sourw;
+                            }
+                            else { dmap = dest; }
+
+                            desth = dmap.Height;
+                            destw = dmap.Width;
+                            int scol = (int)((double)config.Col / sourw * desth);
+                            int dcol = desth - 1 - scol;
+
+                            //List<long> errlist = new List<long>();
+                            int permitcnterr = destw / 10 + (int)(rate * 10);
+                            int permiterr = 10;
+                            int cnterr = 0;
+
+                            for (int y = 0; y < destw; ++y)
+                            {
+                                Color sc = smap.GetPixel(scol, y);
+                                Color dc = dmap.GetPixel(y, dcol);
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
+
+                                int ierr = (sgray - dgray) / 3;
+                                //errlist.Add(ierr);
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            if (sourh > destw) { smap.Dispose(); }
+                            if (sourh < destw) { dmap.Dispose(); }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+
+                        #region 逆时针旋转 270 度
+
+                        desth = dest.Height;
+                        destw = dest.Width;
+
+                        if (h2w * desth - destw < 3 && destw - h2w * desth < 3)
+                        {
+                            Bitmap smap, dmap;
+                            double rate = 0;
+                            if (sourh > destw)
+                            {
+                                smap = new Bitmap(desth, destw);
+                                Graphics g = Graphics.FromImage(smap);
+                                g.DrawImage(sour, new Rectangle(0, 0, desth, destw), new Rectangle(0, 0, sourw, sourh), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = sourh / destw;
+                            }
+                            else { smap = sour; }
+                            if (sourh < destw)
+                            {
+                                dmap = new Bitmap(sourh, sourw);
+                                Graphics g = Graphics.FromImage(dmap);
+                                g.DrawImage(dest, new Rectangle(0, 0, sourh, sourw), new Rectangle(0, 0, destw, desth), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = desth / sourw;
+                            }
+                            else { dmap = dest; }
+
+                            desth = dmap.Height;
+                            destw = dmap.Width;
+                            int scol = (int)((double)config.Col / sourw * desth);
+                            int dcol = scol;
+
+                            //List<long> errlist = new List<long>();
+                            int permitcnterr = destw / 10 + (int)(rate * 10);
+                            int permiterr = 10;
+                            int cnterr = 0;
+
+                            for (int y = 0; y < destw; ++y)
+                            {
+                                Color sc = smap.GetPixel(scol, y);
+                                Color dc = dmap.GetPixel(destw - 1 - y, dcol);
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
+
+                                int ierr = (sgray - dgray) / 3;
+                                //errlist.Add(ierr);
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            if (sourh > destw) { smap.Dispose(); }
+                            if (sourh < destw) { dmap.Dispose(); }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+                    }
+
+                    #endregion
+
+                    #region PATR LIKE NO_TURN
+
+                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    {
+
+                    }
+
+                    #endregion
+
+                    #region PART LIKE TURN
+
+                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    {
+
+                    }
+
+                    #endregion
                 }
+
+                #endregion
+
+                End:
+                lock (config.Lock) { if (found) { config.Results.Add(i); } config.CountFiles++; }
                 dest.Dispose();
             }
 
             Threads[1].finish = true;
-            //if (Threads[0].finish && Threads[1].finish && Threads[2].finish && Threads[3].finish)
-            //{ config.TimeED = config.Time; }
         }
         private void TH_CMP3()
         {
-            int bg = Threads[2].begin, ed = Threads[2].end;
-            string path;
-            string name;
-            bool IsSame;
-            Image dest;
+            Bitmap sour = Threads[2].sour;
+            Bitmap dest;
+            int sourh = sour.Height, sourw = sour.Width;
+            int desth = 0, destw = 0;
+            bool found = false;
 
-            for (int i = bg - 1; i < ed; i++)
+            for (int i = Threads[2].begin - 1; i < Threads[2].end; ++i)
             {
-                path = Paths[i];
-                name = Names[i];
+                #region 初始化变量
 
-                dest = Image.FromFile(path + "\\" + name);
+                dest = (Bitmap)Image.FromFile(Paths[i] + "\\" + Names[i]);
+                desth = dest.Height;
+                destw = dest.Width;
+                found = false;
 
-                #region 比较两幅图片
+                #endregion
 
-                IsSame = false;
+                #region 行比较
 
-                if (config.IsRow && dest.Width > config.MinCmpPix + 20)
+                if (config.Row != -1)
                 {
-                    for (int j = 10; j < dest.Height - 10; j += 1)
+                    #region FULL SAME NO_TURN
+
+                    if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) == 0))
                     {
-                        double err = CmpRow((Bitmap)dest, j);
-                        if (err < 3) { IsSame = true; break; }
+                        if (sourh != desth || sourw != destw) { goto End; }
+
+                        double pace = (double)sourw / config.MinCmpPix;
+                        int permitcnterr = config.MinCmpPix / 10;
+                        int permiterr = 10;
+                        int cnterr = 0;
+                        double x = 0;
+                        int cnt = 0;
+                        int len = config.Grays.Length;
+
+                        for (; cnt < len; x += pace, ++cnt)
+                        {
+                            Color dc = dest.GetPixel((int)x, config.Row);
+                            int sgray = config.Grays[cnt];
+                            int dgray = (dc.R + dc.G + dc.B) / 3;
+
+                            int ierr = sgray - dgray;
+                            if (ierr < 0) { ierr = -ierr; }
+                            if (ierr > permiterr) { ++cnterr; }
+                            if (cnterr > permitcnterr) { break; }
+                        }
+
+                        found = cnterr <= permitcnterr;
                     }
-                }
-                if (!config.IsRow && dest.Height > config.MinCmpPix + 20)
-                {
-                    for (int j = 10; j < dest.Width - 10; j += 1)
+
+                    #endregion
+
+                    #region FULL SAME TURN
+
+                    else if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) != 0))
                     {
-                        double err = CmpCol((Bitmap)dest, j);
-                        if (err < 3) { IsSame = true; break; }
+                        #region 原样
+
+                        if (sourh == desth && sourw == destw)
+                        {
+                            double pace = (double)sourw / config.MinCmpPix;
+                            int permitcnterr = config.MinCmpPix / 10;
+                            int permiterr = 10;
+                            int cnterr = 0;
+                            double x = 0;
+                            int cnt = 0;
+                            int len = config.Grays.Length;
+
+                            for (; cnt < len; x += pace, ++cnt)
+                            {
+                                Color dc = dest.GetPixel((int)x, config.Row);
+                                int sgray = config.Grays[cnt];
+                                int dgray = (dc.R + dc.G + dc.B) / 3;
+
+                                int ierr = sgray - dgray;
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+
+                        #region 逆时针旋转 180 度
+
+                        if (sourh == desth && sourw == destw)
+                        {
+                            double pace = (double)sourw / config.MinCmpPix;
+                            int cmprow = sourh - 1 - config.Row;
+                            int permitcnterr = config.MinCmpPix / 10;
+                            int permiterr = 10;
+                            int cnterr = 0;
+                            double x = 0;
+                            int cnt = 0;
+                            int len = config.Grays.Length;
+
+                            for (; cnt < len; x += pace, ++cnt)
+                            {
+                                Color dc = dest.GetPixel(sourw - 1 - (int)x, cmprow);
+                                int sgray = config.Grays[cnt];
+                                int dgray = (dc.R + dc.G + dc.B) / 3;
+
+                                int ierr = sgray - dgray;
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+
+                        #region 逆时针旋转90度
+
+                        if (sourh == destw && sourw == desth)
+                        {
+                            double pace = (double)sourw / config.MinCmpPix;
+                            int permitcnterr = config.MinCmpPix / 10;
+                            int permiterr = 10;
+                            int cnterr = 0;
+                            double y = 0;
+                            int cnt = 0;
+                            int len = config.Grays.Length;
+
+                            for (; cnt < len; y += pace, ++cnt)
+                            {
+                                Color dc = dest.GetPixel(config.Row, sourw - 1 - (int)y);
+                                int sgray = config.Grays[cnt];
+                                int dgray = (dc.R + dc.G + dc.B) / 3;
+
+                                int ierr = sgray - dgray;
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+
+                        #region 逆时针旋转 270 度
+
+                        if (sourh == destw && sourw == desth)
+                        {
+                            double pace = (double)sourw / config.MinCmpPix;
+                            int cmprow = sourh - 1 - config.Row;
+                            int permitcnterr = config.MinCmpPix / 10;
+                            int permiterr = 10;
+                            int cnterr = 0;
+                            double y = 0;
+                            int cnt = 0;
+                            int len = config.Grays.Length;
+
+                            for (; cnt < len; y += pace, ++cnt)
+                            {
+                                Color dc = dest.GetPixel(cmprow, (int)y);
+                                int sgray = config.Grays[cnt];
+                                int dgray = (dc.R + dc.G + dc.B) / 3;
+
+                                int ierr = sgray - dgray;
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
                     }
+
+                    #endregion
+
+                    #region FULL LIKE NO_TURN
+
+                    else if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    {
+
+                    }
+
+                    #endregion
+
+                    #region FULL LIKE TURN
+
+                    else if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    {
+
+                    }
+
+                    #endregion
+
+                    #region PART SAME NO_TURN
+
+                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    {
+                        // 比例相同
+                        double h2w = (double)sourh / sourw;
+                        int err = (int)(h2w * destw) - desth; if (err < 0) { err = -err; }
+                        if (err > 3) { goto End; }
+
+                        // 缩放
+                        Bitmap smap, dmap;
+                        double rate = 0;
+                        if (sourh > desth)
+                        {
+                            smap = new Bitmap(destw, desth);
+                            Graphics g = Graphics.FromImage(smap);
+                            g.DrawImage(sour, new Rectangle(0, 0, destw, desth), new Rectangle(0, 0, sourw, sourh), GraphicsUnit.Pixel);
+                            g.Dispose();
+
+                            rate = sourh / desth;
+                        }
+                        else { smap = sour; }
+                        if (sourh < desth)
+                        {
+                            dmap = new Bitmap(sourw, sourh);
+                            Graphics g = Graphics.FromImage(dmap);
+                            g.DrawImage(dest, new Rectangle(0, 0, sourw, sourh), new Rectangle(0, 0, destw, desth), GraphicsUnit.Pixel);
+                            g.Dispose();
+
+                            rate = desth / sourh;
+                        }
+                        else { dmap = dest; }
+
+                        desth = dmap.Height;
+                        destw = dmap.Width;
+                        int cmprow = (int)((double)config.Row / sourh * desth);
+
+                        //List<long> errlist = new List<long>();
+                        int permitcnterr = destw / 10 + (int)(rate * 10);
+                        int permiterr = 10;
+                        int cnterr = 0;
+
+                        for (int x = 0; x < destw; ++x)
+                        {
+                            Color sc = smap.GetPixel(x, cmprow);
+                            Color dc = dmap.GetPixel(x, cmprow);
+                            int sgray = sc.R + sc.G + sc.B;
+                            int dgray = dc.R + dc.G + dc.B;
+
+                            int ierr = (sgray - dgray) / 3;
+                            //errlist.Add(ierr);
+                            if (ierr < 0) { ierr = -ierr; }
+                            if (ierr > permiterr) { ++cnterr; }
+                            if (cnterr > permitcnterr) { break; }
+                        }
+
+                        found = cnterr <= permitcnterr;
+                        if (sourh > desth) { smap.Dispose(); }
+                        if (sourh < desth) { dmap.Dispose(); }
+                    }
+
+                    #endregion
+
+                    #region PART SAME TURN
+
+                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    {
+                        double h2w = (double)sourh / sourw;
+
+                        #region 原样
+
+                        desth = dest.Height;
+                        destw = dest.Width;
+
+                        if (h2w * destw - desth < 3 && desth - h2w * destw < 3)
+                        {
+                            Bitmap smap, dmap;
+                            double rate = 0;
+                            if (sourh > desth)
+                            {
+                                smap = new Bitmap(destw, desth);
+                                Graphics g = Graphics.FromImage(smap);
+                                g.DrawImage(sour, new Rectangle(0, 0, destw, desth), new Rectangle(0, 0, sourw, sourh), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = sourh / desth;
+                            }
+                            else { smap = sour; }
+                            if (sourh < desth)
+                            {
+                                dmap = new Bitmap(sourw, sourh);
+                                Graphics g = Graphics.FromImage(dmap);
+                                g.DrawImage(dest, new Rectangle(0, 0, sourw, sourh), new Rectangle(0, 0, destw, desth), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = desth / sourh;
+                            }
+                            else { dmap = dest; }
+
+                            desth = dmap.Height;
+                            destw = dmap.Width;
+                            int cmprow = (int)((double)config.Row / sourh * desth);
+
+                            //List<long> errlist = new List<long>();
+                            int permitcnterr = destw / 10 + (int)(rate * 10);
+                            int permiterr = 10;
+                            int cnterr = 0;
+
+                            for (int x = 0; x < destw; ++x)
+                            {
+                                Color sc = smap.GetPixel(x, cmprow);
+                                Color dc = dmap.GetPixel(x, cmprow);
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
+
+                                int ierr = (sgray - dgray) / 3;
+                                //errlist.Add(ierr);
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            if (sourh > desth) { smap.Dispose(); }
+                            if (sourh < desth) { dmap.Dispose(); }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+
+                        #region 逆时针旋转 180 度
+
+                        desth = dest.Height;
+                        destw = dest.Width;
+
+                        if (h2w * destw - desth < 3 && desth - h2w * destw < 3)
+                        {
+                            Bitmap smap, dmap;
+                            double rate = 0;
+                            if (sourh > desth)
+                            {
+                                smap = new Bitmap(destw, desth);
+                                Graphics g = Graphics.FromImage(smap);
+                                g.DrawImage(sour, new Rectangle(0, 0, destw, desth), new Rectangle(0, 0, sourw, sourh), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = sourh / desth;
+                            }
+                            else { smap = sour; }
+                            if (sourh < desth)
+                            {
+                                dmap = new Bitmap(sourw, sourh);
+                                Graphics g = Graphics.FromImage(dmap);
+                                g.DrawImage(dest, new Rectangle(0, 0, sourw, sourh), new Rectangle(0, 0, destw, desth), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = desth / sourh;
+                            }
+                            else { dmap = dest; }
+
+                            desth = dmap.Height;
+                            destw = dmap.Width;
+                            int srow = (int)((double)config.Row / sourh * desth);
+                            int drow = desth - 1 - srow;
+
+                            //List<long> errlist = new List<long>();
+                            int permitcnterr = destw / 10 + (int)(rate * 10);
+                            int permiterr = 10;
+                            int cnterr = 0;
+
+                            for (int x = 0; x < destw; ++x)
+                            {
+                                Color sc = smap.GetPixel(x, srow);
+                                Color dc = dmap.GetPixel(destw - 1 - x, drow);
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
+
+                                int ierr = (sgray - dgray) / 3;
+                                //errlist.Add(ierr);
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            if (sourh > desth) { smap.Dispose(); }
+                            if (sourh < desth) { dmap.Dispose(); }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+
+                        #region 逆时针旋转90度
+
+                        desth = dest.Height;
+                        destw = dest.Width;
+
+                        if (h2w * desth - destw < 3 && destw - h2w * desth < 3)
+                        {
+                            Bitmap smap, dmap;
+                            double rate = 0;
+                            if (sourh > destw)
+                            {
+                                smap = new Bitmap(desth, destw);
+                                Graphics g = Graphics.FromImage(smap);
+                                g.DrawImage(sour, new Rectangle(0, 0, desth, destw), new Rectangle(0, 0, sourw, sourh), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = sourh / destw;
+                            }
+                            else { smap = sour; }
+                            if (sourh < destw)
+                            {
+                                dmap = new Bitmap(sourh, sourw);
+                                Graphics g = Graphics.FromImage(dmap);
+                                g.DrawImage(dest, new Rectangle(0, 0, sourh, sourw), new Rectangle(0, 0, destw, desth), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = desth / sourw;
+                            }
+                            else { dmap = dest; }
+
+                            desth = dmap.Height;
+                            destw = dmap.Width;
+                            int srow = (int)((double)config.Row / sourh * destw);
+                            int drow = srow;
+
+                            //List<long> errlist = new List<long>();
+                            int permitcnterr = desth / 10 + (int)(rate * 10);
+                            int permiterr = 10;
+                            int cnterr = 0;
+
+                            for (int y = 0; y < desth; ++y)
+                            {
+                                Color sc = smap.GetPixel(y, srow);
+                                Color dc = dmap.GetPixel(drow, desth - 1 - y);
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
+
+                                int ierr = (sgray - dgray) / 3;
+                                //errlist.Add(ierr);
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            if (sourh > destw) { smap.Dispose(); }
+                            if (sourh < destw) { dmap.Dispose(); }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+
+                        #region 逆时针旋转 270 度
+
+                        desth = dest.Height;
+                        destw = dest.Width;
+
+                        if (h2w * desth - destw < 3 && destw - h2w * desth < 3)
+                        {
+                            Bitmap smap, dmap;
+                            double rate = 0;
+                            if (sourh > destw)
+                            {
+                                smap = new Bitmap(desth, destw);
+                                Graphics g = Graphics.FromImage(smap);
+                                g.DrawImage(sour, new Rectangle(0, 0, desth, destw), new Rectangle(0, 0, sourw, sourh), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = sourh / destw;
+                            }
+                            else { smap = sour; }
+                            if (sourh < destw)
+                            {
+                                dmap = new Bitmap(sourh, sourw);
+                                Graphics g = Graphics.FromImage(dmap);
+                                g.DrawImage(dest, new Rectangle(0, 0, sourh, sourw), new Rectangle(0, 0, destw, desth), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = desth / sourw;
+                            }
+                            else { dmap = dest; }
+
+                            desth = dmap.Height;
+                            destw = dmap.Width;
+                            int srow = (int)((double)config.Row / sourh * destw);
+                            int drow = destw - 1 - srow;
+
+                            //List<long> errlist = new List<long>();
+                            int permitcnterr = desth / 10 + (int)(rate * 10);
+                            int permiterr = 10;
+                            int cnterr = 0;
+
+                            for (int y = 0; y < desth; ++y)
+                            {
+                                Color sc = smap.GetPixel(y, srow);
+                                Color dc = dmap.GetPixel(drow, y);
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
+
+                                int ierr = (sgray - dgray) / 3;
+                                //errlist.Add(ierr);
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            if (sourh > destw) { smap.Dispose(); }
+                            if (sourh < destw) { dmap.Dispose(); }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+                    }
+
+                    #endregion
+
+                    #region PATR LIKE NO_TURN
+
+                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    {
+
+                    }
+
+                    #endregion
+
+                    #region PART LIKE TURN
+
+                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    {
+
+                    }
+
+                    #endregion
                 }
 
                 #endregion
 
-                if (IsSame)
+                #region 列比较
+
+                if (config.Col != -1)
                 {
-                    Threads[0].result.Add(i);
-                    int total = 0;
-                    lock (config.Lock) { config.Results.Add(i); total = config.Results.Count; }
+                    #region FULL SAME NO_TURN
+
+                    if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    {
+                        if (sourh != desth || sourw != destw) { goto End; }
+
+                        double pace = (double)sourh / config.MinCmpPix;
+                        int permitcnterr = config.MinCmpPix / 10;
+                        int permiterr = 10;
+                        int cnterr = 0;
+                        double y = 0;
+                        int cnt = 0;
+                        int len = config.Grays.Length;
+
+                        for (; cnt < len; y += pace, ++cnt)
+                        {
+                            Color dc = dest.GetPixel(config.Col, (int)y);
+                            int sgray = config.Grays[cnt];
+                            int dgray = (dc.R + dc.G + dc.B) / 3;
+
+                            int ierr = sgray - dgray;
+                            if (ierr < 0) { ierr = -ierr; }
+                            if (ierr > permiterr) { ++cnterr; }
+                            if (cnterr > permitcnterr) { break; }
+                        }
+
+                        found = cnterr <= permitcnterr;
+                    }
+
+                    #endregion
+
+                    #region FULL SAME TURN
+
+                    else if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    {
+                        #region 原样
+
+                        if (sourh == desth && sourw == destw)
+                        {
+                            double pace = (double)sourh / config.MinCmpPix;
+                            int permitcnterr = config.MinCmpPix / 10;
+                            int permiterr = 10;
+                            int cnterr = 0;
+                            double y = 0;
+                            int cnt = 0;
+                            int len = config.Grays.Length;
+
+                            for (; cnt < len; y += pace, ++cnt)
+                            {
+                                Color dc = dest.GetPixel(config.Col, (int)y);
+                                int sgray = config.Grays[cnt];
+                                int dgray = (dc.R + dc.G + dc.B) / 3;
+
+                                int ierr = sgray - dgray;
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+
+                        #region 逆时针旋转 180 度
+
+                        if (sourh == desth && sourw == destw)
+                        {
+                            double pace = (double)sourh / config.MinCmpPix;
+                            int cmpcol = sourw - config.Col - 1;
+                            int permitcnterr = config.MinCmpPix / 10;
+                            int permiterr = 10;
+                            int cnterr = 0;
+                            double y = 0;
+                            int cnt = 0;
+                            int len = config.Grays.Length;
+
+                            for (; cnt < len; y += pace, ++cnt)
+                            {
+                                Color dc = dest.GetPixel(cmpcol, sourh - 1 - (int)y);
+                                int sgray = config.Grays[cnt];
+                                int dgray = (dc.R + dc.G + dc.B) / 3;
+
+                                int ierr = sgray - dgray;
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+
+                        #region 逆时针旋转90度
+
+                        if (sourh == destw && sourw == desth)
+                        {
+                            double pace = (double)sourh / config.MinCmpPix;
+                            int cmpcol = sourw - config.Col - 1;
+                            int permitcnterr = config.MinCmpPix / 10;
+                            int permiterr = 10;
+                            int cnterr = 0;
+                            double x = 0;
+                            int cnt = 0;
+                            int len = config.Grays.Length;
+
+                            for (; cnt < len; x += pace, ++cnt)
+                            {
+                                Color dc = dest.GetPixel((int)x, cmpcol);
+                                int sgray = config.Grays[cnt];
+                                int dgray = (dc.R + dc.G + dc.B) / 3;
+
+                                int ierr = sgray - dgray;
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+
+                        #region 逆时针旋转 270 度
+
+                        if (sourh == destw && sourw == desth)
+                        {
+                            double pace = (double)sourh / config.MinCmpPix;
+                            int permitcnterr = config.MinCmpPix / 10;
+                            int permiterr = 10;
+                            int cnterr = 0;
+                            double x = 0;
+                            int cnt = 0;
+                            int len = config.Grays.Length;
+
+                            for (; cnt < len; x += pace, ++cnt)
+                            {
+                                Color dc = dest.GetPixel(sourh - 1 - (int)x, config.Col);
+                                int sgray = config.Grays[cnt];
+                                int dgray = (dc.R + dc.G + dc.B) / 3;
+
+                                int ierr = sgray - dgray;
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+                    }
+
+                    #endregion
+
+                    #region FULL LIKE NO_TURN
+
+                    else if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    {
+
+                    }
+
+                    #endregion
+
+                    #region FULL LIKE TURN
+
+                    else if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    {
+
+                    }
+
+                    #endregion
+
+                    #region PART SAME NO_TURN
+
+                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    {
+                        // 比例相同
+                        double h2w = (double)sourh / sourw;
+                        int err = (int)(h2w * destw) - desth; if (err < 0) { err = -err; }
+                        if (err > 3) { goto End; }
+
+                        // 缩放
+                        Bitmap smap, dmap;
+                        double rate = 0;
+                        if (sourh > desth)
+                        {
+                            smap = new Bitmap(destw, desth);
+                            Graphics g = Graphics.FromImage(smap);
+                            g.DrawImage(sour, new Rectangle(0, 0, destw, desth), new Rectangle(0, 0, sourw, sourh), GraphicsUnit.Pixel);
+                            g.Dispose();
+
+                            rate = sourh / desth;
+                        }
+                        else { smap = sour; }
+                        if (sourh < desth)
+                        {
+                            dmap = new Bitmap(sourw, sourh);
+                            Graphics g = Graphics.FromImage(dmap);
+                            g.DrawImage(dest, new Rectangle(0, 0, sourw, sourh), new Rectangle(0, 0, destw, desth), GraphicsUnit.Pixel);
+                            g.Dispose();
+
+                            rate = desth / sourh;
+                        }
+                        else { dmap = dest; }
+
+                        desth = dmap.Height;
+                        destw = dmap.Width;
+                        int cmpcol = (int)((double)config.Col / sourw * destw);
+
+                        //List<long> errlist = new List<long>();
+                        int permitcnterr = desth / 10 + (int)(rate * 10);
+                        int permiterr = 10;
+                        int cnterr = 0;
+
+                        for (int y = 0; y < desth; ++y)
+                        {
+                            Color sc = smap.GetPixel(cmpcol, y);
+                            Color dc = dmap.GetPixel(cmpcol, y);
+                            int sgray = sc.R + sc.G + sc.B;
+                            int dgray = dc.R + dc.G + dc.B;
+
+                            int ierr = (sgray - dgray) / 3;
+                            //errlist.Add(ierr);
+                            if (ierr < 0) { ierr = -ierr; }
+                            if (ierr > permiterr) { ++cnterr; }
+                            if (cnterr > permitcnterr) { break; }
+                        }
+
+                        found = cnterr <= permitcnterr;
+                        if (sourh > desth) { smap.Dispose(); }
+                        if (sourh < desth) { dmap.Dispose(); }
+                    }
+
+                    #endregion
+
+                    #region PART SAME TURN
+
+                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    {
+                        double h2w = (double)sourh / sourw;
+
+                        #region 原样
+
+                        desth = dest.Height;
+                        destw = dest.Width;
+
+                        if (h2w * destw - desth < 3 && desth - h2w * destw < 3)
+                        {
+                            Bitmap smap, dmap;
+                            double rate = 0;
+                            if (sourh > desth)
+                            {
+                                smap = new Bitmap(destw, desth);
+                                Graphics g = Graphics.FromImage(smap);
+                                g.DrawImage(sour, new Rectangle(0, 0, destw, desth), new Rectangle(0, 0, sourw, sourh), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = sourh / desth;
+                            }
+                            else { smap = sour; }
+                            if (sourh < desth)
+                            {
+                                dmap = new Bitmap(sourw, sourh);
+                                Graphics g = Graphics.FromImage(dmap);
+                                g.DrawImage(dest, new Rectangle(0, 0, sourw, sourh), new Rectangle(0, 0, destw, desth), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = desth / sourh;
+                            }
+                            else { dmap = dest; }
+
+                            desth = dmap.Height;
+                            destw = dmap.Width;
+                            int cmpcol = (int)((double)config.Col / sourw * destw);
+
+                            //List<long> errlist = new List<long>();
+                            int permitcnterr = desth / 10 + (int)(rate * 10);
+                            int permiterr = 10;
+                            int cnterr = 0;
+
+                            for (int y = 0; y < desth; ++y)
+                            {
+                                Color sc = smap.GetPixel(cmpcol, y);
+                                Color dc = dmap.GetPixel(cmpcol, y);
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
+
+                                int ierr = (sgray - dgray) / 3;
+                                //errlist.Add(ierr);
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            if (sourh > desth) { smap.Dispose(); }
+                            if (sourh < desth) { dmap.Dispose(); }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+
+                        #region 逆时针旋转 180 度
+
+                        desth = dest.Height;
+                        destw = dest.Width;
+
+                        if (h2w * destw - desth < 3 && desth - h2w * destw < 3)
+                        {
+                            Bitmap smap, dmap;
+                            double rate = 0;
+                            if (sourh > desth)
+                            {
+                                smap = new Bitmap(destw, desth);
+                                Graphics g = Graphics.FromImage(smap);
+                                g.DrawImage(sour, new Rectangle(0, 0, destw, desth), new Rectangle(0, 0, sourw, sourh), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = sourh / desth;
+                            }
+                            else { smap = sour; }
+                            if (sourh < desth)
+                            {
+                                dmap = new Bitmap(sourw, sourh);
+                                Graphics g = Graphics.FromImage(dmap);
+                                g.DrawImage(dest, new Rectangle(0, 0, sourw, sourh), new Rectangle(0, 0, destw, desth), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = desth / sourh;
+                            }
+                            else { dmap = dest; }
+
+                            desth = dmap.Height;
+                            destw = dmap.Width;
+                            int scol = (int)((double)config.Col / sourw * destw);
+                            int dcol = destw - 1 - scol;
+
+                            //List<long> errlist = new List<long>();
+                            int permitcnterr = desth / 10 + (int)(rate * 10);
+                            int permiterr = 10;
+                            int cnterr = 0;
+
+                            for (int y = 0; y < desth; ++y)
+                            {
+                                Color sc = smap.GetPixel(scol, y);
+                                Color dc = dmap.GetPixel(dcol, desth - 1 - y);
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
+
+                                int ierr = (sgray - dgray) / 3;
+                                //errlist.Add(ierr);
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            if (sourh > desth) { smap.Dispose(); }
+                            if (sourh < desth) { dmap.Dispose(); }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+
+                        #region 逆时针旋转90度
+
+                        desth = dest.Height;
+                        destw = dest.Width;
+
+                        if (h2w * desth - destw < 3 && destw - h2w * desth < 3)
+                        {
+                            Bitmap smap, dmap;
+                            double rate = 0;
+                            if (sourh > destw)
+                            {
+                                smap = new Bitmap(desth, destw);
+                                Graphics g = Graphics.FromImage(smap);
+                                g.DrawImage(sour, new Rectangle(0, 0, desth, destw), new Rectangle(0, 0, sourw, sourh), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = sourh / destw;
+                            }
+                            else { smap = sour; }
+                            if (sourh < destw)
+                            {
+                                dmap = new Bitmap(sourh, sourw);
+                                Graphics g = Graphics.FromImage(dmap);
+                                g.DrawImage(dest, new Rectangle(0, 0, sourh, sourw), new Rectangle(0, 0, destw, desth), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = desth / sourw;
+                            }
+                            else { dmap = dest; }
+
+                            desth = dmap.Height;
+                            destw = dmap.Width;
+                            int scol = (int)((double)config.Col / sourw * desth);
+                            int dcol = desth - 1 - scol;
+
+                            //List<long> errlist = new List<long>();
+                            int permitcnterr = destw / 10 + (int)(rate * 10);
+                            int permiterr = 10;
+                            int cnterr = 0;
+
+                            for (int y = 0; y < destw; ++y)
+                            {
+                                Color sc = smap.GetPixel(scol, y);
+                                Color dc = dmap.GetPixel(y, dcol);
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
+
+                                int ierr = (sgray - dgray) / 3;
+                                //errlist.Add(ierr);
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            if (sourh > destw) { smap.Dispose(); }
+                            if (sourh < destw) { dmap.Dispose(); }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+
+                        #region 逆时针旋转 270 度
+
+                        desth = dest.Height;
+                        destw = dest.Width;
+
+                        if (h2w * desth - destw < 3 && destw - h2w * desth < 3)
+                        {
+                            Bitmap smap, dmap;
+                            double rate = 0;
+                            if (sourh > destw)
+                            {
+                                smap = new Bitmap(desth, destw);
+                                Graphics g = Graphics.FromImage(smap);
+                                g.DrawImage(sour, new Rectangle(0, 0, desth, destw), new Rectangle(0, 0, sourw, sourh), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = sourh / destw;
+                            }
+                            else { smap = sour; }
+                            if (sourh < destw)
+                            {
+                                dmap = new Bitmap(sourh, sourw);
+                                Graphics g = Graphics.FromImage(dmap);
+                                g.DrawImage(dest, new Rectangle(0, 0, sourh, sourw), new Rectangle(0, 0, destw, desth), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = desth / sourw;
+                            }
+                            else { dmap = dest; }
+
+                            desth = dmap.Height;
+                            destw = dmap.Width;
+                            int scol = (int)((double)config.Col / sourw * desth);
+                            int dcol = scol;
+
+                            //List<long> errlist = new List<long>();
+                            int permitcnterr = destw / 10 + (int)(rate * 10);
+                            int permiterr = 10;
+                            int cnterr = 0;
+
+                            for (int y = 0; y < destw; ++y)
+                            {
+                                Color sc = smap.GetPixel(scol, y);
+                                Color dc = dmap.GetPixel(destw - 1 - y, dcol);
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
+
+                                int ierr = (sgray - dgray) / 3;
+                                //errlist.Add(ierr);
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            if (sourh > destw) { smap.Dispose(); }
+                            if (sourh < destw) { dmap.Dispose(); }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+                    }
+
+                    #endregion
+
+                    #region PATR LIKE NO_TURN
+
+                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    {
+
+                    }
+
+                    #endregion
+
+                    #region PART LIKE TURN
+
+                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    {
+
+                    }
+
+                    #endregion
                 }
+
+                #endregion
+
+                End:
+                lock (config.Lock) { if (found) { config.Results.Add(i); } config.CountFiles++; }
                 dest.Dispose();
             }
 
             Threads[2].finish = true;
-            //if (Threads[0].finish && Threads[1].finish && Threads[2].finish && Threads[3].finish)
-            //{ config.TimeED = config.Time; }
         }
         private void TH_CMP4()
         {
-            int bg = Threads[3].begin, ed = Threads[3].end;
-            string path;
-            string name;
-            bool IsSame;
-            Image dest;
+            Bitmap sour = Threads[3].sour;
+            Bitmap dest;
+            int sourh = sour.Height, sourw = sour.Width;
+            int desth = 0, destw = 0;
+            bool found = false;
 
-            for (int i = bg - 1; i < ed; i++)
+            for (int i = Threads[3].begin - 1; i < Threads[3].end; ++i)
             {
-                path = Paths[i];
-                name = Names[i];
+                #region 初始化变量
 
-                dest = Image.FromFile(path + "\\" + name);
+                dest = (Bitmap)Image.FromFile(Paths[i] + "\\" + Names[i]);
+                desth = dest.Height;
+                destw = dest.Width;
+                found = false;
 
-                #region 比较两幅图片
+                #endregion
 
-                IsSame = false;
+                #region 行比较
 
-                if (config.IsRow && dest.Width > config.MinCmpPix + 20)
+                if (config.Row != -1)
                 {
-                    for (int j = 10; j < dest.Height - 10; j += 1)
+                    #region FULL SAME NO_TURN
+
+                    if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) == 0))
                     {
-                        double err = CmpRow((Bitmap)dest, j);
-                        if (err < 3) { IsSame = true; break; }
+                        if (sourh != desth || sourw != destw) { goto End; }
+
+                        double pace = (double)sourw / config.MinCmpPix;
+                        int permitcnterr = config.MinCmpPix / 10;
+                        int permiterr = 10;
+                        int cnterr = 0;
+                        double x = 0;
+                        int cnt = 0;
+                        int len = config.Grays.Length;
+
+                        for (; cnt < len; x += pace, ++cnt)
+                        {
+                            Color dc = dest.GetPixel((int)x, config.Row);
+                            int sgray = config.Grays[cnt];
+                            int dgray = (dc.R + dc.G + dc.B) / 3;
+
+                            int ierr = sgray - dgray;
+                            if (ierr < 0) { ierr = -ierr; }
+                            if (ierr > permiterr) { ++cnterr; }
+                            if (cnterr > permitcnterr) { break; }
+                        }
+
+                        found = cnterr <= permitcnterr;
                     }
-                }
-                if (!config.IsRow && dest.Height > config.MinCmpPix + 20)
-                {
-                    for (int j = 10; j < dest.Width - 10; j += 1)
+
+                    #endregion
+
+                    #region FULL SAME TURN
+
+                    else if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) != 0))
                     {
-                        double err = CmpCol((Bitmap)dest, j);
-                        if (err < 3) { IsSame = true; break; }
+                        #region 原样
+
+                        if (sourh == desth && sourw == destw)
+                        {
+                            double pace = (double)sourw / config.MinCmpPix;
+                            int permitcnterr = config.MinCmpPix / 10;
+                            int permiterr = 10;
+                            int cnterr = 0;
+                            double x = 0;
+                            int cnt = 0;
+                            int len = config.Grays.Length;
+
+                            for (; cnt < len; x += pace, ++cnt)
+                            {
+                                Color dc = dest.GetPixel((int)x, config.Row);
+                                int sgray = config.Grays[cnt];
+                                int dgray = (dc.R + dc.G + dc.B) / 3;
+
+                                int ierr = sgray - dgray;
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+
+                        #region 逆时针旋转 180 度
+
+                        if (sourh == desth && sourw == destw)
+                        {
+                            double pace = (double)sourw / config.MinCmpPix;
+                            int cmprow = sourh - 1 - config.Row;
+                            int permitcnterr = config.MinCmpPix / 10;
+                            int permiterr = 10;
+                            int cnterr = 0;
+                            double x = 0;
+                            int cnt = 0;
+                            int len = config.Grays.Length;
+
+                            for (; cnt < len; x += pace, ++cnt)
+                            {
+                                Color dc = dest.GetPixel(sourw - 1 - (int)x, cmprow);
+                                int sgray = config.Grays[cnt];
+                                int dgray = (dc.R + dc.G + dc.B) / 3;
+
+                                int ierr = sgray - dgray;
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+
+                        #region 逆时针旋转90度
+
+                        if (sourh == destw && sourw == desth)
+                        {
+                            double pace = (double)sourw / config.MinCmpPix;
+                            int permitcnterr = config.MinCmpPix / 10;
+                            int permiterr = 10;
+                            int cnterr = 0;
+                            double y = 0;
+                            int cnt = 0;
+                            int len = config.Grays.Length;
+
+                            for (; cnt < len; y += pace, ++cnt)
+                            {
+                                Color dc = dest.GetPixel(config.Row, sourw - 1 - (int)y);
+                                int sgray = config.Grays[cnt];
+                                int dgray = (dc.R + dc.G + dc.B) / 3;
+
+                                int ierr = sgray - dgray;
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+
+                        #region 逆时针旋转 270 度
+
+                        if (sourh == destw && sourw == desth)
+                        {
+                            double pace = (double)sourw / config.MinCmpPix;
+                            int cmprow = sourh - 1 - config.Row;
+                            int permitcnterr = config.MinCmpPix / 10;
+                            int permiterr = 10;
+                            int cnterr = 0;
+                            double y = 0;
+                            int cnt = 0;
+                            int len = config.Grays.Length;
+
+                            for (; cnt < len; y += pace, ++cnt)
+                            {
+                                Color dc = dest.GetPixel(cmprow, (int)y);
+                                int sgray = config.Grays[cnt];
+                                int dgray = (dc.R + dc.G + dc.B) / 3;
+
+                                int ierr = sgray - dgray;
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
                     }
+
+                    #endregion
+
+                    #region FULL LIKE NO_TURN
+
+                    else if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    {
+
+                    }
+
+                    #endregion
+
+                    #region FULL LIKE TURN
+
+                    else if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    {
+
+                    }
+
+                    #endregion
+
+                    #region PART SAME NO_TURN
+
+                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    {
+                        // 比例相同
+                        double h2w = (double)sourh / sourw;
+                        int err = (int)(h2w * destw) - desth; if (err < 0) { err = -err; }
+                        if (err > 3) { goto End; }
+
+                        // 缩放
+                        Bitmap smap, dmap;
+                        double rate = 0;
+                        if (sourh > desth)
+                        {
+                            smap = new Bitmap(destw, desth);
+                            Graphics g = Graphics.FromImage(smap);
+                            g.DrawImage(sour, new Rectangle(0, 0, destw, desth), new Rectangle(0, 0, sourw, sourh), GraphicsUnit.Pixel);
+                            g.Dispose();
+
+                            rate = sourh / desth;
+                        }
+                        else { smap = sour; }
+                        if (sourh < desth)
+                        {
+                            dmap = new Bitmap(sourw, sourh);
+                            Graphics g = Graphics.FromImage(dmap);
+                            g.DrawImage(dest, new Rectangle(0, 0, sourw, sourh), new Rectangle(0, 0, destw, desth), GraphicsUnit.Pixel);
+                            g.Dispose();
+
+                            rate = desth / sourh;
+                        }
+                        else { dmap = dest; }
+
+                        desth = dmap.Height;
+                        destw = dmap.Width;
+                        int cmprow = (int)((double)config.Row / sourh * desth);
+
+                        //List<long> errlist = new List<long>();
+                        int permitcnterr = destw / 10 + (int)(rate * 10);
+                        int permiterr = 10;
+                        int cnterr = 0;
+
+                        for (int x = 0; x < destw; ++x)
+                        {
+                            Color sc = smap.GetPixel(x, cmprow);
+                            Color dc = dmap.GetPixel(x, cmprow);
+                            int sgray = sc.R + sc.G + sc.B;
+                            int dgray = dc.R + dc.G + dc.B;
+
+                            int ierr = (sgray - dgray) / 3;
+                            //errlist.Add(ierr);
+                            if (ierr < 0) { ierr = -ierr; }
+                            if (ierr > permiterr) { ++cnterr; }
+                            if (cnterr > permitcnterr) { break; }
+                        }
+
+                        found = cnterr <= permitcnterr;
+                        if (sourh > desth) { smap.Dispose(); }
+                        if (sourh < desth) { dmap.Dispose(); }
+                    }
+
+                    #endregion
+
+                    #region PART SAME TURN
+
+                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    {
+                        double h2w = (double)sourh / sourw;
+
+                        #region 原样
+
+                        desth = dest.Height;
+                        destw = dest.Width;
+
+                        if (h2w * destw - desth < 3 && desth - h2w * destw < 3)
+                        {
+                            Bitmap smap, dmap;
+                            double rate = 0;
+                            if (sourh > desth)
+                            {
+                                smap = new Bitmap(destw, desth);
+                                Graphics g = Graphics.FromImage(smap);
+                                g.DrawImage(sour, new Rectangle(0, 0, destw, desth), new Rectangle(0, 0, sourw, sourh), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = sourh / desth;
+                            }
+                            else { smap = sour; }
+                            if (sourh < desth)
+                            {
+                                dmap = new Bitmap(sourw, sourh);
+                                Graphics g = Graphics.FromImage(dmap);
+                                g.DrawImage(dest, new Rectangle(0, 0, sourw, sourh), new Rectangle(0, 0, destw, desth), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = desth / sourh;
+                            }
+                            else { dmap = dest; }
+
+                            desth = dmap.Height;
+                            destw = dmap.Width;
+                            int cmprow = (int)((double)config.Row / sourh * desth);
+
+                            //List<long> errlist = new List<long>();
+                            int permitcnterr = destw / 10 + (int)(rate * 10);
+                            int permiterr = 10;
+                            int cnterr = 0;
+
+                            for (int x = 0; x < destw; ++x)
+                            {
+                                Color sc = smap.GetPixel(x, cmprow);
+                                Color dc = dmap.GetPixel(x, cmprow);
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
+
+                                int ierr = (sgray - dgray) / 3;
+                                //errlist.Add(ierr);
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            if (sourh > desth) { smap.Dispose(); }
+                            if (sourh < desth) { dmap.Dispose(); }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+
+                        #region 逆时针旋转 180 度
+
+                        desth = dest.Height;
+                        destw = dest.Width;
+
+                        if (h2w * destw - desth < 3 && desth - h2w * destw < 3)
+                        {
+                            Bitmap smap, dmap;
+                            double rate = 0;
+                            if (sourh > desth)
+                            {
+                                smap = new Bitmap(destw, desth);
+                                Graphics g = Graphics.FromImage(smap);
+                                g.DrawImage(sour, new Rectangle(0, 0, destw, desth), new Rectangle(0, 0, sourw, sourh), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = sourh / desth;
+                            }
+                            else { smap = sour; }
+                            if (sourh < desth)
+                            {
+                                dmap = new Bitmap(sourw, sourh);
+                                Graphics g = Graphics.FromImage(dmap);
+                                g.DrawImage(dest, new Rectangle(0, 0, sourw, sourh), new Rectangle(0, 0, destw, desth), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = desth / sourh;
+                            }
+                            else { dmap = dest; }
+
+                            desth = dmap.Height;
+                            destw = dmap.Width;
+                            int srow = (int)((double)config.Row / sourh * desth);
+                            int drow = desth - 1 - srow;
+
+                            //List<long> errlist = new List<long>();
+                            int permitcnterr = destw / 10 + (int)(rate * 10);
+                            int permiterr = 10;
+                            int cnterr = 0;
+
+                            for (int x = 0; x < destw; ++x)
+                            {
+                                Color sc = smap.GetPixel(x, srow);
+                                Color dc = dmap.GetPixel(destw - 1 - x, drow);
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
+
+                                int ierr = (sgray - dgray) / 3;
+                                //errlist.Add(ierr);
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            if (sourh > desth) { smap.Dispose(); }
+                            if (sourh < desth) { dmap.Dispose(); }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+
+                        #region 逆时针旋转90度
+
+                        desth = dest.Height;
+                        destw = dest.Width;
+
+                        if (h2w * desth - destw < 3 && destw - h2w * desth < 3)
+                        {
+                            Bitmap smap, dmap;
+                            double rate = 0;
+                            if (sourh > destw)
+                            {
+                                smap = new Bitmap(desth, destw);
+                                Graphics g = Graphics.FromImage(smap);
+                                g.DrawImage(sour, new Rectangle(0, 0, desth, destw), new Rectangle(0, 0, sourw, sourh), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = sourh / destw;
+                            }
+                            else { smap = sour; }
+                            if (sourh < destw)
+                            {
+                                dmap = new Bitmap(sourh, sourw);
+                                Graphics g = Graphics.FromImage(dmap);
+                                g.DrawImage(dest, new Rectangle(0, 0, sourh, sourw), new Rectangle(0, 0, destw, desth), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = desth / sourw;
+                            }
+                            else { dmap = dest; }
+
+                            desth = dmap.Height;
+                            destw = dmap.Width;
+                            int srow = (int)((double)config.Row / sourh * destw);
+                            int drow = srow;
+
+                            //List<long> errlist = new List<long>();
+                            int permitcnterr = desth / 10 + (int)(rate * 10);
+                            int permiterr = 10;
+                            int cnterr = 0;
+
+                            for (int y = 0; y < desth; ++y)
+                            {
+                                Color sc = smap.GetPixel(y, srow);
+                                Color dc = dmap.GetPixel(drow, desth - 1 - y);
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
+
+                                int ierr = (sgray - dgray) / 3;
+                                //errlist.Add(ierr);
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            if (sourh > destw) { smap.Dispose(); }
+                            if (sourh < destw) { dmap.Dispose(); }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+
+                        #region 逆时针旋转 270 度
+
+                        desth = dest.Height;
+                        destw = dest.Width;
+
+                        if (h2w * desth - destw < 3 && destw - h2w * desth < 3)
+                        {
+                            Bitmap smap, dmap;
+                            double rate = 0;
+                            if (sourh > destw)
+                            {
+                                smap = new Bitmap(desth, destw);
+                                Graphics g = Graphics.FromImage(smap);
+                                g.DrawImage(sour, new Rectangle(0, 0, desth, destw), new Rectangle(0, 0, sourw, sourh), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = sourh / destw;
+                            }
+                            else { smap = sour; }
+                            if (sourh < destw)
+                            {
+                                dmap = new Bitmap(sourh, sourw);
+                                Graphics g = Graphics.FromImage(dmap);
+                                g.DrawImage(dest, new Rectangle(0, 0, sourh, sourw), new Rectangle(0, 0, destw, desth), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = desth / sourw;
+                            }
+                            else { dmap = dest; }
+
+                            desth = dmap.Height;
+                            destw = dmap.Width;
+                            int srow = (int)((double)config.Row / sourh * destw);
+                            int drow = destw - 1 - srow;
+
+                            //List<long> errlist = new List<long>();
+                            int permitcnterr = desth / 10 + (int)(rate * 10);
+                            int permiterr = 10;
+                            int cnterr = 0;
+
+                            for (int y = 0; y < desth; ++y)
+                            {
+                                Color sc = smap.GetPixel(y, srow);
+                                Color dc = dmap.GetPixel(drow, y);
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
+
+                                int ierr = (sgray - dgray) / 3;
+                                //errlist.Add(ierr);
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            if (sourh > destw) { smap.Dispose(); }
+                            if (sourh < destw) { dmap.Dispose(); }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+                    }
+
+                    #endregion
+
+                    #region PATR LIKE NO_TURN
+
+                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    {
+
+                    }
+
+                    #endregion
+
+                    #region PART LIKE TURN
+
+                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    {
+
+                    }
+
+                    #endregion
                 }
 
                 #endregion
 
-                if (IsSame)
+                #region 列比较
+
+                if (config.Col != -1)
                 {
-                    Threads[0].result.Add(i);
-                    int total = 0;
-                    lock (config.Lock) { config.Results.Add(i); total = config.Results.Count; }
+                    #region FULL SAME NO_TURN
+
+                    if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    {
+                        if (sourh != desth || sourw != destw) { goto End; }
+
+                        double pace = (double)sourh / config.MinCmpPix;
+                        int permitcnterr = config.MinCmpPix / 10;
+                        int permiterr = 10;
+                        int cnterr = 0;
+                        double y = 0;
+                        int cnt = 0;
+                        int len = config.Grays.Length;
+
+                        for (; cnt < len; y += pace, ++cnt)
+                        {
+                            Color dc = dest.GetPixel(config.Col, (int)y);
+                            int sgray = config.Grays[cnt];
+                            int dgray = (dc.R + dc.G + dc.B) / 3;
+
+                            int ierr = sgray - dgray;
+                            if (ierr < 0) { ierr = -ierr; }
+                            if (ierr > permiterr) { ++cnterr; }
+                            if (cnterr > permitcnterr) { break; }
+                        }
+
+                        found = cnterr <= permitcnterr;
+                    }
+
+                    #endregion
+
+                    #region FULL SAME TURN
+
+                    else if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    {
+                        #region 原样
+
+                        if (sourh == desth && sourw == destw)
+                        {
+                            double pace = (double)sourh / config.MinCmpPix;
+                            int permitcnterr = config.MinCmpPix / 10;
+                            int permiterr = 10;
+                            int cnterr = 0;
+                            double y = 0;
+                            int cnt = 0;
+                            int len = config.Grays.Length;
+
+                            for (; cnt < len; y += pace, ++cnt)
+                            {
+                                Color dc = dest.GetPixel(config.Col, (int)y);
+                                int sgray = config.Grays[cnt];
+                                int dgray = (dc.R + dc.G + dc.B) / 3;
+
+                                int ierr = sgray - dgray;
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+
+                        #region 逆时针旋转 180 度
+
+                        if (sourh == desth && sourw == destw)
+                        {
+                            double pace = (double)sourh / config.MinCmpPix;
+                            int cmpcol = sourw - config.Col - 1;
+                            int permitcnterr = config.MinCmpPix / 10;
+                            int permiterr = 10;
+                            int cnterr = 0;
+                            double y = 0;
+                            int cnt = 0;
+                            int len = config.Grays.Length;
+
+                            for (; cnt < len; y += pace, ++cnt)
+                            {
+                                Color dc = dest.GetPixel(cmpcol, sourh - 1 - (int)y);
+                                int sgray = config.Grays[cnt];
+                                int dgray = (dc.R + dc.G + dc.B) / 3;
+
+                                int ierr = sgray - dgray;
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+
+                        #region 逆时针旋转90度
+
+                        if (sourh == destw && sourw == desth)
+                        {
+                            double pace = (double)sourh / config.MinCmpPix;
+                            int cmpcol = sourw - config.Col - 1;
+                            int permitcnterr = config.MinCmpPix / 10;
+                            int permiterr = 10;
+                            int cnterr = 0;
+                            double x = 0;
+                            int cnt = 0;
+                            int len = config.Grays.Length;
+
+                            for (; cnt < len; x += pace, ++cnt)
+                            {
+                                Color dc = dest.GetPixel((int)x, cmpcol);
+                                int sgray = config.Grays[cnt];
+                                int dgray = (dc.R + dc.G + dc.B) / 3;
+
+                                int ierr = sgray - dgray;
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+
+                        #region 逆时针旋转 270 度
+
+                        if (sourh == destw && sourw == desth)
+                        {
+                            double pace = (double)sourh / config.MinCmpPix;
+                            int permitcnterr = config.MinCmpPix / 10;
+                            int permiterr = 10;
+                            int cnterr = 0;
+                            double x = 0;
+                            int cnt = 0;
+                            int len = config.Grays.Length;
+
+                            for (; cnt < len; x += pace, ++cnt)
+                            {
+                                Color dc = dest.GetPixel(sourh - 1 - (int)x, config.Col);
+                                int sgray = config.Grays[cnt];
+                                int dgray = (dc.R + dc.G + dc.B) / 3;
+
+                                int ierr = sgray - dgray;
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+                    }
+
+                    #endregion
+
+                    #region FULL LIKE NO_TURN
+
+                    else if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    {
+
+                    }
+
+                    #endregion
+
+                    #region FULL LIKE TURN
+
+                    else if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    {
+
+                    }
+
+                    #endregion
+
+                    #region PART SAME NO_TURN
+
+                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    {
+                        // 比例相同
+                        double h2w = (double)sourh / sourw;
+                        int err = (int)(h2w * destw) - desth; if (err < 0) { err = -err; }
+                        if (err > 3) { goto End; }
+
+                        // 缩放
+                        Bitmap smap, dmap;
+                        double rate = 0;
+                        if (sourh > desth)
+                        {
+                            smap = new Bitmap(destw, desth);
+                            Graphics g = Graphics.FromImage(smap);
+                            g.DrawImage(sour, new Rectangle(0, 0, destw, desth), new Rectangle(0, 0, sourw, sourh), GraphicsUnit.Pixel);
+                            g.Dispose();
+
+                            rate = sourh / desth;
+                        }
+                        else { smap = sour; }
+                        if (sourh < desth)
+                        {
+                            dmap = new Bitmap(sourw, sourh);
+                            Graphics g = Graphics.FromImage(dmap);
+                            g.DrawImage(dest, new Rectangle(0, 0, sourw, sourh), new Rectangle(0, 0, destw, desth), GraphicsUnit.Pixel);
+                            g.Dispose();
+
+                            rate = desth / sourh;
+                        }
+                        else { dmap = dest; }
+
+                        desth = dmap.Height;
+                        destw = dmap.Width;
+                        int cmpcol = (int)((double)config.Col / sourw * destw);
+
+                        //List<long> errlist = new List<long>();
+                        int permitcnterr = desth / 10 + (int)(rate * 10);
+                        int permiterr = 10;
+                        int cnterr = 0;
+
+                        for (int y = 0; y < desth; ++y)
+                        {
+                            Color sc = smap.GetPixel(cmpcol, y);
+                            Color dc = dmap.GetPixel(cmpcol, y);
+                            int sgray = sc.R + sc.G + sc.B;
+                            int dgray = dc.R + dc.G + dc.B;
+
+                            int ierr = (sgray - dgray) / 3;
+                            //errlist.Add(ierr);
+                            if (ierr < 0) { ierr = -ierr; }
+                            if (ierr > permiterr) { ++cnterr; }
+                            if (cnterr > permitcnterr) { break; }
+                        }
+
+                        found = cnterr <= permitcnterr;
+                        if (sourh > desth) { smap.Dispose(); }
+                        if (sourh < desth) { dmap.Dispose(); }
+                    }
+
+                    #endregion
+
+                    #region PART SAME TURN
+
+                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    {
+                        double h2w = (double)sourh / sourw;
+
+                        #region 原样
+
+                        desth = dest.Height;
+                        destw = dest.Width;
+
+                        if (h2w * destw - desth < 3 && desth - h2w * destw < 3)
+                        {
+                            Bitmap smap, dmap;
+                            double rate = 0;
+                            if (sourh > desth)
+                            {
+                                smap = new Bitmap(destw, desth);
+                                Graphics g = Graphics.FromImage(smap);
+                                g.DrawImage(sour, new Rectangle(0, 0, destw, desth), new Rectangle(0, 0, sourw, sourh), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = sourh / desth;
+                            }
+                            else { smap = sour; }
+                            if (sourh < desth)
+                            {
+                                dmap = new Bitmap(sourw, sourh);
+                                Graphics g = Graphics.FromImage(dmap);
+                                g.DrawImage(dest, new Rectangle(0, 0, sourw, sourh), new Rectangle(0, 0, destw, desth), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = desth / sourh;
+                            }
+                            else { dmap = dest; }
+
+                            desth = dmap.Height;
+                            destw = dmap.Width;
+                            int cmpcol = (int)((double)config.Col / sourw * destw);
+
+                            //List<long> errlist = new List<long>();
+                            int permitcnterr = desth / 10 + (int)(rate * 10);
+                            int permiterr = 10;
+                            int cnterr = 0;
+
+                            for (int y = 0; y < desth; ++y)
+                            {
+                                Color sc = smap.GetPixel(cmpcol, y);
+                                Color dc = dmap.GetPixel(cmpcol, y);
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
+
+                                int ierr = (sgray - dgray) / 3;
+                                //errlist.Add(ierr);
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            if (sourh > desth) { smap.Dispose(); }
+                            if (sourh < desth) { dmap.Dispose(); }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+
+                        #region 逆时针旋转 180 度
+
+                        desth = dest.Height;
+                        destw = dest.Width;
+
+                        if (h2w * destw - desth < 3 && desth - h2w * destw < 3)
+                        {
+                            Bitmap smap, dmap;
+                            double rate = 0;
+                            if (sourh > desth)
+                            {
+                                smap = new Bitmap(destw, desth);
+                                Graphics g = Graphics.FromImage(smap);
+                                g.DrawImage(sour, new Rectangle(0, 0, destw, desth), new Rectangle(0, 0, sourw, sourh), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = sourh / desth;
+                            }
+                            else { smap = sour; }
+                            if (sourh < desth)
+                            {
+                                dmap = new Bitmap(sourw, sourh);
+                                Graphics g = Graphics.FromImage(dmap);
+                                g.DrawImage(dest, new Rectangle(0, 0, sourw, sourh), new Rectangle(0, 0, destw, desth), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = desth / sourh;
+                            }
+                            else { dmap = dest; }
+
+                            desth = dmap.Height;
+                            destw = dmap.Width;
+                            int scol = (int)((double)config.Col / sourw * destw);
+                            int dcol = destw - 1 - scol;
+
+                            //List<long> errlist = new List<long>();
+                            int permitcnterr = desth / 10 + (int)(rate * 10);
+                            int permiterr = 10;
+                            int cnterr = 0;
+
+                            for (int y = 0; y < desth; ++y)
+                            {
+                                Color sc = smap.GetPixel(scol, y);
+                                Color dc = dmap.GetPixel(dcol, desth - 1 - y);
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
+
+                                int ierr = (sgray - dgray) / 3;
+                                //errlist.Add(ierr);
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            if (sourh > desth) { smap.Dispose(); }
+                            if (sourh < desth) { dmap.Dispose(); }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+
+                        #region 逆时针旋转90度
+
+                        desth = dest.Height;
+                        destw = dest.Width;
+
+                        if (h2w * desth - destw < 3 && destw - h2w * desth < 3)
+                        {
+                            Bitmap smap, dmap;
+                            double rate = 0;
+                            if (sourh > destw)
+                            {
+                                smap = new Bitmap(desth, destw);
+                                Graphics g = Graphics.FromImage(smap);
+                                g.DrawImage(sour, new Rectangle(0, 0, desth, destw), new Rectangle(0, 0, sourw, sourh), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = sourh / destw;
+                            }
+                            else { smap = sour; }
+                            if (sourh < destw)
+                            {
+                                dmap = new Bitmap(sourh, sourw);
+                                Graphics g = Graphics.FromImage(dmap);
+                                g.DrawImage(dest, new Rectangle(0, 0, sourh, sourw), new Rectangle(0, 0, destw, desth), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = desth / sourw;
+                            }
+                            else { dmap = dest; }
+
+                            desth = dmap.Height;
+                            destw = dmap.Width;
+                            int scol = (int)((double)config.Col / sourw * desth);
+                            int dcol = desth - 1 - scol;
+
+                            //List<long> errlist = new List<long>();
+                            int permitcnterr = destw / 10 + (int)(rate * 10);
+                            int permiterr = 10;
+                            int cnterr = 0;
+
+                            for (int y = 0; y < destw; ++y)
+                            {
+                                Color sc = smap.GetPixel(scol, y);
+                                Color dc = dmap.GetPixel(y, dcol);
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
+
+                                int ierr = (sgray - dgray) / 3;
+                                //errlist.Add(ierr);
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            if (sourh > destw) { smap.Dispose(); }
+                            if (sourh < destw) { dmap.Dispose(); }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+
+                        #region 逆时针旋转 270 度
+
+                        desth = dest.Height;
+                        destw = dest.Width;
+
+                        if (h2w * desth - destw < 3 && destw - h2w * desth < 3)
+                        {
+                            Bitmap smap, dmap;
+                            double rate = 0;
+                            if (sourh > destw)
+                            {
+                                smap = new Bitmap(desth, destw);
+                                Graphics g = Graphics.FromImage(smap);
+                                g.DrawImage(sour, new Rectangle(0, 0, desth, destw), new Rectangle(0, 0, sourw, sourh), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = sourh / destw;
+                            }
+                            else { smap = sour; }
+                            if (sourh < destw)
+                            {
+                                dmap = new Bitmap(sourh, sourw);
+                                Graphics g = Graphics.FromImage(dmap);
+                                g.DrawImage(dest, new Rectangle(0, 0, sourh, sourw), new Rectangle(0, 0, destw, desth), GraphicsUnit.Pixel);
+                                g.Dispose();
+
+                                rate = desth / sourw;
+                            }
+                            else { dmap = dest; }
+
+                            desth = dmap.Height;
+                            destw = dmap.Width;
+                            int scol = (int)((double)config.Col / sourw * desth);
+                            int dcol = scol;
+
+                            //List<long> errlist = new List<long>();
+                            int permitcnterr = destw / 10 + (int)(rate * 10);
+                            int permiterr = 10;
+                            int cnterr = 0;
+
+                            for (int y = 0; y < destw; ++y)
+                            {
+                                Color sc = smap.GetPixel(scol, y);
+                                Color dc = dmap.GetPixel(destw - 1 - y, dcol);
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
+
+                                int ierr = (sgray - dgray) / 3;
+                                //errlist.Add(ierr);
+                                if (ierr < 0) { ierr = -ierr; }
+                                if (ierr > permiterr) { ++cnterr; }
+                                if (cnterr > permitcnterr) { break; }
+                            }
+
+                            if (sourh > destw) { smap.Dispose(); }
+                            if (sourh < destw) { dmap.Dispose(); }
+
+                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                        }
+
+                        #endregion
+                    }
+
+                    #endregion
+
+                    #region PATR LIKE NO_TURN
+
+                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    {
+
+                    }
+
+                    #endregion
+
+                    #region PART LIKE TURN
+
+                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    {
+
+                    }
+
+                    #endregion
                 }
+
+                #endregion
+
+                End:
+                lock (config.Lock) { if (found) { config.Results.Add(i); } config.CountFiles++; }
                 dest.Dispose();
             }
 
             Threads[3].finish = true;
-            //if (Threads[0].finish && Threads[1].finish && Threads[2].finish && Threads[3].finish)
-            //{ config.TimeED = config.Time; }
-        }
-
-        private double CmpRow(Bitmap pic, int row)
-        {
-            int[] grays = new int[config.MinCmpPix];
-            int len = pic.Width;
-
-            double err = 0;
-            double ierr = 0;
-
-            double pace = (double)len / config.MinCmpPix;
-            int lastPix = config.Grays.Length - 1;
-            int cntBigErr = 0;
-            int cnt = 0;
-            for (double i = 0; i < len; i += pace, cnt++)
-            {
-                if (cnt == lastPix) { break; }
-                int index = (int)i; if (index >= len) { break; }
-                grays[cnt] = ToGray(pic.GetPixel(index, row));
-
-                ierr = Math.Abs(grays[cnt] - config.Grays[cnt]);
-                if (ierr > 10) { cntBigErr++; }
-                if (cntBigErr > 10) { return double.MaxValue; }
-                err += ierr;
-            }
-
-            return err / lastPix;
-        }
-        private double CmpCol(Bitmap pic, int col)
-        {
-            int[] grays = new int[config.MinCmpPix];
-            int len = pic.Height;
-
-            double err = 0;
-            double ierr = 0;
-
-            double pace = (double)len / config.MinCmpPix;
-            int lastPix = config.Grays.Length - 1;
-            int cntBigErr = 0;
-            int cnt = 0;
-            for (double i = 0; i < len; i += pace, cnt++)
-            {
-                if (cnt == lastPix) { break; }
-                int index = (int)i; if (index >= len) { break; }
-                grays[cnt] = ToGray(pic.GetPixel(col, index));
-
-                ierr = Math.Abs(grays[cnt] - config.Grays[cnt]);
-                if (ierr > 10) { cntBigErr++; }
-                if (cntBigErr > 10) { return double.MaxValue; }
-                err += ierr;
-            }
-            
-            return err / lastPix;
         }
     }
 }
