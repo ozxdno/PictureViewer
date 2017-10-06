@@ -53,11 +53,20 @@ namespace PictureViewer
             /// <summary>
             /// 部分相似
             /// </summary>
-            LIKE = 0x0010,
+            LIKE = 0x0008,
             /// <summary>
             /// 经过了旋转和翻转
             /// </summary>
-            TURN = 0x0020
+            TURN = 0x0010,
+
+            FULL_SAME_NOTURN = FULL + SAME,
+            FULL_SAME_TURN = FULL + SAME + TURN,
+            PART_SAME_NOTURN = PART + SAME,
+            PART_SAME_TURN = PART + SAME + TURN,
+            FULL_LIKE_NOTURN = FULL + LIKE,
+            FULL_LIKE_TURN = FULL + LIKE + TURN,
+            PART_LIKE_NOTURN = PART + LIKE,
+            PART_LIKE_TURN = PART + LIKE + TURN
         }
 
         /////////////////////////////////////////////////////////// private attribute //////////////////////////////////////////////////
@@ -113,10 +122,6 @@ namespace PictureViewer
             /// 最小比较元素个数
             /// </summary>
             public int MinCmpPix;
-            /// <summary>
-            /// 待比较的灰度值序列
-            /// </summary>
-            public int[] Grays;
             /// <summary>
             /// Grays 所在行
             /// </summary>
@@ -488,17 +493,17 @@ namespace PictureViewer
 
             config.TimeBG = config.CountTime;
 
-            Threads[0].begin = 1;
-            Threads[0].end = Names.Count;
-            Threads[1].begin = 1;
-            Threads[1].end = 0;
-            Threads[2].begin = 1;
-            Threads[2].end = 0;
-            Threads[3].begin = 1;
-            Threads[3].end = 0;
-            Threads[1].finish = true;
-            Threads[2].finish = true;
-            Threads[3].finish = true;
+            //Threads[0].begin = 1;
+            //Threads[0].end = Names.Count;
+            //Threads[1].begin = 1;
+            //Threads[1].end = 0;
+            //Threads[2].begin = 1;
+            //Threads[2].end = 0;
+            //Threads[3].begin = 1;
+            //Threads[3].end = 0;
+            //Threads[1].finish = true;
+            //Threads[2].finish = true;
+            //Threads[3].finish = true;
 
             Threads[0].thread.Start();
             Threads[1].thread.Start();
@@ -527,12 +532,8 @@ namespace PictureViewer
             config.Name = "Unknow";
 
             config.Lock = new object();
-            if ((config.Mode & MODE.PART) == 0) { config.Mode |= MODE.FULL; }
-            else { config.Mode &= (~MODE.FULL); }
-            if ((config.Mode & MODE.LIKE) == 0) { config.Mode |= MODE.SAME; }
-            else { config.Mode &= (~MODE.SAME); }
+            if (config.Mode == MODE.DEFAULT) { config.Mode = MODE.FULL_SAME_NOTURN; }
             config.MinCmpPix = Math.Min(Math.Max(SourPic.Height, SourPic.Width), 50);
-            config.Grays = new int[config.MinCmpPix];
             config.Row = -1;
             config.Col = -1;
             config.Results = new List<int>();
@@ -601,13 +602,14 @@ namespace PictureViewer
                     }
                 }
             }
-            
+
             #endregion
 
-            #region 填充灰度值
-
-            int H = SourPic.Height, W = SourPic.Width;
-            if (H > W) { GetBestCol(); } else { GetBestRow(); }
+            #region 比较方式
+            
+            //if (SourPic.Height > SourPic.Width) { GetBestCol(); } else { GetBestRow(); }
+            GetBestRow();
+            GetBestCol();
 
             #endregion
         }
@@ -652,8 +654,6 @@ namespace PictureViewer
             }
 
             config.Row = idx;
-            List<int> grays = new List<int>(); GetRowGrays(idx, ref grays);
-            config.Grays = grays.ToArray();
         }
         private void GetBestCol()
         {
@@ -668,8 +668,6 @@ namespace PictureViewer
             }
 
             config.Col = idx;
-            List<int> grays = new List<int>(); GetColGrays(idx, ref grays);
-            config.Grays = grays.ToArray();
         }
         private int GetDiffRow(int row)
         {
@@ -784,6 +782,11 @@ namespace PictureViewer
                 destw = dest.Width;
                 found = false;
 
+                //if (Names[i].Substring(0, 2) == "1%")
+                //{
+                //    int stop = 1; stop++;
+                //}
+
                 #endregion
 
                 #region 行比较
@@ -792,38 +795,38 @@ namespace PictureViewer
                 {
                     #region FULL SAME NO_TURN
 
-                    if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    if (config.Mode == MODE.FULL_SAME_NOTURN)
                     {
-                        if (sourh != desth || sourw != destw) { goto End; }
+                        if (sourh != desth || sourw != destw) { goto END_ROW_CMP; }
                         
                         double pace = (double)sourw / config.MinCmpPix;
                         int permitcnterr = config.MinCmpPix / 10;
                         int permiterr = 10;
                         int cnterr = 0;
                         double x = 0;
-                        int cnt = 0;
-                        int len = config.Grays.Length;
 
-                        for (; cnt < len; x += pace, ++cnt)
+                        for (; x < sourw; x += pace)
                         {
+                            Color sc = sour.GetPixel((int)x, config.Row);
                             Color dc = dest.GetPixel((int)x, config.Row);
-                            int sgray = config.Grays[cnt];
-                            int dgray = (dc.R + dc.G + dc.B) / 3;
+                            int sgray = sc.R + sc.B + sc.B;
+                            int dgray = dc.R + dc.G + dc.B;
 
-                            int ierr = sgray - dgray;
+                            int ierr = (sgray - dgray) / 3;
                             if (ierr < 0) { ierr = -ierr; }
                             if (ierr > permiterr) { ++cnterr; }
                             if (cnterr > permitcnterr) { break; }
                         }
 
                         found = cnterr <= permitcnterr;
+                        if (found) { goto END; } else { goto END_ROW_CMP; }
                     }
-
+                    
                     #endregion
 
                     #region FULL SAME TURN
 
-                    else if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    if (config.Mode == MODE.FULL_SAME_TURN)
                     {
                         #region 原样
 
@@ -834,22 +837,22 @@ namespace PictureViewer
                             int permiterr = 10;
                             int cnterr = 0;
                             double x = 0;
-                            int cnt = 0;
-                            int len = config.Grays.Length;
 
-                            for (; cnt < len; x += pace, ++cnt)
+                            for (; x < sourw; x += pace)
                             {
+                                Color sc = sour.GetPixel((int)x, config.Row);
                                 Color dc = dest.GetPixel((int)x, config.Row);
-                                int sgray = config.Grays[cnt];
-                                int dgray = (dc.R + dc.G + dc.B) / 3;
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
 
-                                int ierr = sgray - dgray;
+                                int ierr = (sgray - dgray) / 3;
                                 if (ierr < 0) { ierr = -ierr; }
                                 if (ierr > permiterr) { ++cnterr; }
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; }
                         }
 
                         #endregion
@@ -864,22 +867,22 @@ namespace PictureViewer
                             int permiterr = 10;
                             int cnterr = 0;
                             double x = 0;
-                            int cnt = 0;
-                            int len = config.Grays.Length;
 
-                            for (; cnt < len; x += pace, ++cnt)
+                            for (; x < sourw; x += pace)
                             {
+                                Color sc = sour.GetPixel((int)x, config.Row);
                                 Color dc = dest.GetPixel(sourw - 1 - (int)x, cmprow);
-                                int sgray = config.Grays[cnt];
-                                int dgray = (dc.R + dc.G + dc.B) / 3;
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
 
-                                int ierr = sgray - dgray;
+                                int ierr = (sgray - dgray) / 3;
                                 if (ierr < 0) { ierr = -ierr; }
                                 if (ierr > permiterr) { ++cnterr; }
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; } else { goto END_ROW_CMP; }
                         }
 
                         #endregion
@@ -893,22 +896,22 @@ namespace PictureViewer
                             int permiterr = 10;
                             int cnterr = 0;
                             double y = 0;
-                            int cnt = 0;
-                            int len = config.Grays.Length;
 
-                            for (; cnt < len; y += pace, ++cnt)
+                            for (; y < sourw; y += pace)
                             {
+                                Color sc = sour.GetPixel((int)y, config.Row);
                                 Color dc = dest.GetPixel(config.Row, sourw - 1 - (int)y);
-                                int sgray = config.Grays[cnt];
-                                int dgray = (dc.R + dc.G + dc.B) / 3;
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
 
-                                int ierr = sgray - dgray;
+                                int ierr = (sgray - dgray) / 3;
                                 if (ierr < 0) { ierr = -ierr; }
                                 if (ierr > permiterr) { ++cnterr; }
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; }
                         }
 
                         #endregion
@@ -923,32 +926,34 @@ namespace PictureViewer
                             int permiterr = 10;
                             int cnterr = 0;
                             double y = 0;
-                            int cnt = 0;
-                            int len = config.Grays.Length;
 
-                            for (; cnt < len; y += pace, ++cnt)
+                            for (; y < sourw; y += pace)
                             {
+                                Color sc = sour.GetPixel((int)y, config.Row);
                                 Color dc = dest.GetPixel(cmprow, (int)y);
-                                int sgray = config.Grays[cnt];
-                                int dgray = (dc.R + dc.G + dc.B) / 3;
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
 
-                                int ierr = sgray - dgray;
+                                int ierr = (sgray - dgray) / 3;
                                 if (ierr < 0) { ierr = -ierr; }
                                 if (ierr > permiterr) { ++cnterr; }
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; } else { goto END_ROW_CMP; }
                         }
 
                         #endregion
+
+                        goto END_ROW_CMP;
                     }
 
                     #endregion
 
                     #region FULL LIKE NO_TURN
 
-                    else if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    if (config.Mode == MODE.FULL_LIKE_NOTURN)
                     {
 
                     }
@@ -957,7 +962,7 @@ namespace PictureViewer
 
                     #region FULL LIKE TURN
 
-                    else if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    if (config.Mode == MODE.FULL_LIKE_TURN)
                     {
 
                     }
@@ -966,14 +971,14 @@ namespace PictureViewer
 
                     #region PART SAME NO_TURN
 
-                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    if (config.Mode == MODE.PART_SAME_NOTURN)
                     {
                         int errparallel = 0;
                         double h2h = 1;
                         if (sourh > desth) { h2h = (double)sourh / desth; errparallel = (int)(sourw / h2h) - destw; }
                         if (sourh < desth) { h2h = (double)desth / sourh; errparallel = (int)(destw / h2h) - sourw; }
                         if (errparallel < 0) { errparallel = -errparallel; }
-                        if (errparallel > 1) { goto End; }
+                        if (errparallel > 1) { goto END_ROW_CMP; }
 
                         Bitmap smap, dmap;
                         double rate = 0;
@@ -1021,16 +1026,17 @@ namespace PictureViewer
                             if (cnterr > permitcnterr) { break; }
                         }
 
-                        found = cnterr <= permitcnterr;
                         if (sourh > desth) { smap.Dispose(); }
                         if (sourh < desth) { dmap.Dispose(); }
+                        found = cnterr <= permitcnterr;
+                        if (found) { goto END; } else { goto END_ROW_CMP; }
                     }
 
                     #endregion
 
                     #region PART SAME TURN
 
-                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    if (config.Mode == MODE.PART_SAME_TURN)
                     {
                         int errparallel = 0, errcross = 0;
                         double h2h = 1;
@@ -1096,7 +1102,8 @@ namespace PictureViewer
                             if (sourh > desth) { smap.Dispose(); }
                             if (sourh < desth) { dmap.Dispose(); }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; }
                         }
 
                         #endregion
@@ -1158,7 +1165,8 @@ namespace PictureViewer
                             if (sourh > desth) { smap.Dispose(); }
                             if (sourh < desth) { dmap.Dispose(); }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; } else { goto END_ROW_CMP; }
                         }
 
                         #endregion
@@ -1220,7 +1228,8 @@ namespace PictureViewer
                             if (sourh > destw) { smap.Dispose(); }
                             if (sourh < destw) { dmap.Dispose(); }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; }
                         }
 
                         #endregion
@@ -1282,17 +1291,20 @@ namespace PictureViewer
                             if (sourh > destw) { smap.Dispose(); }
                             if (sourh < destw) { dmap.Dispose(); }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; } else { goto END_ROW_CMP; }
                         }
 
                         #endregion
+
+                        goto END_ROW_CMP;
                     }
 
                     #endregion
 
                     #region PATR LIKE NO_TURN
 
-                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    if (config.Mode == MODE.PART_LIKE_NOTURN)
                     {
 
                     }
@@ -1301,14 +1313,15 @@ namespace PictureViewer
 
                     #region PART LIKE TURN
 
-                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    if (config.Mode == MODE.PART_LIKE_TURN)
                     {
-
+                        goto END_ROW_CMP;
                     }
 
                     #endregion
                 }
 
+                END_ROW_CMP:
                 #endregion
 
                 #region 列比较
@@ -1317,38 +1330,38 @@ namespace PictureViewer
                 {
                     #region FULL SAME NO_TURN
 
-                    if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    if (config.Mode == MODE.FULL_SAME_NOTURN)
                     {
-                        if (sourh != desth || sourw != destw) { goto End; }
+                        if (sourh != desth || sourw != destw) { goto END_COL_CMP; }
 
                         double pace = (double)sourh / config.MinCmpPix;
                         int permitcnterr = config.MinCmpPix / 10;
                         int permiterr = 10;
                         int cnterr = 0;
                         double y = 0;
-                        int cnt = 0;
-                        int len = config.Grays.Length;
 
-                        for (; cnt < len; y += pace, ++cnt)
+                        for (; y < sourh; y += pace)
                         {
+                            Color sc = sour.GetPixel(config.Col, (int)y);
                             Color dc = dest.GetPixel(config.Col, (int)y);
-                            int sgray = config.Grays[cnt];
-                            int dgray = (dc.R + dc.G + dc.B) / 3;
+                            int sgray = sc.R + sc.G + sc.B;
+                            int dgray = dc.R + dc.G + dc.B;
 
-                            int ierr = sgray - dgray;
+                            int ierr = (sgray - dgray) / 3;
                             if (ierr < 0) { ierr = -ierr; }
                             if (ierr > permiterr) { ++cnterr; }
                             if (cnterr > permitcnterr) { break; }
                         }
 
                         found = cnterr <= permitcnterr;
+                        if (found) { goto END; } else { goto END_COL_CMP; }
                     }
 
                     #endregion
 
                     #region FULL SAME TURN
 
-                    else if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    if (config.Mode == MODE.FULL_SAME_TURN)
                     {
                         #region 原样
 
@@ -1359,22 +1372,22 @@ namespace PictureViewer
                             int permiterr = 10;
                             int cnterr = 0;
                             double y = 0;
-                            int cnt = 0;
-                            int len = config.Grays.Length;
 
-                            for (; cnt < len; y += pace, ++cnt)
+                            for (; y < sourh; y += pace)
                             {
+                                Color sc = sour.GetPixel(config.Col, (int)y);
                                 Color dc = dest.GetPixel(config.Col, (int)y);
-                                int sgray = config.Grays[cnt];
-                                int dgray = (dc.R + dc.G + dc.B) / 3;
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
 
-                                int ierr = sgray - dgray;
+                                int ierr = (sgray - dgray) / 3;
                                 if (ierr < 0) { ierr = -ierr; }
                                 if (ierr > permiterr) { ++cnterr; }
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; }
                         }
 
                         #endregion
@@ -1389,22 +1402,22 @@ namespace PictureViewer
                             int permiterr = 10;
                             int cnterr = 0;
                             double y = 0;
-                            int cnt = 0;
-                            int len = config.Grays.Length;
 
-                            for (; cnt < len; y += pace, ++cnt)
+                            for (; y < sourh; y += pace)
                             {
+                                Color sc = sour.GetPixel(config.Col, (int)y);
                                 Color dc = dest.GetPixel(cmpcol, sourh - 1 - (int)y);
-                                int sgray = config.Grays[cnt];
-                                int dgray = (dc.R + dc.G + dc.B) / 3;
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
 
-                                int ierr = sgray - dgray;
+                                int ierr = (sgray - dgray) / 3;
                                 if (ierr < 0) { ierr = -ierr; }
                                 if (ierr > permiterr) { ++cnterr; }
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; } else { goto END_COL_CMP; }
                         }
 
                         #endregion
@@ -1419,22 +1432,22 @@ namespace PictureViewer
                             int permiterr = 10;
                             int cnterr = 0;
                             double x = 0;
-                            int cnt = 0;
-                            int len = config.Grays.Length;
 
-                            for (; cnt < len; x += pace, ++cnt)
+                            for (; x < sourh; x += pace)
                             {
+                                Color sc = sour.GetPixel(config.Col, (int)x);
                                 Color dc = dest.GetPixel((int)x, cmpcol);
-                                int sgray = config.Grays[cnt];
-                                int dgray = (dc.R + dc.G + dc.B) / 3;
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
 
-                                int ierr = sgray - dgray;
+                                int ierr = (sgray - dgray) / 3;
                                 if (ierr < 0) { ierr = -ierr; }
                                 if (ierr > permiterr) { ++cnterr; }
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; }
                         }
 
                         #endregion
@@ -1448,32 +1461,34 @@ namespace PictureViewer
                             int permiterr = 10;
                             int cnterr = 0;
                             double x = 0;
-                            int cnt = 0;
-                            int len = config.Grays.Length;
 
-                            for (; cnt < len; x += pace, ++cnt)
+                            for (; x < sourh; x += pace)
                             {
+                                Color sc = sour.GetPixel(config.Col, (int)x);
                                 Color dc = dest.GetPixel(sourh - 1 - (int)x, config.Col);
-                                int sgray = config.Grays[cnt];
-                                int dgray = (dc.R + dc.G + dc.B) / 3;
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
 
-                                int ierr = sgray - dgray;
+                                int ierr = (sgray - dgray) / 3;
                                 if (ierr < 0) { ierr = -ierr; }
                                 if (ierr > permiterr) { ++cnterr; }
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; } else { goto END_COL_CMP; }
                         }
 
                         #endregion
+
+                        goto END_COL_CMP;
                     }
 
                     #endregion
 
                     #region FULL LIKE NO_TURN
 
-                    else if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    if (config.Mode == MODE.FULL_LIKE_NOTURN)
                     {
 
                     }
@@ -1482,7 +1497,7 @@ namespace PictureViewer
 
                     #region FULL LIKE TURN
 
-                    else if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    if (config.Mode == MODE.FULL_LIKE_TURN)
                     {
 
                     }
@@ -1491,14 +1506,14 @@ namespace PictureViewer
 
                     #region PART SAME NO_TURN
 
-                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    if (config.Mode == MODE.PART_SAME_NOTURN)
                     {
                         int errparallel = 0;
                         double h2h = 1;
                         if (sourh > desth) { h2h = (double)sourh / desth; errparallel = (int)(sourw / h2h) - destw; }
                         if (sourh < desth) { h2h = (double)desth / sourh; errparallel = (int)(destw / h2h) - sourw; }
                         if (errparallel < 0) { errparallel = -errparallel; }
-                        if (errparallel > 1) { goto End; }
+                        if (errparallel > 1) { goto END_COL_CMP; }
 
                         Bitmap smap, dmap;
                         double rate = 0;
@@ -1545,17 +1560,18 @@ namespace PictureViewer
                             if (ierr > permiterr) { ++cnterr; }
                             if (cnterr > permitcnterr) { break; }
                         }
-
-                        found = cnterr <= permitcnterr;
+                        
                         if (sourh > desth) { smap.Dispose(); }
                         if (sourh < desth) { dmap.Dispose(); }
+                        found = cnterr <= permitcnterr;
+                        if (found) { goto END; } else { goto END_COL_CMP; }
                     }
 
                     #endregion
 
                     #region PART SAME TURN
 
-                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    if (config.Mode == MODE.PART_SAME_TURN)
                     {
                         int errparallel = 0, errcross = 0;
                         double h2h = 1;
@@ -1620,7 +1636,8 @@ namespace PictureViewer
                             if (sourh > desth) { smap.Dispose(); }
                             if (sourh < desth) { dmap.Dispose(); }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; }
                         }
 
                         #endregion
@@ -1680,7 +1697,8 @@ namespace PictureViewer
                             if (sourh > desth) { smap.Dispose(); }
                             if (sourh < desth) { dmap.Dispose(); }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; } else { goto END_COL_CMP; }
                         }
 
                         #endregion
@@ -1740,7 +1758,8 @@ namespace PictureViewer
                             if (sourh > destw) { smap.Dispose(); }
                             if (sourh < destw) { dmap.Dispose(); }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; }
                         }
 
                         #endregion
@@ -1800,17 +1819,20 @@ namespace PictureViewer
                             if (sourh > destw) { smap.Dispose(); }
                             if (sourh < destw) { dmap.Dispose(); }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; } else { goto END_COL_CMP; }
                         }
 
                         #endregion
+
+                        goto END_COL_CMP;
                     }
 
                     #endregion
 
                     #region PATR LIKE NO_TURN
 
-                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    if (config.Mode == MODE.PART_LIKE_NOTURN)
                     {
 
                     }
@@ -1819,17 +1841,18 @@ namespace PictureViewer
 
                     #region PART LIKE TURN
 
-                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    if (config.Mode == MODE.PART_LIKE_TURN)
                     {
-
+                        goto END_COL_CMP;
                     }
 
                     #endregion
                 }
 
+                END_COL_CMP:
                 #endregion
 
-                End:
+                END:
                 lock (config.Lock) { if (found) { config.Results.Add(i); } config.CountFiles++; }
                 dest.Dispose();
             }
@@ -1861,38 +1884,38 @@ namespace PictureViewer
                 {
                     #region FULL SAME NO_TURN
 
-                    if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    if (config.Mode == MODE.FULL_SAME_NOTURN)
                     {
-                        if (sourh != desth || sourw != destw) { goto End; }
+                        if (sourh != desth || sourw != destw) { goto END_ROW_CMP; }
 
                         double pace = (double)sourw / config.MinCmpPix;
                         int permitcnterr = config.MinCmpPix / 10;
                         int permiterr = 10;
                         int cnterr = 0;
                         double x = 0;
-                        int cnt = 0;
-                        int len = config.Grays.Length;
 
-                        for (; cnt < len; x += pace, ++cnt)
+                        for (; x < sourw; x += pace)
                         {
+                            Color sc = sour.GetPixel((int)x, config.Row);
                             Color dc = dest.GetPixel((int)x, config.Row);
-                            int sgray = config.Grays[cnt];
-                            int dgray = (dc.R + dc.G + dc.B) / 3;
+                            int sgray = sc.R + sc.B + sc.B;
+                            int dgray = dc.R + dc.G + dc.B;
 
-                            int ierr = sgray - dgray;
+                            int ierr = (sgray - dgray) / 3;
                             if (ierr < 0) { ierr = -ierr; }
                             if (ierr > permiterr) { ++cnterr; }
                             if (cnterr > permitcnterr) { break; }
                         }
 
                         found = cnterr <= permitcnterr;
+                        if (found) { goto END; } else { goto END_ROW_CMP; }
                     }
 
                     #endregion
 
                     #region FULL SAME TURN
 
-                    else if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    if (config.Mode == MODE.FULL_SAME_TURN)
                     {
                         #region 原样
 
@@ -1903,22 +1926,22 @@ namespace PictureViewer
                             int permiterr = 10;
                             int cnterr = 0;
                             double x = 0;
-                            int cnt = 0;
-                            int len = config.Grays.Length;
 
-                            for (; cnt < len; x += pace, ++cnt)
+                            for (; x < sourw; x += pace)
                             {
+                                Color sc = sour.GetPixel((int)x, config.Row);
                                 Color dc = dest.GetPixel((int)x, config.Row);
-                                int sgray = config.Grays[cnt];
-                                int dgray = (dc.R + dc.G + dc.B) / 3;
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
 
-                                int ierr = sgray - dgray;
+                                int ierr = (sgray - dgray) / 3;
                                 if (ierr < 0) { ierr = -ierr; }
                                 if (ierr > permiterr) { ++cnterr; }
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; }
                         }
 
                         #endregion
@@ -1933,22 +1956,22 @@ namespace PictureViewer
                             int permiterr = 10;
                             int cnterr = 0;
                             double x = 0;
-                            int cnt = 0;
-                            int len = config.Grays.Length;
 
-                            for (; cnt < len; x += pace, ++cnt)
+                            for (; x < sourw; x += pace)
                             {
+                                Color sc = sour.GetPixel((int)x, config.Row);
                                 Color dc = dest.GetPixel(sourw - 1 - (int)x, cmprow);
-                                int sgray = config.Grays[cnt];
-                                int dgray = (dc.R + dc.G + dc.B) / 3;
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
 
-                                int ierr = sgray - dgray;
+                                int ierr = (sgray - dgray) / 3;
                                 if (ierr < 0) { ierr = -ierr; }
                                 if (ierr > permiterr) { ++cnterr; }
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; } else { goto END_ROW_CMP; }
                         }
 
                         #endregion
@@ -1962,22 +1985,22 @@ namespace PictureViewer
                             int permiterr = 10;
                             int cnterr = 0;
                             double y = 0;
-                            int cnt = 0;
-                            int len = config.Grays.Length;
 
-                            for (; cnt < len; y += pace, ++cnt)
+                            for (; y < sourw; y += pace)
                             {
+                                Color sc = sour.GetPixel((int)y, config.Row);
                                 Color dc = dest.GetPixel(config.Row, sourw - 1 - (int)y);
-                                int sgray = config.Grays[cnt];
-                                int dgray = (dc.R + dc.G + dc.B) / 3;
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
 
-                                int ierr = sgray - dgray;
+                                int ierr = (sgray - dgray) / 3;
                                 if (ierr < 0) { ierr = -ierr; }
                                 if (ierr > permiterr) { ++cnterr; }
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; }
                         }
 
                         #endregion
@@ -1992,32 +2015,34 @@ namespace PictureViewer
                             int permiterr = 10;
                             int cnterr = 0;
                             double y = 0;
-                            int cnt = 0;
-                            int len = config.Grays.Length;
 
-                            for (; cnt < len; y += pace, ++cnt)
+                            for (; y < sourw; y += pace)
                             {
+                                Color sc = sour.GetPixel((int)y, config.Row);
                                 Color dc = dest.GetPixel(cmprow, (int)y);
-                                int sgray = config.Grays[cnt];
-                                int dgray = (dc.R + dc.G + dc.B) / 3;
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
 
-                                int ierr = sgray - dgray;
+                                int ierr = (sgray - dgray) / 3;
                                 if (ierr < 0) { ierr = -ierr; }
                                 if (ierr > permiterr) { ++cnterr; }
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; } else { goto END_ROW_CMP; }
                         }
 
                         #endregion
+
+                        goto END_ROW_CMP;
                     }
 
                     #endregion
 
                     #region FULL LIKE NO_TURN
 
-                    else if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    if (config.Mode == MODE.FULL_LIKE_NOTURN)
                     {
 
                     }
@@ -2026,7 +2051,7 @@ namespace PictureViewer
 
                     #region FULL LIKE TURN
 
-                    else if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    if (config.Mode == MODE.FULL_LIKE_TURN)
                     {
 
                     }
@@ -2035,14 +2060,15 @@ namespace PictureViewer
 
                     #region PART SAME NO_TURN
 
-                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    if (config.Mode == MODE.PART_SAME_NOTURN)
                     {
-                        // 比例相同
-                        double h2w = (double)sourh / sourw;
-                        int err = (int)(h2w * destw) - desth; if (err < 0) { err = -err; }
-                        if (err > 3) { goto End; }
+                        int errparallel = 0;
+                        double h2h = 1;
+                        if (sourh > desth) { h2h = (double)sourh / desth; errparallel = (int)(sourw / h2h) - destw; }
+                        if (sourh < desth) { h2h = (double)desth / sourh; errparallel = (int)(destw / h2h) - sourw; }
+                        if (errparallel < 0) { errparallel = -errparallel; }
+                        if (errparallel > 1) { goto END_ROW_CMP; }
 
-                        // 缩放
                         Bitmap smap, dmap;
                         double rate = 0;
                         if (sourh > desth)
@@ -2089,25 +2115,32 @@ namespace PictureViewer
                             if (cnterr > permitcnterr) { break; }
                         }
 
-                        found = cnterr <= permitcnterr;
                         if (sourh > desth) { smap.Dispose(); }
                         if (sourh < desth) { dmap.Dispose(); }
+                        found = cnterr <= permitcnterr;
+                        if (found) { goto END; } else { goto END_ROW_CMP; }
                     }
 
                     #endregion
 
                     #region PART SAME TURN
 
-                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    if (config.Mode == MODE.PART_SAME_TURN)
                     {
-                        double h2w = (double)sourh / sourw;
+                        int errparallel = 0, errcross = 0;
+                        double h2h = 1;
+                        if (sourh > desth) { h2h = (double)sourh / desth; errparallel = (int)(sourw / h2h) - destw; }
+                        if (sourh < desth) { h2h = (double)desth / sourh; errparallel = (int)(destw / h2h) - sourw; }
+                        if (sourh > destw) { h2h = (double)sourh / destw; errcross = (int)(sourw / h2h) - desth; }
+                        if (sourh < destw) { h2h = (double)destw / sourh; errcross = (int)(desth / h2h) - sourw; }
+                        if (errparallel < 0) { errparallel = -errparallel; }
+                        if (errcross < 0) { errcross = -errcross; }
 
                         #region 原样
 
                         desth = dest.Height;
                         destw = dest.Width;
-
-                        if (h2w * destw - desth < 3 && desth - h2w * destw < 3)
+                        if (errparallel < 2)
                         {
                             Bitmap smap, dmap;
                             double rate = 0;
@@ -2137,7 +2170,7 @@ namespace PictureViewer
                             int cmprow = (int)((double)config.Row / sourh * desth);
 
                             //List<long> errlist = new List<long>();
-                            int permitcnterr = destw / 10 + (int)(rate * 10);
+                            int permitcnterr = destw > 100 ? destw * 2 / 10 : destw * 4 / 10;
                             int permiterr = 10;
                             int cnterr = 0;
 
@@ -2158,7 +2191,8 @@ namespace PictureViewer
                             if (sourh > desth) { smap.Dispose(); }
                             if (sourh < desth) { dmap.Dispose(); }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; }
                         }
 
                         #endregion
@@ -2168,7 +2202,7 @@ namespace PictureViewer
                         desth = dest.Height;
                         destw = dest.Width;
 
-                        if (h2w * destw - desth < 3 && desth - h2w * destw < 3)
+                        if (errparallel < 2)
                         {
                             Bitmap smap, dmap;
                             double rate = 0;
@@ -2199,7 +2233,7 @@ namespace PictureViewer
                             int drow = desth - 1 - srow;
 
                             //List<long> errlist = new List<long>();
-                            int permitcnterr = destw / 10 + (int)(rate * 10);
+                            int permitcnterr = destw > 100 ? destw * 2 / 10 : destw * 4 / 10;
                             int permiterr = 10;
                             int cnterr = 0;
 
@@ -2220,7 +2254,8 @@ namespace PictureViewer
                             if (sourh > desth) { smap.Dispose(); }
                             if (sourh < desth) { dmap.Dispose(); }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; } else { goto END_ROW_CMP; }
                         }
 
                         #endregion
@@ -2230,7 +2265,7 @@ namespace PictureViewer
                         desth = dest.Height;
                         destw = dest.Width;
 
-                        if (h2w * desth - destw < 3 && destw - h2w * desth < 3)
+                        if (errcross < 2)
                         {
                             Bitmap smap, dmap;
                             double rate = 0;
@@ -2261,7 +2296,7 @@ namespace PictureViewer
                             int drow = srow;
 
                             //List<long> errlist = new List<long>();
-                            int permitcnterr = desth / 10 + (int)(rate * 10);
+                            int permitcnterr = destw > 100 ? desth * 2 / 10 : desth * 4 / 10;
                             int permiterr = 10;
                             int cnterr = 0;
 
@@ -2282,7 +2317,8 @@ namespace PictureViewer
                             if (sourh > destw) { smap.Dispose(); }
                             if (sourh < destw) { dmap.Dispose(); }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; }
                         }
 
                         #endregion
@@ -2292,7 +2328,7 @@ namespace PictureViewer
                         desth = dest.Height;
                         destw = dest.Width;
 
-                        if (h2w * desth - destw < 3 && destw - h2w * desth < 3)
+                        if (errcross < 2)
                         {
                             Bitmap smap, dmap;
                             double rate = 0;
@@ -2323,7 +2359,7 @@ namespace PictureViewer
                             int drow = destw - 1 - srow;
 
                             //List<long> errlist = new List<long>();
-                            int permitcnterr = desth / 10 + (int)(rate * 10);
+                            int permitcnterr = desth > 100 ? desth * 2 / 10 : desth * 4 / 10;
                             int permiterr = 10;
                             int cnterr = 0;
 
@@ -2344,17 +2380,20 @@ namespace PictureViewer
                             if (sourh > destw) { smap.Dispose(); }
                             if (sourh < destw) { dmap.Dispose(); }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; } else { goto END_ROW_CMP; }
                         }
 
                         #endregion
+
+                        goto END_ROW_CMP;
                     }
 
                     #endregion
 
                     #region PATR LIKE NO_TURN
 
-                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    if (config.Mode == MODE.PART_LIKE_NOTURN)
                     {
 
                     }
@@ -2363,14 +2402,15 @@ namespace PictureViewer
 
                     #region PART LIKE TURN
 
-                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    if (config.Mode == MODE.PART_LIKE_TURN)
                     {
-
+                        goto END_ROW_CMP;
                     }
 
                     #endregion
                 }
 
+                END_ROW_CMP:
                 #endregion
 
                 #region 列比较
@@ -2379,38 +2419,38 @@ namespace PictureViewer
                 {
                     #region FULL SAME NO_TURN
 
-                    if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    if (config.Mode == MODE.FULL_SAME_NOTURN)
                     {
-                        if (sourh != desth || sourw != destw) { goto End; }
+                        if (sourh != desth || sourw != destw) { goto END_COL_CMP; }
 
                         double pace = (double)sourh / config.MinCmpPix;
                         int permitcnterr = config.MinCmpPix / 10;
                         int permiterr = 10;
                         int cnterr = 0;
                         double y = 0;
-                        int cnt = 0;
-                        int len = config.Grays.Length;
 
-                        for (; cnt < len; y += pace, ++cnt)
+                        for (; y < sourh; y += pace)
                         {
+                            Color sc = sour.GetPixel(config.Col, (int)y);
                             Color dc = dest.GetPixel(config.Col, (int)y);
-                            int sgray = config.Grays[cnt];
-                            int dgray = (dc.R + dc.G + dc.B) / 3;
+                            int sgray = sc.R + sc.G + sc.B;
+                            int dgray = dc.R + dc.G + dc.B;
 
-                            int ierr = sgray - dgray;
+                            int ierr = (sgray - dgray) / 3;
                             if (ierr < 0) { ierr = -ierr; }
                             if (ierr > permiterr) { ++cnterr; }
                             if (cnterr > permitcnterr) { break; }
                         }
 
                         found = cnterr <= permitcnterr;
+                        if (found) { goto END; } else { goto END_COL_CMP; }
                     }
 
                     #endregion
 
                     #region FULL SAME TURN
 
-                    else if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    if (config.Mode == MODE.FULL_SAME_TURN)
                     {
                         #region 原样
 
@@ -2421,22 +2461,22 @@ namespace PictureViewer
                             int permiterr = 10;
                             int cnterr = 0;
                             double y = 0;
-                            int cnt = 0;
-                            int len = config.Grays.Length;
 
-                            for (; cnt < len; y += pace, ++cnt)
+                            for (; y < sourh; y += pace)
                             {
+                                Color sc = sour.GetPixel(config.Col, (int)y);
                                 Color dc = dest.GetPixel(config.Col, (int)y);
-                                int sgray = config.Grays[cnt];
-                                int dgray = (dc.R + dc.G + dc.B) / 3;
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
 
-                                int ierr = sgray - dgray;
+                                int ierr = (sgray - dgray) / 3;
                                 if (ierr < 0) { ierr = -ierr; }
                                 if (ierr > permiterr) { ++cnterr; }
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; }
                         }
 
                         #endregion
@@ -2451,22 +2491,22 @@ namespace PictureViewer
                             int permiterr = 10;
                             int cnterr = 0;
                             double y = 0;
-                            int cnt = 0;
-                            int len = config.Grays.Length;
 
-                            for (; cnt < len; y += pace, ++cnt)
+                            for (; y < sourh; y += pace)
                             {
+                                Color sc = sour.GetPixel(config.Col, (int)y);
                                 Color dc = dest.GetPixel(cmpcol, sourh - 1 - (int)y);
-                                int sgray = config.Grays[cnt];
-                                int dgray = (dc.R + dc.G + dc.B) / 3;
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
 
-                                int ierr = sgray - dgray;
+                                int ierr = (sgray - dgray) / 3;
                                 if (ierr < 0) { ierr = -ierr; }
                                 if (ierr > permiterr) { ++cnterr; }
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; } else { goto END_COL_CMP; }
                         }
 
                         #endregion
@@ -2481,22 +2521,22 @@ namespace PictureViewer
                             int permiterr = 10;
                             int cnterr = 0;
                             double x = 0;
-                            int cnt = 0;
-                            int len = config.Grays.Length;
 
-                            for (; cnt < len; x += pace, ++cnt)
+                            for (; x < sourh; x += pace)
                             {
+                                Color sc = sour.GetPixel(config.Col, (int)x);
                                 Color dc = dest.GetPixel((int)x, cmpcol);
-                                int sgray = config.Grays[cnt];
-                                int dgray = (dc.R + dc.G + dc.B) / 3;
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
 
-                                int ierr = sgray - dgray;
+                                int ierr = (sgray - dgray) / 3;
                                 if (ierr < 0) { ierr = -ierr; }
                                 if (ierr > permiterr) { ++cnterr; }
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; }
                         }
 
                         #endregion
@@ -2510,32 +2550,34 @@ namespace PictureViewer
                             int permiterr = 10;
                             int cnterr = 0;
                             double x = 0;
-                            int cnt = 0;
-                            int len = config.Grays.Length;
 
-                            for (; cnt < len; x += pace, ++cnt)
+                            for (; x < sourh; x += pace)
                             {
+                                Color sc = sour.GetPixel(config.Col, (int)x);
                                 Color dc = dest.GetPixel(sourh - 1 - (int)x, config.Col);
-                                int sgray = config.Grays[cnt];
-                                int dgray = (dc.R + dc.G + dc.B) / 3;
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
 
-                                int ierr = sgray - dgray;
+                                int ierr = (sgray - dgray) / 3;
                                 if (ierr < 0) { ierr = -ierr; }
                                 if (ierr > permiterr) { ++cnterr; }
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; } else { goto END_COL_CMP; }
                         }
 
                         #endregion
+
+                        goto END_COL_CMP;
                     }
 
                     #endregion
 
                     #region FULL LIKE NO_TURN
 
-                    else if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    if (config.Mode == MODE.FULL_LIKE_NOTURN)
                     {
 
                     }
@@ -2544,7 +2586,7 @@ namespace PictureViewer
 
                     #region FULL LIKE TURN
 
-                    else if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    if (config.Mode == MODE.FULL_LIKE_TURN)
                     {
 
                     }
@@ -2553,14 +2595,15 @@ namespace PictureViewer
 
                     #region PART SAME NO_TURN
 
-                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    if (config.Mode == MODE.PART_SAME_NOTURN)
                     {
-                        // 比例相同
-                        double h2w = (double)sourh / sourw;
-                        int err = (int)(h2w * destw) - desth; if (err < 0) { err = -err; }
-                        if (err > 3) { goto End; }
+                        int errparallel = 0;
+                        double h2h = 1;
+                        if (sourh > desth) { h2h = (double)sourh / desth; errparallel = (int)(sourw / h2h) - destw; }
+                        if (sourh < desth) { h2h = (double)desth / sourh; errparallel = (int)(destw / h2h) - sourw; }
+                        if (errparallel < 0) { errparallel = -errparallel; }
+                        if (errparallel > 1) { goto END_COL_CMP; }
 
-                        // 缩放
                         Bitmap smap, dmap;
                         double rate = 0;
                         if (sourh > desth)
@@ -2589,7 +2632,7 @@ namespace PictureViewer
                         int cmpcol = (int)((double)config.Col / sourw * destw);
 
                         //List<long> errlist = new List<long>();
-                        int permitcnterr = desth / 10 + (int)(rate * 10);
+                        int permitcnterr = desth * 2 / 10;
                         int permiterr = 10;
                         int cnterr = 0;
 
@@ -2607,25 +2650,31 @@ namespace PictureViewer
                             if (cnterr > permitcnterr) { break; }
                         }
 
-                        found = cnterr <= permitcnterr;
                         if (sourh > desth) { smap.Dispose(); }
                         if (sourh < desth) { dmap.Dispose(); }
+                        found = cnterr <= permitcnterr;
+                        if (found) { goto END; } else { goto END_COL_CMP; }
                     }
 
                     #endregion
 
                     #region PART SAME TURN
 
-                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    if (config.Mode == MODE.PART_SAME_TURN)
                     {
-                        double h2w = (double)sourh / sourw;
+                        int errparallel = 0, errcross = 0;
+                        double h2h = 1;
+                        if (sourh > desth) { h2h = (double)sourh / desth; errparallel = (int)(sourw / h2h) - destw; }
+                        if (sourh < desth) { h2h = (double)desth / sourh; errparallel = (int)(destw / h2h) - sourw; }
+                        if (sourh > destw) { h2h = (double)sourh / destw; errcross = (int)(sourw / h2h) - desth; }
+                        if (sourh < destw) { h2h = (double)destw / sourh; errcross = (int)(desth / h2h) - sourw; }
+                        if (errparallel < 0) { errparallel = -errparallel; }
+                        if (errcross < 0) { errcross = -errcross; }
 
                         #region 原样
 
-                        desth = dest.Height;
-                        destw = dest.Width;
-
-                        if (h2w * destw - desth < 3 && desth - h2w * destw < 3)
+                        desth = dest.Height; destw = dest.Width;
+                        if (errparallel < 2)
                         {
                             Bitmap smap, dmap;
                             double rate = 0;
@@ -2655,7 +2704,7 @@ namespace PictureViewer
                             int cmpcol = (int)((double)config.Col / sourw * destw);
 
                             //List<long> errlist = new List<long>();
-                            int permitcnterr = desth / 10 + (int)(rate * 10);
+                            int permitcnterr = desth > 100 ? desth * 2 / 10 : desth * 4 / 10;
                             int permiterr = 10;
                             int cnterr = 0;
 
@@ -2676,17 +2725,16 @@ namespace PictureViewer
                             if (sourh > desth) { smap.Dispose(); }
                             if (sourh < desth) { dmap.Dispose(); }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; }
                         }
 
                         #endregion
 
                         #region 逆时针旋转 180 度
 
-                        desth = dest.Height;
-                        destw = dest.Width;
-
-                        if (h2w * destw - desth < 3 && desth - h2w * destw < 3)
+                        desth = dest.Height; destw = dest.Width;
+                        if (errparallel < 2)
                         {
                             Bitmap smap, dmap;
                             double rate = 0;
@@ -2717,7 +2765,7 @@ namespace PictureViewer
                             int dcol = destw - 1 - scol;
 
                             //List<long> errlist = new List<long>();
-                            int permitcnterr = desth / 10 + (int)(rate * 10);
+                            int permitcnterr = desth > 100 ? desth * 2 / 10 : desth * 4 / 10;
                             int permiterr = 10;
                             int cnterr = 0;
 
@@ -2738,17 +2786,16 @@ namespace PictureViewer
                             if (sourh > desth) { smap.Dispose(); }
                             if (sourh < desth) { dmap.Dispose(); }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; } else { goto END_COL_CMP; }
                         }
 
                         #endregion
 
                         #region 逆时针旋转90度
 
-                        desth = dest.Height;
-                        destw = dest.Width;
-
-                        if (h2w * desth - destw < 3 && destw - h2w * desth < 3)
+                        desth = dest.Height; destw = dest.Width;
+                        if (errcross < 2)
                         {
                             Bitmap smap, dmap;
                             double rate = 0;
@@ -2779,7 +2826,7 @@ namespace PictureViewer
                             int dcol = desth - 1 - scol;
 
                             //List<long> errlist = new List<long>();
-                            int permitcnterr = destw / 10 + (int)(rate * 10);
+                            int permitcnterr = destw > 100 ? destw * 2 / 10 : destw * 4 / 10;
                             int permiterr = 10;
                             int cnterr = 0;
 
@@ -2800,17 +2847,16 @@ namespace PictureViewer
                             if (sourh > destw) { smap.Dispose(); }
                             if (sourh < destw) { dmap.Dispose(); }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; }
                         }
 
                         #endregion
 
                         #region 逆时针旋转 270 度
 
-                        desth = dest.Height;
-                        destw = dest.Width;
-
-                        if (h2w * desth - destw < 3 && destw - h2w * desth < 3)
+                        desth = dest.Height; destw = dest.Width;
+                        if (errcross < 2)
                         {
                             Bitmap smap, dmap;
                             double rate = 0;
@@ -2841,7 +2887,7 @@ namespace PictureViewer
                             int dcol = scol;
 
                             //List<long> errlist = new List<long>();
-                            int permitcnterr = destw / 10 + (int)(rate * 10);
+                            int permitcnterr = destw > 100 ? destw * 2 / 10 : destw * 4 / 10;
                             int permiterr = 10;
                             int cnterr = 0;
 
@@ -2862,17 +2908,20 @@ namespace PictureViewer
                             if (sourh > destw) { smap.Dispose(); }
                             if (sourh < destw) { dmap.Dispose(); }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; } else { goto END_COL_CMP; }
                         }
 
                         #endregion
+
+                        goto END_COL_CMP;
                     }
 
                     #endregion
 
                     #region PATR LIKE NO_TURN
 
-                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    if (config.Mode == MODE.PART_LIKE_NOTURN)
                     {
 
                     }
@@ -2881,17 +2930,18 @@ namespace PictureViewer
 
                     #region PART LIKE TURN
 
-                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    if (config.Mode == MODE.PART_LIKE_TURN)
                     {
-
+                        goto END_COL_CMP;
                     }
 
                     #endregion
                 }
 
+                END_COL_CMP:
                 #endregion
 
-                End:
+                END:
                 lock (config.Lock) { if (found) { config.Results.Add(i); } config.CountFiles++; }
                 dest.Dispose();
             }
@@ -2923,38 +2973,38 @@ namespace PictureViewer
                 {
                     #region FULL SAME NO_TURN
 
-                    if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    if (config.Mode == MODE.FULL_SAME_NOTURN)
                     {
-                        if (sourh != desth || sourw != destw) { goto End; }
+                        if (sourh != desth || sourw != destw) { goto END_ROW_CMP; }
 
                         double pace = (double)sourw / config.MinCmpPix;
                         int permitcnterr = config.MinCmpPix / 10;
                         int permiterr = 10;
                         int cnterr = 0;
                         double x = 0;
-                        int cnt = 0;
-                        int len = config.Grays.Length;
 
-                        for (; cnt < len; x += pace, ++cnt)
+                        for (; x < sourw; x += pace)
                         {
+                            Color sc = sour.GetPixel((int)x, config.Row);
                             Color dc = dest.GetPixel((int)x, config.Row);
-                            int sgray = config.Grays[cnt];
-                            int dgray = (dc.R + dc.G + dc.B) / 3;
+                            int sgray = sc.R + sc.B + sc.B;
+                            int dgray = dc.R + dc.G + dc.B;
 
-                            int ierr = sgray - dgray;
+                            int ierr = (sgray - dgray) / 3;
                             if (ierr < 0) { ierr = -ierr; }
                             if (ierr > permiterr) { ++cnterr; }
                             if (cnterr > permitcnterr) { break; }
                         }
 
                         found = cnterr <= permitcnterr;
+                        if (found) { goto END; } else { goto END_ROW_CMP; }
                     }
 
                     #endregion
 
                     #region FULL SAME TURN
 
-                    else if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    if (config.Mode == MODE.FULL_SAME_TURN)
                     {
                         #region 原样
 
@@ -2965,22 +3015,22 @@ namespace PictureViewer
                             int permiterr = 10;
                             int cnterr = 0;
                             double x = 0;
-                            int cnt = 0;
-                            int len = config.Grays.Length;
 
-                            for (; cnt < len; x += pace, ++cnt)
+                            for (; x < sourw; x += pace)
                             {
+                                Color sc = sour.GetPixel((int)x, config.Row);
                                 Color dc = dest.GetPixel((int)x, config.Row);
-                                int sgray = config.Grays[cnt];
-                                int dgray = (dc.R + dc.G + dc.B) / 3;
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
 
-                                int ierr = sgray - dgray;
+                                int ierr = (sgray - dgray) / 3;
                                 if (ierr < 0) { ierr = -ierr; }
                                 if (ierr > permiterr) { ++cnterr; }
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; }
                         }
 
                         #endregion
@@ -2995,22 +3045,22 @@ namespace PictureViewer
                             int permiterr = 10;
                             int cnterr = 0;
                             double x = 0;
-                            int cnt = 0;
-                            int len = config.Grays.Length;
 
-                            for (; cnt < len; x += pace, ++cnt)
+                            for (; x < sourw; x += pace)
                             {
+                                Color sc = sour.GetPixel((int)x, config.Row);
                                 Color dc = dest.GetPixel(sourw - 1 - (int)x, cmprow);
-                                int sgray = config.Grays[cnt];
-                                int dgray = (dc.R + dc.G + dc.B) / 3;
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
 
-                                int ierr = sgray - dgray;
+                                int ierr = (sgray - dgray) / 3;
                                 if (ierr < 0) { ierr = -ierr; }
                                 if (ierr > permiterr) { ++cnterr; }
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; } else { goto END_ROW_CMP; }
                         }
 
                         #endregion
@@ -3024,22 +3074,22 @@ namespace PictureViewer
                             int permiterr = 10;
                             int cnterr = 0;
                             double y = 0;
-                            int cnt = 0;
-                            int len = config.Grays.Length;
 
-                            for (; cnt < len; y += pace, ++cnt)
+                            for (; y < sourw; y += pace)
                             {
+                                Color sc = sour.GetPixel((int)y, config.Row);
                                 Color dc = dest.GetPixel(config.Row, sourw - 1 - (int)y);
-                                int sgray = config.Grays[cnt];
-                                int dgray = (dc.R + dc.G + dc.B) / 3;
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
 
-                                int ierr = sgray - dgray;
+                                int ierr = (sgray - dgray) / 3;
                                 if (ierr < 0) { ierr = -ierr; }
                                 if (ierr > permiterr) { ++cnterr; }
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; }
                         }
 
                         #endregion
@@ -3054,32 +3104,34 @@ namespace PictureViewer
                             int permiterr = 10;
                             int cnterr = 0;
                             double y = 0;
-                            int cnt = 0;
-                            int len = config.Grays.Length;
 
-                            for (; cnt < len; y += pace, ++cnt)
+                            for (; y < sourw; y += pace)
                             {
+                                Color sc = sour.GetPixel((int)y, config.Row);
                                 Color dc = dest.GetPixel(cmprow, (int)y);
-                                int sgray = config.Grays[cnt];
-                                int dgray = (dc.R + dc.G + dc.B) / 3;
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
 
-                                int ierr = sgray - dgray;
+                                int ierr = (sgray - dgray) / 3;
                                 if (ierr < 0) { ierr = -ierr; }
                                 if (ierr > permiterr) { ++cnterr; }
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; } else { goto END_ROW_CMP; }
                         }
 
                         #endregion
+
+                        goto END_ROW_CMP;
                     }
 
                     #endregion
 
                     #region FULL LIKE NO_TURN
 
-                    else if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    if (config.Mode == MODE.FULL_LIKE_NOTURN)
                     {
 
                     }
@@ -3088,7 +3140,7 @@ namespace PictureViewer
 
                     #region FULL LIKE TURN
 
-                    else if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    if (config.Mode == MODE.FULL_LIKE_TURN)
                     {
 
                     }
@@ -3097,14 +3149,15 @@ namespace PictureViewer
 
                     #region PART SAME NO_TURN
 
-                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    if (config.Mode == MODE.PART_SAME_NOTURN)
                     {
-                        // 比例相同
-                        double h2w = (double)sourh / sourw;
-                        int err = (int)(h2w * destw) - desth; if (err < 0) { err = -err; }
-                        if (err > 3) { goto End; }
+                        int errparallel = 0;
+                        double h2h = 1;
+                        if (sourh > desth) { h2h = (double)sourh / desth; errparallel = (int)(sourw / h2h) - destw; }
+                        if (sourh < desth) { h2h = (double)desth / sourh; errparallel = (int)(destw / h2h) - sourw; }
+                        if (errparallel < 0) { errparallel = -errparallel; }
+                        if (errparallel > 1) { goto END_ROW_CMP; }
 
-                        // 缩放
                         Bitmap smap, dmap;
                         double rate = 0;
                         if (sourh > desth)
@@ -3151,25 +3204,32 @@ namespace PictureViewer
                             if (cnterr > permitcnterr) { break; }
                         }
 
-                        found = cnterr <= permitcnterr;
                         if (sourh > desth) { smap.Dispose(); }
                         if (sourh < desth) { dmap.Dispose(); }
+                        found = cnterr <= permitcnterr;
+                        if (found) { goto END; } else { goto END_ROW_CMP; }
                     }
 
                     #endregion
 
                     #region PART SAME TURN
 
-                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    if (config.Mode == MODE.PART_SAME_TURN)
                     {
-                        double h2w = (double)sourh / sourw;
+                        int errparallel = 0, errcross = 0;
+                        double h2h = 1;
+                        if (sourh > desth) { h2h = (double)sourh / desth; errparallel = (int)(sourw / h2h) - destw; }
+                        if (sourh < desth) { h2h = (double)desth / sourh; errparallel = (int)(destw / h2h) - sourw; }
+                        if (sourh > destw) { h2h = (double)sourh / destw; errcross = (int)(sourw / h2h) - desth; }
+                        if (sourh < destw) { h2h = (double)destw / sourh; errcross = (int)(desth / h2h) - sourw; }
+                        if (errparallel < 0) { errparallel = -errparallel; }
+                        if (errcross < 0) { errcross = -errcross; }
 
                         #region 原样
 
                         desth = dest.Height;
                         destw = dest.Width;
-
-                        if (h2w * destw - desth < 3 && desth - h2w * destw < 3)
+                        if (errparallel < 2)
                         {
                             Bitmap smap, dmap;
                             double rate = 0;
@@ -3199,7 +3259,7 @@ namespace PictureViewer
                             int cmprow = (int)((double)config.Row / sourh * desth);
 
                             //List<long> errlist = new List<long>();
-                            int permitcnterr = destw / 10 + (int)(rate * 10);
+                            int permitcnterr = destw > 100 ? destw * 2 / 10 : destw * 4 / 10;
                             int permiterr = 10;
                             int cnterr = 0;
 
@@ -3220,7 +3280,8 @@ namespace PictureViewer
                             if (sourh > desth) { smap.Dispose(); }
                             if (sourh < desth) { dmap.Dispose(); }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; }
                         }
 
                         #endregion
@@ -3230,7 +3291,7 @@ namespace PictureViewer
                         desth = dest.Height;
                         destw = dest.Width;
 
-                        if (h2w * destw - desth < 3 && desth - h2w * destw < 3)
+                        if (errparallel < 2)
                         {
                             Bitmap smap, dmap;
                             double rate = 0;
@@ -3261,7 +3322,7 @@ namespace PictureViewer
                             int drow = desth - 1 - srow;
 
                             //List<long> errlist = new List<long>();
-                            int permitcnterr = destw / 10 + (int)(rate * 10);
+                            int permitcnterr = destw > 100 ? destw * 2 / 10 : destw * 4 / 10;
                             int permiterr = 10;
                             int cnterr = 0;
 
@@ -3282,7 +3343,8 @@ namespace PictureViewer
                             if (sourh > desth) { smap.Dispose(); }
                             if (sourh < desth) { dmap.Dispose(); }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; } else { goto END_ROW_CMP; }
                         }
 
                         #endregion
@@ -3292,7 +3354,7 @@ namespace PictureViewer
                         desth = dest.Height;
                         destw = dest.Width;
 
-                        if (h2w * desth - destw < 3 && destw - h2w * desth < 3)
+                        if (errcross < 2)
                         {
                             Bitmap smap, dmap;
                             double rate = 0;
@@ -3323,7 +3385,7 @@ namespace PictureViewer
                             int drow = srow;
 
                             //List<long> errlist = new List<long>();
-                            int permitcnterr = desth / 10 + (int)(rate * 10);
+                            int permitcnterr = destw > 100 ? desth * 2 / 10 : desth * 4 / 10;
                             int permiterr = 10;
                             int cnterr = 0;
 
@@ -3344,7 +3406,8 @@ namespace PictureViewer
                             if (sourh > destw) { smap.Dispose(); }
                             if (sourh < destw) { dmap.Dispose(); }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; }
                         }
 
                         #endregion
@@ -3354,7 +3417,7 @@ namespace PictureViewer
                         desth = dest.Height;
                         destw = dest.Width;
 
-                        if (h2w * desth - destw < 3 && destw - h2w * desth < 3)
+                        if (errcross < 2)
                         {
                             Bitmap smap, dmap;
                             double rate = 0;
@@ -3385,7 +3448,7 @@ namespace PictureViewer
                             int drow = destw - 1 - srow;
 
                             //List<long> errlist = new List<long>();
-                            int permitcnterr = desth / 10 + (int)(rate * 10);
+                            int permitcnterr = desth > 100 ? desth * 2 / 10 : desth * 4 / 10;
                             int permiterr = 10;
                             int cnterr = 0;
 
@@ -3406,17 +3469,20 @@ namespace PictureViewer
                             if (sourh > destw) { smap.Dispose(); }
                             if (sourh < destw) { dmap.Dispose(); }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; } else { goto END_ROW_CMP; }
                         }
 
                         #endregion
+
+                        goto END_ROW_CMP;
                     }
 
                     #endregion
 
                     #region PATR LIKE NO_TURN
 
-                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    if (config.Mode == MODE.PART_LIKE_NOTURN)
                     {
 
                     }
@@ -3425,14 +3491,15 @@ namespace PictureViewer
 
                     #region PART LIKE TURN
 
-                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    if (config.Mode == MODE.PART_LIKE_TURN)
                     {
-
+                        goto END_ROW_CMP;
                     }
 
                     #endregion
                 }
 
+                END_ROW_CMP:
                 #endregion
 
                 #region 列比较
@@ -3441,38 +3508,38 @@ namespace PictureViewer
                 {
                     #region FULL SAME NO_TURN
 
-                    if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    if (config.Mode == MODE.FULL_SAME_NOTURN)
                     {
-                        if (sourh != desth || sourw != destw) { goto End; }
+                        if (sourh != desth || sourw != destw) { goto END_COL_CMP; }
 
                         double pace = (double)sourh / config.MinCmpPix;
                         int permitcnterr = config.MinCmpPix / 10;
                         int permiterr = 10;
                         int cnterr = 0;
                         double y = 0;
-                        int cnt = 0;
-                        int len = config.Grays.Length;
 
-                        for (; cnt < len; y += pace, ++cnt)
+                        for (; y < sourh; y += pace)
                         {
+                            Color sc = sour.GetPixel(config.Col, (int)y);
                             Color dc = dest.GetPixel(config.Col, (int)y);
-                            int sgray = config.Grays[cnt];
-                            int dgray = (dc.R + dc.G + dc.B) / 3;
+                            int sgray = sc.R + sc.G + sc.B;
+                            int dgray = dc.R + dc.G + dc.B;
 
-                            int ierr = sgray - dgray;
+                            int ierr = (sgray - dgray) / 3;
                             if (ierr < 0) { ierr = -ierr; }
                             if (ierr > permiterr) { ++cnterr; }
                             if (cnterr > permitcnterr) { break; }
                         }
 
                         found = cnterr <= permitcnterr;
+                        if (found) { goto END; } else { goto END_COL_CMP; }
                     }
 
                     #endregion
 
                     #region FULL SAME TURN
 
-                    else if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    if (config.Mode == MODE.FULL_SAME_TURN)
                     {
                         #region 原样
 
@@ -3483,22 +3550,22 @@ namespace PictureViewer
                             int permiterr = 10;
                             int cnterr = 0;
                             double y = 0;
-                            int cnt = 0;
-                            int len = config.Grays.Length;
 
-                            for (; cnt < len; y += pace, ++cnt)
+                            for (; y < sourh; y += pace)
                             {
+                                Color sc = sour.GetPixel(config.Col, (int)y);
                                 Color dc = dest.GetPixel(config.Col, (int)y);
-                                int sgray = config.Grays[cnt];
-                                int dgray = (dc.R + dc.G + dc.B) / 3;
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
 
-                                int ierr = sgray - dgray;
+                                int ierr = (sgray - dgray) / 3;
                                 if (ierr < 0) { ierr = -ierr; }
                                 if (ierr > permiterr) { ++cnterr; }
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; }
                         }
 
                         #endregion
@@ -3513,22 +3580,22 @@ namespace PictureViewer
                             int permiterr = 10;
                             int cnterr = 0;
                             double y = 0;
-                            int cnt = 0;
-                            int len = config.Grays.Length;
 
-                            for (; cnt < len; y += pace, ++cnt)
+                            for (; y < sourh; y += pace)
                             {
+                                Color sc = sour.GetPixel(config.Col, (int)y);
                                 Color dc = dest.GetPixel(cmpcol, sourh - 1 - (int)y);
-                                int sgray = config.Grays[cnt];
-                                int dgray = (dc.R + dc.G + dc.B) / 3;
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
 
-                                int ierr = sgray - dgray;
+                                int ierr = (sgray - dgray) / 3;
                                 if (ierr < 0) { ierr = -ierr; }
                                 if (ierr > permiterr) { ++cnterr; }
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; } else { goto END_COL_CMP; }
                         }
 
                         #endregion
@@ -3543,22 +3610,22 @@ namespace PictureViewer
                             int permiterr = 10;
                             int cnterr = 0;
                             double x = 0;
-                            int cnt = 0;
-                            int len = config.Grays.Length;
 
-                            for (; cnt < len; x += pace, ++cnt)
+                            for (; x < sourh; x += pace)
                             {
+                                Color sc = sour.GetPixel(config.Col, (int)x);
                                 Color dc = dest.GetPixel((int)x, cmpcol);
-                                int sgray = config.Grays[cnt];
-                                int dgray = (dc.R + dc.G + dc.B) / 3;
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
 
-                                int ierr = sgray - dgray;
+                                int ierr = (sgray - dgray) / 3;
                                 if (ierr < 0) { ierr = -ierr; }
                                 if (ierr > permiterr) { ++cnterr; }
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; }
                         }
 
                         #endregion
@@ -3572,32 +3639,34 @@ namespace PictureViewer
                             int permiterr = 10;
                             int cnterr = 0;
                             double x = 0;
-                            int cnt = 0;
-                            int len = config.Grays.Length;
 
-                            for (; cnt < len; x += pace, ++cnt)
+                            for (; x < sourh; x += pace)
                             {
+                                Color sc = sour.GetPixel(config.Col, (int)x);
                                 Color dc = dest.GetPixel(sourh - 1 - (int)x, config.Col);
-                                int sgray = config.Grays[cnt];
-                                int dgray = (dc.R + dc.G + dc.B) / 3;
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
 
-                                int ierr = sgray - dgray;
+                                int ierr = (sgray - dgray) / 3;
                                 if (ierr < 0) { ierr = -ierr; }
                                 if (ierr > permiterr) { ++cnterr; }
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; } else { goto END_COL_CMP; }
                         }
 
                         #endregion
+
+                        goto END_COL_CMP;
                     }
 
                     #endregion
 
                     #region FULL LIKE NO_TURN
 
-                    else if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    if (config.Mode == MODE.FULL_LIKE_NOTURN)
                     {
 
                     }
@@ -3606,7 +3675,7 @@ namespace PictureViewer
 
                     #region FULL LIKE TURN
 
-                    else if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    if (config.Mode == MODE.FULL_LIKE_TURN)
                     {
 
                     }
@@ -3615,14 +3684,15 @@ namespace PictureViewer
 
                     #region PART SAME NO_TURN
 
-                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    if (config.Mode == MODE.PART_SAME_NOTURN)
                     {
-                        // 比例相同
-                        double h2w = (double)sourh / sourw;
-                        int err = (int)(h2w * destw) - desth; if (err < 0) { err = -err; }
-                        if (err > 3) { goto End; }
+                        int errparallel = 0;
+                        double h2h = 1;
+                        if (sourh > desth) { h2h = (double)sourh / desth; errparallel = (int)(sourw / h2h) - destw; }
+                        if (sourh < desth) { h2h = (double)desth / sourh; errparallel = (int)(destw / h2h) - sourw; }
+                        if (errparallel < 0) { errparallel = -errparallel; }
+                        if (errparallel > 1) { goto END_COL_CMP; }
 
-                        // 缩放
                         Bitmap smap, dmap;
                         double rate = 0;
                         if (sourh > desth)
@@ -3651,7 +3721,7 @@ namespace PictureViewer
                         int cmpcol = (int)((double)config.Col / sourw * destw);
 
                         //List<long> errlist = new List<long>();
-                        int permitcnterr = desth / 10 + (int)(rate * 10);
+                        int permitcnterr = desth * 2 / 10;
                         int permiterr = 10;
                         int cnterr = 0;
 
@@ -3669,25 +3739,31 @@ namespace PictureViewer
                             if (cnterr > permitcnterr) { break; }
                         }
 
-                        found = cnterr <= permitcnterr;
                         if (sourh > desth) { smap.Dispose(); }
                         if (sourh < desth) { dmap.Dispose(); }
+                        found = cnterr <= permitcnterr;
+                        if (found) { goto END; } else { goto END_COL_CMP; }
                     }
 
                     #endregion
 
                     #region PART SAME TURN
 
-                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    if (config.Mode == MODE.PART_SAME_TURN)
                     {
-                        double h2w = (double)sourh / sourw;
+                        int errparallel = 0, errcross = 0;
+                        double h2h = 1;
+                        if (sourh > desth) { h2h = (double)sourh / desth; errparallel = (int)(sourw / h2h) - destw; }
+                        if (sourh < desth) { h2h = (double)desth / sourh; errparallel = (int)(destw / h2h) - sourw; }
+                        if (sourh > destw) { h2h = (double)sourh / destw; errcross = (int)(sourw / h2h) - desth; }
+                        if (sourh < destw) { h2h = (double)destw / sourh; errcross = (int)(desth / h2h) - sourw; }
+                        if (errparallel < 0) { errparallel = -errparallel; }
+                        if (errcross < 0) { errcross = -errcross; }
 
                         #region 原样
 
-                        desth = dest.Height;
-                        destw = dest.Width;
-
-                        if (h2w * destw - desth < 3 && desth - h2w * destw < 3)
+                        desth = dest.Height; destw = dest.Width;
+                        if (errparallel < 2)
                         {
                             Bitmap smap, dmap;
                             double rate = 0;
@@ -3717,7 +3793,7 @@ namespace PictureViewer
                             int cmpcol = (int)((double)config.Col / sourw * destw);
 
                             //List<long> errlist = new List<long>();
-                            int permitcnterr = desth / 10 + (int)(rate * 10);
+                            int permitcnterr = desth > 100 ? desth * 2 / 10 : desth * 4 / 10;
                             int permiterr = 10;
                             int cnterr = 0;
 
@@ -3738,17 +3814,16 @@ namespace PictureViewer
                             if (sourh > desth) { smap.Dispose(); }
                             if (sourh < desth) { dmap.Dispose(); }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; }
                         }
 
                         #endregion
 
                         #region 逆时针旋转 180 度
 
-                        desth = dest.Height;
-                        destw = dest.Width;
-
-                        if (h2w * destw - desth < 3 && desth - h2w * destw < 3)
+                        desth = dest.Height; destw = dest.Width;
+                        if (errparallel < 2)
                         {
                             Bitmap smap, dmap;
                             double rate = 0;
@@ -3779,7 +3854,7 @@ namespace PictureViewer
                             int dcol = destw - 1 - scol;
 
                             //List<long> errlist = new List<long>();
-                            int permitcnterr = desth / 10 + (int)(rate * 10);
+                            int permitcnterr = desth > 100 ? desth * 2 / 10 : desth * 4 / 10;
                             int permiterr = 10;
                             int cnterr = 0;
 
@@ -3800,17 +3875,16 @@ namespace PictureViewer
                             if (sourh > desth) { smap.Dispose(); }
                             if (sourh < desth) { dmap.Dispose(); }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; } else { goto END_COL_CMP; }
                         }
 
                         #endregion
 
                         #region 逆时针旋转90度
 
-                        desth = dest.Height;
-                        destw = dest.Width;
-
-                        if (h2w * desth - destw < 3 && destw - h2w * desth < 3)
+                        desth = dest.Height; destw = dest.Width;
+                        if (errcross < 2)
                         {
                             Bitmap smap, dmap;
                             double rate = 0;
@@ -3841,7 +3915,7 @@ namespace PictureViewer
                             int dcol = desth - 1 - scol;
 
                             //List<long> errlist = new List<long>();
-                            int permitcnterr = destw / 10 + (int)(rate * 10);
+                            int permitcnterr = destw > 100 ? destw * 2 / 10 : destw * 4 / 10;
                             int permiterr = 10;
                             int cnterr = 0;
 
@@ -3862,17 +3936,16 @@ namespace PictureViewer
                             if (sourh > destw) { smap.Dispose(); }
                             if (sourh < destw) { dmap.Dispose(); }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; }
                         }
 
                         #endregion
 
                         #region 逆时针旋转 270 度
 
-                        desth = dest.Height;
-                        destw = dest.Width;
-
-                        if (h2w * desth - destw < 3 && destw - h2w * desth < 3)
+                        desth = dest.Height; destw = dest.Width;
+                        if (errcross < 2)
                         {
                             Bitmap smap, dmap;
                             double rate = 0;
@@ -3903,7 +3976,7 @@ namespace PictureViewer
                             int dcol = scol;
 
                             //List<long> errlist = new List<long>();
-                            int permitcnterr = destw / 10 + (int)(rate * 10);
+                            int permitcnterr = destw > 100 ? destw * 2 / 10 : destw * 4 / 10;
                             int permiterr = 10;
                             int cnterr = 0;
 
@@ -3924,17 +3997,20 @@ namespace PictureViewer
                             if (sourh > destw) { smap.Dispose(); }
                             if (sourh < destw) { dmap.Dispose(); }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; } else { goto END_COL_CMP; }
                         }
 
                         #endregion
+
+                        goto END_COL_CMP;
                     }
 
                     #endregion
 
                     #region PATR LIKE NO_TURN
 
-                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    if (config.Mode == MODE.PART_LIKE_NOTURN)
                     {
 
                     }
@@ -3943,17 +4019,18 @@ namespace PictureViewer
 
                     #region PART LIKE TURN
 
-                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    if (config.Mode == MODE.PART_LIKE_TURN)
                     {
-
+                        goto END_COL_CMP;
                     }
 
                     #endregion
                 }
 
+                END_COL_CMP:
                 #endregion
 
-                End:
+                END:
                 lock (config.Lock) { if (found) { config.Results.Add(i); } config.CountFiles++; }
                 dest.Dispose();
             }
@@ -3985,38 +4062,38 @@ namespace PictureViewer
                 {
                     #region FULL SAME NO_TURN
 
-                    if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    if (config.Mode == MODE.FULL_SAME_NOTURN)
                     {
-                        if (sourh != desth || sourw != destw) { goto End; }
+                        if (sourh != desth || sourw != destw) { goto END_ROW_CMP; }
 
                         double pace = (double)sourw / config.MinCmpPix;
                         int permitcnterr = config.MinCmpPix / 10;
                         int permiterr = 10;
                         int cnterr = 0;
                         double x = 0;
-                        int cnt = 0;
-                        int len = config.Grays.Length;
 
-                        for (; cnt < len; x += pace, ++cnt)
+                        for (; x < sourw; x += pace)
                         {
+                            Color sc = sour.GetPixel((int)x, config.Row);
                             Color dc = dest.GetPixel((int)x, config.Row);
-                            int sgray = config.Grays[cnt];
-                            int dgray = (dc.R + dc.G + dc.B) / 3;
+                            int sgray = sc.R + sc.B + sc.B;
+                            int dgray = dc.R + dc.G + dc.B;
 
-                            int ierr = sgray - dgray;
+                            int ierr = (sgray - dgray) / 3;
                             if (ierr < 0) { ierr = -ierr; }
                             if (ierr > permiterr) { ++cnterr; }
                             if (cnterr > permitcnterr) { break; }
                         }
 
                         found = cnterr <= permitcnterr;
+                        if (found) { goto END; } else { goto END_ROW_CMP; }
                     }
 
                     #endregion
 
                     #region FULL SAME TURN
 
-                    else if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    if (config.Mode == MODE.FULL_SAME_TURN)
                     {
                         #region 原样
 
@@ -4027,22 +4104,22 @@ namespace PictureViewer
                             int permiterr = 10;
                             int cnterr = 0;
                             double x = 0;
-                            int cnt = 0;
-                            int len = config.Grays.Length;
 
-                            for (; cnt < len; x += pace, ++cnt)
+                            for (; x < sourw; x += pace)
                             {
+                                Color sc = sour.GetPixel((int)x, config.Row);
                                 Color dc = dest.GetPixel((int)x, config.Row);
-                                int sgray = config.Grays[cnt];
-                                int dgray = (dc.R + dc.G + dc.B) / 3;
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
 
-                                int ierr = sgray - dgray;
+                                int ierr = (sgray - dgray) / 3;
                                 if (ierr < 0) { ierr = -ierr; }
                                 if (ierr > permiterr) { ++cnterr; }
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; }
                         }
 
                         #endregion
@@ -4057,22 +4134,22 @@ namespace PictureViewer
                             int permiterr = 10;
                             int cnterr = 0;
                             double x = 0;
-                            int cnt = 0;
-                            int len = config.Grays.Length;
 
-                            for (; cnt < len; x += pace, ++cnt)
+                            for (; x < sourw; x += pace)
                             {
+                                Color sc = sour.GetPixel((int)x, config.Row);
                                 Color dc = dest.GetPixel(sourw - 1 - (int)x, cmprow);
-                                int sgray = config.Grays[cnt];
-                                int dgray = (dc.R + dc.G + dc.B) / 3;
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
 
-                                int ierr = sgray - dgray;
+                                int ierr = (sgray - dgray) / 3;
                                 if (ierr < 0) { ierr = -ierr; }
                                 if (ierr > permiterr) { ++cnterr; }
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; } else { goto END_ROW_CMP; }
                         }
 
                         #endregion
@@ -4086,22 +4163,22 @@ namespace PictureViewer
                             int permiterr = 10;
                             int cnterr = 0;
                             double y = 0;
-                            int cnt = 0;
-                            int len = config.Grays.Length;
 
-                            for (; cnt < len; y += pace, ++cnt)
+                            for (; y < sourw; y += pace)
                             {
+                                Color sc = sour.GetPixel((int)y, config.Row);
                                 Color dc = dest.GetPixel(config.Row, sourw - 1 - (int)y);
-                                int sgray = config.Grays[cnt];
-                                int dgray = (dc.R + dc.G + dc.B) / 3;
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
 
-                                int ierr = sgray - dgray;
+                                int ierr = (sgray - dgray) / 3;
                                 if (ierr < 0) { ierr = -ierr; }
                                 if (ierr > permiterr) { ++cnterr; }
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; }
                         }
 
                         #endregion
@@ -4116,32 +4193,34 @@ namespace PictureViewer
                             int permiterr = 10;
                             int cnterr = 0;
                             double y = 0;
-                            int cnt = 0;
-                            int len = config.Grays.Length;
 
-                            for (; cnt < len; y += pace, ++cnt)
+                            for (; y < sourw; y += pace)
                             {
+                                Color sc = sour.GetPixel((int)y, config.Row);
                                 Color dc = dest.GetPixel(cmprow, (int)y);
-                                int sgray = config.Grays[cnt];
-                                int dgray = (dc.R + dc.G + dc.B) / 3;
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
 
-                                int ierr = sgray - dgray;
+                                int ierr = (sgray - dgray) / 3;
                                 if (ierr < 0) { ierr = -ierr; }
                                 if (ierr > permiterr) { ++cnterr; }
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; } else { goto END_ROW_CMP; }
                         }
 
                         #endregion
+
+                        goto END_ROW_CMP;
                     }
 
                     #endregion
 
                     #region FULL LIKE NO_TURN
 
-                    else if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    if (config.Mode == MODE.FULL_LIKE_NOTURN)
                     {
 
                     }
@@ -4150,7 +4229,7 @@ namespace PictureViewer
 
                     #region FULL LIKE TURN
 
-                    else if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    if (config.Mode == MODE.FULL_LIKE_TURN)
                     {
 
                     }
@@ -4159,14 +4238,15 @@ namespace PictureViewer
 
                     #region PART SAME NO_TURN
 
-                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    if (config.Mode == MODE.PART_SAME_NOTURN)
                     {
-                        // 比例相同
-                        double h2w = (double)sourh / sourw;
-                        int err = (int)(h2w * destw) - desth; if (err < 0) { err = -err; }
-                        if (err > 3) { goto End; }
+                        int errparallel = 0;
+                        double h2h = 1;
+                        if (sourh > desth) { h2h = (double)sourh / desth; errparallel = (int)(sourw / h2h) - destw; }
+                        if (sourh < desth) { h2h = (double)desth / sourh; errparallel = (int)(destw / h2h) - sourw; }
+                        if (errparallel < 0) { errparallel = -errparallel; }
+                        if (errparallel > 1) { goto END_ROW_CMP; }
 
-                        // 缩放
                         Bitmap smap, dmap;
                         double rate = 0;
                         if (sourh > desth)
@@ -4213,25 +4293,32 @@ namespace PictureViewer
                             if (cnterr > permitcnterr) { break; }
                         }
 
-                        found = cnterr <= permitcnterr;
                         if (sourh > desth) { smap.Dispose(); }
                         if (sourh < desth) { dmap.Dispose(); }
+                        found = cnterr <= permitcnterr;
+                        if (found) { goto END; } else { goto END_ROW_CMP; }
                     }
 
                     #endregion
 
                     #region PART SAME TURN
 
-                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    if (config.Mode == MODE.PART_SAME_TURN)
                     {
-                        double h2w = (double)sourh / sourw;
+                        int errparallel = 0, errcross = 0;
+                        double h2h = 1;
+                        if (sourh > desth) { h2h = (double)sourh / desth; errparallel = (int)(sourw / h2h) - destw; }
+                        if (sourh < desth) { h2h = (double)desth / sourh; errparallel = (int)(destw / h2h) - sourw; }
+                        if (sourh > destw) { h2h = (double)sourh / destw; errcross = (int)(sourw / h2h) - desth; }
+                        if (sourh < destw) { h2h = (double)destw / sourh; errcross = (int)(desth / h2h) - sourw; }
+                        if (errparallel < 0) { errparallel = -errparallel; }
+                        if (errcross < 0) { errcross = -errcross; }
 
                         #region 原样
 
                         desth = dest.Height;
                         destw = dest.Width;
-
-                        if (h2w * destw - desth < 3 && desth - h2w * destw < 3)
+                        if (errparallel < 2)
                         {
                             Bitmap smap, dmap;
                             double rate = 0;
@@ -4261,7 +4348,7 @@ namespace PictureViewer
                             int cmprow = (int)((double)config.Row / sourh * desth);
 
                             //List<long> errlist = new List<long>();
-                            int permitcnterr = destw / 10 + (int)(rate * 10);
+                            int permitcnterr = destw > 100 ? destw * 2 / 10 : destw * 4 / 10;
                             int permiterr = 10;
                             int cnterr = 0;
 
@@ -4282,7 +4369,8 @@ namespace PictureViewer
                             if (sourh > desth) { smap.Dispose(); }
                             if (sourh < desth) { dmap.Dispose(); }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; }
                         }
 
                         #endregion
@@ -4292,7 +4380,7 @@ namespace PictureViewer
                         desth = dest.Height;
                         destw = dest.Width;
 
-                        if (h2w * destw - desth < 3 && desth - h2w * destw < 3)
+                        if (errparallel < 2)
                         {
                             Bitmap smap, dmap;
                             double rate = 0;
@@ -4323,7 +4411,7 @@ namespace PictureViewer
                             int drow = desth - 1 - srow;
 
                             //List<long> errlist = new List<long>();
-                            int permitcnterr = destw / 10 + (int)(rate * 10);
+                            int permitcnterr = destw > 100 ? destw * 2 / 10 : destw * 4 / 10;
                             int permiterr = 10;
                             int cnterr = 0;
 
@@ -4344,7 +4432,8 @@ namespace PictureViewer
                             if (sourh > desth) { smap.Dispose(); }
                             if (sourh < desth) { dmap.Dispose(); }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; } else { goto END_ROW_CMP; }
                         }
 
                         #endregion
@@ -4354,7 +4443,7 @@ namespace PictureViewer
                         desth = dest.Height;
                         destw = dest.Width;
 
-                        if (h2w * desth - destw < 3 && destw - h2w * desth < 3)
+                        if (errcross < 2)
                         {
                             Bitmap smap, dmap;
                             double rate = 0;
@@ -4385,7 +4474,7 @@ namespace PictureViewer
                             int drow = srow;
 
                             //List<long> errlist = new List<long>();
-                            int permitcnterr = desth / 10 + (int)(rate * 10);
+                            int permitcnterr = destw > 100 ? desth * 2 / 10 : desth * 4 / 10;
                             int permiterr = 10;
                             int cnterr = 0;
 
@@ -4406,7 +4495,8 @@ namespace PictureViewer
                             if (sourh > destw) { smap.Dispose(); }
                             if (sourh < destw) { dmap.Dispose(); }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; }
                         }
 
                         #endregion
@@ -4416,7 +4506,7 @@ namespace PictureViewer
                         desth = dest.Height;
                         destw = dest.Width;
 
-                        if (h2w * desth - destw < 3 && destw - h2w * desth < 3)
+                        if (errcross < 2)
                         {
                             Bitmap smap, dmap;
                             double rate = 0;
@@ -4447,7 +4537,7 @@ namespace PictureViewer
                             int drow = destw - 1 - srow;
 
                             //List<long> errlist = new List<long>();
-                            int permitcnterr = desth / 10 + (int)(rate * 10);
+                            int permitcnterr = desth > 100 ? desth * 2 / 10 : desth * 4 / 10;
                             int permiterr = 10;
                             int cnterr = 0;
 
@@ -4468,17 +4558,20 @@ namespace PictureViewer
                             if (sourh > destw) { smap.Dispose(); }
                             if (sourh < destw) { dmap.Dispose(); }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; } else { goto END_ROW_CMP; }
                         }
 
                         #endregion
+
+                        goto END_ROW_CMP;
                     }
 
                     #endregion
 
                     #region PATR LIKE NO_TURN
 
-                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    if (config.Mode == MODE.PART_LIKE_NOTURN)
                     {
 
                     }
@@ -4487,14 +4580,15 @@ namespace PictureViewer
 
                     #region PART LIKE TURN
 
-                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    if (config.Mode == MODE.PART_LIKE_TURN)
                     {
-
+                        goto END_ROW_CMP;
                     }
 
                     #endregion
                 }
 
+                END_ROW_CMP:
                 #endregion
 
                 #region 列比较
@@ -4503,38 +4597,38 @@ namespace PictureViewer
                 {
                     #region FULL SAME NO_TURN
 
-                    if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    if (config.Mode == MODE.FULL_SAME_NOTURN)
                     {
-                        if (sourh != desth || sourw != destw) { goto End; }
+                        if (sourh != desth || sourw != destw) { goto END_COL_CMP; }
 
                         double pace = (double)sourh / config.MinCmpPix;
                         int permitcnterr = config.MinCmpPix / 10;
                         int permiterr = 10;
                         int cnterr = 0;
                         double y = 0;
-                        int cnt = 0;
-                        int len = config.Grays.Length;
 
-                        for (; cnt < len; y += pace, ++cnt)
+                        for (; y < sourh; y += pace)
                         {
+                            Color sc = sour.GetPixel(config.Col, (int)y);
                             Color dc = dest.GetPixel(config.Col, (int)y);
-                            int sgray = config.Grays[cnt];
-                            int dgray = (dc.R + dc.G + dc.B) / 3;
+                            int sgray = sc.R + sc.G + sc.B;
+                            int dgray = dc.R + dc.G + dc.B;
 
-                            int ierr = sgray - dgray;
+                            int ierr = (sgray - dgray) / 3;
                             if (ierr < 0) { ierr = -ierr; }
                             if (ierr > permiterr) { ++cnterr; }
                             if (cnterr > permitcnterr) { break; }
                         }
 
                         found = cnterr <= permitcnterr;
+                        if (found) { goto END; } else { goto END_COL_CMP; }
                     }
 
                     #endregion
 
                     #region FULL SAME TURN
 
-                    else if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    if (config.Mode == MODE.FULL_SAME_TURN)
                     {
                         #region 原样
 
@@ -4545,22 +4639,22 @@ namespace PictureViewer
                             int permiterr = 10;
                             int cnterr = 0;
                             double y = 0;
-                            int cnt = 0;
-                            int len = config.Grays.Length;
 
-                            for (; cnt < len; y += pace, ++cnt)
+                            for (; y < sourh; y += pace)
                             {
+                                Color sc = sour.GetPixel(config.Col, (int)y);
                                 Color dc = dest.GetPixel(config.Col, (int)y);
-                                int sgray = config.Grays[cnt];
-                                int dgray = (dc.R + dc.G + dc.B) / 3;
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
 
-                                int ierr = sgray - dgray;
+                                int ierr = (sgray - dgray) / 3;
                                 if (ierr < 0) { ierr = -ierr; }
                                 if (ierr > permiterr) { ++cnterr; }
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; }
                         }
 
                         #endregion
@@ -4575,22 +4669,22 @@ namespace PictureViewer
                             int permiterr = 10;
                             int cnterr = 0;
                             double y = 0;
-                            int cnt = 0;
-                            int len = config.Grays.Length;
 
-                            for (; cnt < len; y += pace, ++cnt)
+                            for (; y < sourh; y += pace)
                             {
+                                Color sc = sour.GetPixel(config.Col, (int)y);
                                 Color dc = dest.GetPixel(cmpcol, sourh - 1 - (int)y);
-                                int sgray = config.Grays[cnt];
-                                int dgray = (dc.R + dc.G + dc.B) / 3;
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
 
-                                int ierr = sgray - dgray;
+                                int ierr = (sgray - dgray) / 3;
                                 if (ierr < 0) { ierr = -ierr; }
                                 if (ierr > permiterr) { ++cnterr; }
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; } else { goto END_COL_CMP; }
                         }
 
                         #endregion
@@ -4605,22 +4699,22 @@ namespace PictureViewer
                             int permiterr = 10;
                             int cnterr = 0;
                             double x = 0;
-                            int cnt = 0;
-                            int len = config.Grays.Length;
 
-                            for (; cnt < len; x += pace, ++cnt)
+                            for (; x < sourh; x += pace)
                             {
+                                Color sc = sour.GetPixel(config.Col, (int)x);
                                 Color dc = dest.GetPixel((int)x, cmpcol);
-                                int sgray = config.Grays[cnt];
-                                int dgray = (dc.R + dc.G + dc.B) / 3;
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
 
-                                int ierr = sgray - dgray;
+                                int ierr = (sgray - dgray) / 3;
                                 if (ierr < 0) { ierr = -ierr; }
                                 if (ierr > permiterr) { ++cnterr; }
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; }
                         }
 
                         #endregion
@@ -4634,32 +4728,34 @@ namespace PictureViewer
                             int permiterr = 10;
                             int cnterr = 0;
                             double x = 0;
-                            int cnt = 0;
-                            int len = config.Grays.Length;
 
-                            for (; cnt < len; x += pace, ++cnt)
+                            for (; x < sourh; x += pace)
                             {
+                                Color sc = sour.GetPixel(config.Col, (int)x);
                                 Color dc = dest.GetPixel(sourh - 1 - (int)x, config.Col);
-                                int sgray = config.Grays[cnt];
-                                int dgray = (dc.R + dc.G + dc.B) / 3;
+                                int sgray = sc.R + sc.G + sc.B;
+                                int dgray = dc.R + dc.G + dc.B;
 
-                                int ierr = sgray - dgray;
+                                int ierr = (sgray - dgray) / 3;
                                 if (ierr < 0) { ierr = -ierr; }
                                 if (ierr > permiterr) { ++cnterr; }
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; } else { goto END_COL_CMP; }
                         }
 
                         #endregion
+
+                        goto END_COL_CMP;
                     }
 
                     #endregion
 
                     #region FULL LIKE NO_TURN
 
-                    else if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    if (config.Mode == MODE.FULL_LIKE_NOTURN)
                     {
 
                     }
@@ -4668,7 +4764,7 @@ namespace PictureViewer
 
                     #region FULL LIKE TURN
 
-                    else if (((config.Mode & MODE.FULL) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    if (config.Mode == MODE.FULL_LIKE_TURN)
                     {
 
                     }
@@ -4677,14 +4773,15 @@ namespace PictureViewer
 
                     #region PART SAME NO_TURN
 
-                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    if (config.Mode == MODE.PART_SAME_NOTURN)
                     {
-                        // 比例相同
-                        double h2w = (double)sourh / sourw;
-                        int err = (int)(h2w * destw) - desth; if (err < 0) { err = -err; }
-                        if (err > 3) { goto End; }
+                        int errparallel = 0;
+                        double h2h = 1;
+                        if (sourh > desth) { h2h = (double)sourh / desth; errparallel = (int)(sourw / h2h) - destw; }
+                        if (sourh < desth) { h2h = (double)desth / sourh; errparallel = (int)(destw / h2h) - sourw; }
+                        if (errparallel < 0) { errparallel = -errparallel; }
+                        if (errparallel > 1) { goto END_COL_CMP; }
 
-                        // 缩放
                         Bitmap smap, dmap;
                         double rate = 0;
                         if (sourh > desth)
@@ -4713,7 +4810,7 @@ namespace PictureViewer
                         int cmpcol = (int)((double)config.Col / sourw * destw);
 
                         //List<long> errlist = new List<long>();
-                        int permitcnterr = desth / 10 + (int)(rate * 10);
+                        int permitcnterr = desth * 2 / 10;
                         int permiterr = 10;
                         int cnterr = 0;
 
@@ -4731,25 +4828,31 @@ namespace PictureViewer
                             if (cnterr > permitcnterr) { break; }
                         }
 
-                        found = cnterr <= permitcnterr;
                         if (sourh > desth) { smap.Dispose(); }
                         if (sourh < desth) { dmap.Dispose(); }
+                        found = cnterr <= permitcnterr;
+                        if (found) { goto END; } else { goto END_COL_CMP; }
                     }
 
                     #endregion
 
                     #region PART SAME TURN
 
-                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    if (config.Mode == MODE.PART_SAME_TURN)
                     {
-                        double h2w = (double)sourh / sourw;
+                        int errparallel = 0, errcross = 0;
+                        double h2h = 1;
+                        if (sourh > desth) { h2h = (double)sourh / desth; errparallel = (int)(sourw / h2h) - destw; }
+                        if (sourh < desth) { h2h = (double)desth / sourh; errparallel = (int)(destw / h2h) - sourw; }
+                        if (sourh > destw) { h2h = (double)sourh / destw; errcross = (int)(sourw / h2h) - desth; }
+                        if (sourh < destw) { h2h = (double)destw / sourh; errcross = (int)(desth / h2h) - sourw; }
+                        if (errparallel < 0) { errparallel = -errparallel; }
+                        if (errcross < 0) { errcross = -errcross; }
 
                         #region 原样
 
-                        desth = dest.Height;
-                        destw = dest.Width;
-
-                        if (h2w * destw - desth < 3 && desth - h2w * destw < 3)
+                        desth = dest.Height; destw = dest.Width;
+                        if (errparallel < 2)
                         {
                             Bitmap smap, dmap;
                             double rate = 0;
@@ -4779,7 +4882,7 @@ namespace PictureViewer
                             int cmpcol = (int)((double)config.Col / sourw * destw);
 
                             //List<long> errlist = new List<long>();
-                            int permitcnterr = desth / 10 + (int)(rate * 10);
+                            int permitcnterr = desth > 100 ? desth * 2 / 10 : desth * 4 / 10;
                             int permiterr = 10;
                             int cnterr = 0;
 
@@ -4800,17 +4903,16 @@ namespace PictureViewer
                             if (sourh > desth) { smap.Dispose(); }
                             if (sourh < desth) { dmap.Dispose(); }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; }
                         }
 
                         #endregion
 
                         #region 逆时针旋转 180 度
 
-                        desth = dest.Height;
-                        destw = dest.Width;
-
-                        if (h2w * destw - desth < 3 && desth - h2w * destw < 3)
+                        desth = dest.Height; destw = dest.Width;
+                        if (errparallel < 2)
                         {
                             Bitmap smap, dmap;
                             double rate = 0;
@@ -4841,7 +4943,7 @@ namespace PictureViewer
                             int dcol = destw - 1 - scol;
 
                             //List<long> errlist = new List<long>();
-                            int permitcnterr = desth / 10 + (int)(rate * 10);
+                            int permitcnterr = desth > 100 ? desth * 2 / 10 : desth * 4 / 10;
                             int permiterr = 10;
                             int cnterr = 0;
 
@@ -4862,17 +4964,16 @@ namespace PictureViewer
                             if (sourh > desth) { smap.Dispose(); }
                             if (sourh < desth) { dmap.Dispose(); }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; } else { goto END_COL_CMP; }
                         }
 
                         #endregion
 
                         #region 逆时针旋转90度
 
-                        desth = dest.Height;
-                        destw = dest.Width;
-
-                        if (h2w * desth - destw < 3 && destw - h2w * desth < 3)
+                        desth = dest.Height; destw = dest.Width;
+                        if (errcross < 2)
                         {
                             Bitmap smap, dmap;
                             double rate = 0;
@@ -4903,7 +5004,7 @@ namespace PictureViewer
                             int dcol = desth - 1 - scol;
 
                             //List<long> errlist = new List<long>();
-                            int permitcnterr = destw / 10 + (int)(rate * 10);
+                            int permitcnterr = destw > 100 ? destw * 2 / 10 : destw * 4 / 10;
                             int permiterr = 10;
                             int cnterr = 0;
 
@@ -4924,17 +5025,16 @@ namespace PictureViewer
                             if (sourh > destw) { smap.Dispose(); }
                             if (sourh < destw) { dmap.Dispose(); }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; }
                         }
 
                         #endregion
 
                         #region 逆时针旋转 270 度
 
-                        desth = dest.Height;
-                        destw = dest.Width;
-
-                        if (h2w * desth - destw < 3 && destw - h2w * desth < 3)
+                        desth = dest.Height; destw = dest.Width;
+                        if (errcross < 2)
                         {
                             Bitmap smap, dmap;
                             double rate = 0;
@@ -4965,7 +5065,7 @@ namespace PictureViewer
                             int dcol = scol;
 
                             //List<long> errlist = new List<long>();
-                            int permitcnterr = destw / 10 + (int)(rate * 10);
+                            int permitcnterr = destw > 100 ? destw * 2 / 10 : destw * 4 / 10;
                             int permiterr = 10;
                             int cnterr = 0;
 
@@ -4986,17 +5086,20 @@ namespace PictureViewer
                             if (sourh > destw) { smap.Dispose(); }
                             if (sourh < destw) { dmap.Dispose(); }
 
-                            found = cnterr <= permitcnterr; if (found) { goto End; }
+                            found = cnterr <= permitcnterr;
+                            if (found) { goto END; } else { goto END_COL_CMP; }
                         }
 
                         #endregion
+
+                        goto END_COL_CMP;
                     }
 
                     #endregion
 
                     #region PATR LIKE NO_TURN
 
-                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) == 0))
+                    if (config.Mode == MODE.PART_LIKE_NOTURN)
                     {
 
                     }
@@ -5005,17 +5108,18 @@ namespace PictureViewer
 
                     #region PART LIKE TURN
 
-                    else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.LIKE) != 0) && ((config.Mode & MODE.TURN) != 0))
+                    if (config.Mode == MODE.PART_LIKE_TURN)
                     {
-
+                        goto END_COL_CMP;
                     }
 
                     #endregion
                 }
 
+                END_COL_CMP:
                 #endregion
 
-                End:
+                END:
                 lock (config.Lock) { if (found) { config.Results.Add(i); } config.CountFiles++; }
                 dest.Dispose();
             }
