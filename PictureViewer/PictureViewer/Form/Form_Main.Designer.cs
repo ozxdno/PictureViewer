@@ -224,6 +224,8 @@
             // 
             // partToolStripMenuItem
             // 
+            this.partToolStripMenuItem.Checked = true;
+            this.partToolStripMenuItem.CheckState = System.Windows.Forms.CheckState.Checked;
             this.partToolStripMenuItem.Name = "partToolStripMenuItem";
             this.partToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
             this.partToolStripMenuItem.Text = "Part";
@@ -313,8 +315,6 @@
             // 
             // fullToolStripMenuItem
             // 
-            this.fullToolStripMenuItem.Checked = true;
-            this.fullToolStripMenuItem.CheckState = System.Windows.Forms.CheckState.Checked;
             this.fullToolStripMenuItem.Name = "fullToolStripMenuItem";
             this.fullToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
             this.fullToolStripMenuItem.Text = "Full";

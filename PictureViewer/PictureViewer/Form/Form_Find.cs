@@ -378,9 +378,21 @@ namespace PictureViewer
                 if (DestPic != null) { DestPic.Dispose(); }
                 string unkfile = FileOperate.getExePath() + "\\unk.tip";
                 if (File.Exists(unkfile)) { DestPic = (Bitmap)Image.FromFile(unkfile); }
-                else { DestPic = null; }
+                else
+                {
+                    this.pictureBox1.BackgroundImage = null;
+                    this.toolTip1.ToolTipTitle = config.Path;
+                    this.toolTip1.SetToolTip(this.listBox1, config.Name); return;
+                }
 
-                this.pictureBox1.BackgroundImage = DestPic;
+                int hBox = this.pictureBox1.Height;
+                int wBox = this.pictureBox1.Width;
+                int hPic = DestPic.Height;
+                int wPic = DestPic.Width;
+
+                double rate = Math.Min((double)hBox / hPic, (double)wBox / wPic);
+                Bitmap dest = CopyPicture(DestPic, rate);
+                this.pictureBox1.BackgroundImage = dest;
 
                 this.toolTip1.ToolTipTitle = config.Path;
                 this.toolTip1.SetToolTip(this.listBox1, config.Name);
@@ -476,17 +488,17 @@ namespace PictureViewer
 
             config.TimeBG = config.CountTime;
 
-            //Threads[0].begin = 1;
-            //Threads[0].end = Names.Count;
-            //Threads[1].begin = 1;
-            //Threads[1].end = 0;
-            //Threads[2].begin = 1;
-            //Threads[2].end = 0;
-            //Threads[3].begin = 1;
-            //Threads[3].end = 0;
-            //Threads[1].finish = true;
-            //Threads[2].finish = true;
-            //Threads[3].finish = true;
+            Threads[0].begin = 1;
+            Threads[0].end = Names.Count;
+            Threads[1].begin = 1;
+            Threads[1].end = 0;
+            Threads[2].begin = 1;
+            Threads[2].end = 0;
+            Threads[3].begin = 1;
+            Threads[3].end = 0;
+            Threads[1].finish = true;
+            Threads[2].finish = true;
+            Threads[3].finish = true;
 
             Threads[0].thread.Start();
             Threads[1].thread.Start();
@@ -956,12 +968,13 @@ namespace PictureViewer
 
                     else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) == 0))
                     {
-                        // 比例相同
-                        double h2w = (double)sourh / sourw;
-                        int err = (int)(h2w * destw) - desth; if (err < 0) { err = -err; }
-                        if (err > 3) { goto End; }
+                        int errparallel = 0;
+                        double h2h = 1;
+                        if (sourh > desth) { h2h = (double)sourh / desth; errparallel = (int)(sourw / h2h) - destw; }
+                        if (sourh < desth) { h2h = (double)desth / sourh; errparallel = (int)(destw / h2h) - sourw; }
+                        if (errparallel < 0) { errparallel = -errparallel; }
+                        if (errparallel > 1) { goto End; }
 
-                        // 缩放
                         Bitmap smap, dmap;
                         double rate = 0;
                         if (sourh > desth)
@@ -1019,14 +1032,20 @@ namespace PictureViewer
 
                     else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) != 0))
                     {
-                        double h2w = (double)sourh / sourw;
+                        int errparallel = 0, errcross = 0;
+                        double h2h = 1;
+                        if (sourh > desth) { h2h = (double)sourh / desth; errparallel = (int)(sourw / h2h) - destw; }
+                        if (sourh < desth) { h2h = (double)desth / sourh; errparallel = (int)(destw / h2h) - sourw; }
+                        if (sourh > destw) { h2h = (double)sourh / destw; errcross = (int)(sourw / h2h) - desth; }
+                        if (sourh < destw) { h2h = (double)destw / sourh; errcross = (int)(desth / h2h) - sourw; }
+                        if (errparallel < 0) { errparallel = -errparallel; }
+                        if (errcross < 0) { errcross = -errcross; }
 
                         #region 原样
 
                         desth = dest.Height;
                         destw = dest.Width;
-
-                        if (h2w * destw - desth < 3 && desth - h2w * destw < 3)
+                        if (errparallel < 2)
                         {
                             Bitmap smap, dmap;
                             double rate = 0;
@@ -1056,7 +1075,7 @@ namespace PictureViewer
                             int cmprow = (int)((double)config.Row / sourh * desth);
 
                             //List<long> errlist = new List<long>();
-                            int permitcnterr = destw / 10 + (int)(rate * 10);
+                            int permitcnterr = destw > 100 ? destw * 2 / 10 : destw * 4 / 10;
                             int permiterr = 10;
                             int cnterr = 0;
 
@@ -1087,7 +1106,7 @@ namespace PictureViewer
                         desth = dest.Height;
                         destw = dest.Width;
 
-                        if (h2w * destw - desth < 3 && desth - h2w * destw < 3)
+                        if (errparallel < 2)
                         {
                             Bitmap smap, dmap;
                             double rate = 0;
@@ -1118,7 +1137,7 @@ namespace PictureViewer
                             int drow = desth - 1 - srow;
 
                             //List<long> errlist = new List<long>();
-                            int permitcnterr = destw / 10 + (int)(rate * 10);
+                            int permitcnterr = destw > 100 ? destw * 2 / 10 : destw * 4 / 10;
                             int permiterr = 10;
                             int cnterr = 0;
 
@@ -1149,7 +1168,7 @@ namespace PictureViewer
                         desth = dest.Height;
                         destw = dest.Width;
 
-                        if (h2w * desth - destw < 3 && destw - h2w * desth < 3)
+                        if (errcross < 2)
                         {
                             Bitmap smap, dmap;
                             double rate = 0;
@@ -1180,7 +1199,7 @@ namespace PictureViewer
                             int drow = srow;
 
                             //List<long> errlist = new List<long>();
-                            int permitcnterr = desth / 10 + (int)(rate * 10);
+                            int permitcnterr = destw > 100 ? desth * 2 / 10 : desth * 4 / 10;
                             int permiterr = 10;
                             int cnterr = 0;
 
@@ -1211,7 +1230,7 @@ namespace PictureViewer
                         desth = dest.Height;
                         destw = dest.Width;
 
-                        if (h2w * desth - destw < 3 && destw - h2w * desth < 3)
+                        if (errcross < 2)
                         {
                             Bitmap smap, dmap;
                             double rate = 0;
@@ -1242,7 +1261,7 @@ namespace PictureViewer
                             int drow = destw - 1 - srow;
 
                             //List<long> errlist = new List<long>();
-                            int permitcnterr = desth / 10 + (int)(rate * 10);
+                            int permitcnterr = desth > 100 ? desth * 2 / 10 : desth * 4 / 10;
                             int permiterr = 10;
                             int cnterr = 0;
 
@@ -1474,12 +1493,13 @@ namespace PictureViewer
 
                     else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) == 0))
                     {
-                        // 比例相同
-                        double h2w = (double)sourh / sourw;
-                        int err = (int)(h2w * destw) - desth; if (err < 0) { err = -err; }
-                        if (err > 3) { goto End; }
+                        int errparallel = 0;
+                        double h2h = 1;
+                        if (sourh > desth) { h2h = (double)sourh / desth; errparallel = (int)(sourw / h2h) - destw; }
+                        if (sourh < desth) { h2h = (double)desth / sourh; errparallel = (int)(destw / h2h) - sourw; }
+                        if (errparallel < 0) { errparallel = -errparallel; }
+                        if (errparallel > 1) { goto End; }
 
-                        // 缩放
                         Bitmap smap, dmap;
                         double rate = 0;
                         if (sourh > desth)
@@ -1508,7 +1528,7 @@ namespace PictureViewer
                         int cmpcol = (int)((double)config.Col / sourw * destw);
 
                         //List<long> errlist = new List<long>();
-                        int permitcnterr = desth / 10 + (int)(rate * 10);
+                        int permitcnterr = desth * 2 / 10;
                         int permiterr = 10;
                         int cnterr = 0;
 
@@ -1537,14 +1557,19 @@ namespace PictureViewer
 
                     else if (((config.Mode & MODE.PART) != 0) && ((config.Mode & MODE.SAME) != 0) && ((config.Mode & MODE.TURN) != 0))
                     {
-                        double h2w = (double)sourh / sourw;
+                        int errparallel = 0, errcross = 0;
+                        double h2h = 1;
+                        if (sourh > desth) { h2h = (double)sourh / desth; errparallel = (int)(sourw / h2h) - destw; }
+                        if (sourh < desth) { h2h = (double)desth / sourh; errparallel = (int)(destw / h2h) - sourw; }
+                        if (sourh > destw) { h2h = (double)sourh / destw; errcross = (int)(sourw / h2h) - desth; }
+                        if (sourh < destw) { h2h = (double)destw / sourh; errcross = (int)(desth / h2h) - sourw; }
+                        if (errparallel < 0) { errparallel = -errparallel; }
+                        if (errcross < 0) { errcross = -errcross; }
 
                         #region 原样
 
-                        desth = dest.Height;
-                        destw = dest.Width;
-
-                        if (h2w * destw - desth < 3 && desth - h2w * destw < 3)
+                        desth = dest.Height; destw = dest.Width;
+                        if (errparallel < 2)
                         {
                             Bitmap smap, dmap;
                             double rate = 0;
@@ -1574,7 +1599,7 @@ namespace PictureViewer
                             int cmpcol = (int)((double)config.Col / sourw * destw);
 
                             //List<long> errlist = new List<long>();
-                            int permitcnterr = desth / 10 + (int)(rate * 10);
+                            int permitcnterr = desth > 100 ? desth * 2 / 10 : desth * 4 / 10;
                             int permiterr = 10;
                             int cnterr = 0;
 
@@ -1601,11 +1626,9 @@ namespace PictureViewer
                         #endregion
 
                         #region 逆时针旋转 180 度
-
-                        desth = dest.Height;
-                        destw = dest.Width;
-
-                        if (h2w * destw - desth < 3 && desth - h2w * destw < 3)
+                        
+                        desth = dest.Height; destw = dest.Width;
+                        if (errparallel < 2)
                         {
                             Bitmap smap, dmap;
                             double rate = 0;
@@ -1636,7 +1659,7 @@ namespace PictureViewer
                             int dcol = destw - 1 - scol;
 
                             //List<long> errlist = new List<long>();
-                            int permitcnterr = desth / 10 + (int)(rate * 10);
+                            int permitcnterr = desth > 100 ? desth * 2 / 10 : desth * 4 / 10;
                             int permiterr = 10;
                             int cnterr = 0;
 
@@ -1664,10 +1687,8 @@ namespace PictureViewer
 
                         #region 逆时针旋转90度
 
-                        desth = dest.Height;
-                        destw = dest.Width;
-
-                        if (h2w * desth - destw < 3 && destw - h2w * desth < 3)
+                        desth = dest.Height; destw = dest.Width;
+                        if (errcross < 2)
                         {
                             Bitmap smap, dmap;
                             double rate = 0;
@@ -1698,7 +1719,7 @@ namespace PictureViewer
                             int dcol = desth - 1 - scol;
 
                             //List<long> errlist = new List<long>();
-                            int permitcnterr = destw / 10 + (int)(rate * 10);
+                            int permitcnterr = destw > 100 ? destw * 2 / 10 : destw * 4 / 10;
                             int permiterr = 10;
                             int cnterr = 0;
 
@@ -1726,10 +1747,8 @@ namespace PictureViewer
 
                         #region 逆时针旋转 270 度
 
-                        desth = dest.Height;
-                        destw = dest.Width;
-
-                        if (h2w * desth - destw < 3 && destw - h2w * desth < 3)
+                        desth = dest.Height; destw = dest.Width; 
+                        if (errcross < 2)
                         {
                             Bitmap smap, dmap;
                             double rate = 0;
@@ -1760,7 +1779,7 @@ namespace PictureViewer
                             int dcol = scol;
 
                             //List<long> errlist = new List<long>();
-                            int permitcnterr = destw / 10 + (int)(rate * 10);
+                            int permitcnterr = destw > 100 ? destw * 2 / 10 : destw * 4 / 10;
                             int permiterr = 10;
                             int cnterr = 0;
 
