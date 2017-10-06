@@ -1869,6 +1869,10 @@ namespace PictureViewer
 
             if (type != 2) { MessageBox.Show("不能匹配图片之外的文件", "提示"); return; }
 
+            // 不能匹配隐藏文件
+            if (!NoHide && FileOperate.IsSupportHide(FileOperate.getExtension(name)))
+            { MessageBox.Show("不能匹配图片之外的文件", "提示"); return; }
+
             // 确保没有重复路径
             for (int i = 0; i < FileOperate.RootFiles.Count; i++)
             {

@@ -109,6 +109,7 @@
             this.listBox1.Size = new System.Drawing.Size(180, 124);
             this.listBox1.TabIndex = 18;
             this.listBox1.SelectedIndexChanged += new System.EventHandler(this.ListClicked);
+            this.listBox1.DoubleClick += new System.EventHandler(this.RightMenu_Switch);
             // 
             // toolTip2
             // 

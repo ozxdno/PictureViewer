@@ -397,17 +397,17 @@ namespace PictureViewer
                 for (int j = 0; j < FileOperate.RootFiles[i].Name.Count; j++)
                 {
                     string jname = FileOperate.RootFiles[i].Name[j];
-                    int type = FileOperate.getFileType(FileOperate.getHideExtension(jname));
+                    int type = FileOperate.getFileType(FileOperate.getExtension(jname));
 
                     if (type == 1)
                     {
-                        ipath = ipath + jname;
-                        List<string> subnames = FileOperate.getSubFiles(ipath);
+                        string newpath = ipath + "\\" + jname;
+                        List<string> subnames = FileOperate.getSubFiles(newpath);
 
                         for (int k = 0; k < subnames.Count; k++)
                         {
                             jname = subnames[k];
-                            if (ipath == path && jname == name)
+                            if (newpath == path && jname == name)
                             {
                                 Form_Main.config.FolderIndex = i;
                                 Form_Main.config.FileIndex = j;
@@ -599,17 +599,17 @@ namespace PictureViewer
 
             config.TimeBG = config.CountTime;
 
-            Threads[0].begin = 1;
-            Threads[0].end = Names.Count;
-            Threads[1].begin = 1;
-            Threads[1].end = 0;
-            Threads[2].begin = 1;
-            Threads[2].end = 0;
-            Threads[3].begin = 1;
-            Threads[3].end = 0;
-            Threads[1].finish = true;
-            Threads[2].finish = true;
-            Threads[3].finish = true;
+            //Threads[0].begin = 1;
+            //Threads[0].end = Names.Count;
+            //Threads[1].begin = 1;
+            //Threads[1].end = 0;
+            //Threads[2].begin = 1;
+            //Threads[2].end = 0;
+            //Threads[3].begin = 1;
+            //Threads[3].end = 0;
+            //Threads[1].finish = true;
+            //Threads[2].finish = true;
+            //Threads[3].finish = true;
 
             Threads[0].thread.Start();
             Threads[1].thread.Start();
@@ -1112,6 +1112,11 @@ namespace PictureViewer
                         int errparallel = 0;
                         double h2h = 1;
                         if (sourh > desth) { h2h = (double)sourh / desth; errparallel = (int)(sourw / h2h) - destw; }
+                        else { h2h = (double)desth / sourh; errparallel = (int)(destw / h2h) - sourw; }
+                        if (errparallel < 0) { errparallel = -errparallel; }
+                        if (errparallel > 1) { goto END_ROW_CMP; }
+
+                        if (sourh > desth) { h2h = (double)sourh / desth; errparallel = (int)(sourw / h2h) - destw; }
                         if (sourh < desth) { h2h = (double)desth / sourh; errparallel = (int)(destw / h2h) - sourw; }
                         if (errparallel < 0) { errparallel = -errparallel; }
                         if (errparallel > 1) { goto END_ROW_CMP; }
@@ -1163,8 +1168,8 @@ namespace PictureViewer
                             if (cnterr > permitcnterr) { break; }
                         }
 
-                        if (sourh > desth) { smap.Dispose(); }
-                        if (sourh < desth) { dmap.Dispose(); }
+                        if (sourh > dest.Height) { smap.Dispose(); }
+                        if (sourh < dest.Height) { dmap.Dispose(); }
                         found = cnterr <= permitcnterr;
                         if (found) { goto END; } else { goto END_ROW_CMP; }
                     }
@@ -1178,9 +1183,9 @@ namespace PictureViewer
                         int errparallel = 0, errcross = 0;
                         double h2h = 1;
                         if (sourh > desth) { h2h = (double)sourh / desth; errparallel = (int)(sourw / h2h) - destw; }
-                        if (sourh < desth) { h2h = (double)desth / sourh; errparallel = (int)(destw / h2h) - sourw; }
+                        else { h2h = (double)desth / sourh; errparallel = (int)(destw / h2h) - sourw; }
                         if (sourh > destw) { h2h = (double)sourh / destw; errcross = (int)(sourw / h2h) - desth; }
-                        if (sourh < destw) { h2h = (double)destw / sourh; errcross = (int)(desth / h2h) - sourw; }
+                        else { h2h = (double)destw / sourh; errcross = (int)(desth / h2h) - sourw; }
                         if (errparallel < 0) { errparallel = -errparallel; }
                         if (errcross < 0) { errcross = -errcross; }
 
@@ -1237,8 +1242,8 @@ namespace PictureViewer
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            if (sourh > desth) { smap.Dispose(); }
-                            if (sourh < desth) { dmap.Dispose(); }
+                            if (sourh > dest.Height) { smap.Dispose(); }
+                            if (sourh < dest.Height) { dmap.Dispose(); }
 
                             found = cnterr <= permitcnterr;
                             if (found) { goto END; }
@@ -1301,8 +1306,8 @@ namespace PictureViewer
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            if (sourh > desth) { smap.Dispose(); }
-                            if (sourh < desth) { dmap.Dispose(); }
+                            if (sourh > dest.Height) { smap.Dispose(); }
+                            if (sourh < dest.Height) { dmap.Dispose(); }
 
                             found = cnterr <= permitcnterr;
                             if (found) { goto END; } else { goto END_ROW_CMP; }
@@ -1366,8 +1371,8 @@ namespace PictureViewer
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            if (sourh > destw) { smap.Dispose(); }
-                            if (sourh < destw) { dmap.Dispose(); }
+                            if (sourh > dest.Width) { smap.Dispose(); }
+                            if (sourh < dest.Width) { dmap.Dispose(); }
 
                             found = cnterr <= permitcnterr;
                             if (found) { goto END; }
@@ -1431,8 +1436,8 @@ namespace PictureViewer
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            if (sourh > destw) { smap.Dispose(); }
-                            if (sourh < destw) { dmap.Dispose(); }
+                            if (sourh > dest.Width) { smap.Dispose(); }
+                            if (sourh < dest.Width) { dmap.Dispose(); }
 
                             found = cnterr <= permitcnterr;
                             if (found) { goto END; } else { goto END_ROW_CMP; }
@@ -1659,7 +1664,7 @@ namespace PictureViewer
                         int errparallel = 0;
                         double h2h = 1;
                         if (sourh > desth) { h2h = (double)sourh / desth; errparallel = (int)(sourw / h2h) - destw; }
-                        if (sourh < desth) { h2h = (double)desth / sourh; errparallel = (int)(destw / h2h) - sourw; }
+                        else { h2h = (double)desth / sourh; errparallel = (int)(destw / h2h) - sourw; }
                         if (errparallel < 0) { errparallel = -errparallel; }
                         if (errparallel > 1) { goto END_COL_CMP; }
 
@@ -1711,8 +1716,8 @@ namespace PictureViewer
                             if (cnterr > permitcnterr) { break; }
                         }
                         
-                        if (sourh > desth) { smap.Dispose(); }
-                        if (sourh < desth) { dmap.Dispose(); }
+                        if (sourh > dest.Height) { smap.Dispose(); }
+                        if (sourh < dest.Height) { dmap.Dispose(); }
                         found = cnterr <= permitcnterr;
                         if (found) { goto END; } else { goto END_COL_CMP; }
                     }
@@ -1726,9 +1731,9 @@ namespace PictureViewer
                         int errparallel = 0, errcross = 0;
                         double h2h = 1;
                         if (sourh > desth) { h2h = (double)sourh / desth; errparallel = (int)(sourw / h2h) - destw; }
-                        if (sourh < desth) { h2h = (double)desth / sourh; errparallel = (int)(destw / h2h) - sourw; }
+                        else { h2h = (double)desth / sourh; errparallel = (int)(destw / h2h) - sourw; }
                         if (sourh > destw) { h2h = (double)sourh / destw; errcross = (int)(sourw / h2h) - desth; }
-                        if (sourh < destw) { h2h = (double)destw / sourh; errcross = (int)(desth / h2h) - sourw; }
+                        else { h2h = (double)destw / sourh; errcross = (int)(desth / h2h) - sourw; }
                         if (errparallel < 0) { errparallel = -errparallel; }
                         if (errcross < 0) { errcross = -errcross; }
 
@@ -1784,8 +1789,8 @@ namespace PictureViewer
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            if (sourh > desth) { smap.Dispose(); }
-                            if (sourh < desth) { dmap.Dispose(); }
+                            if (sourh > dest.Height) { smap.Dispose(); }
+                            if (sourh < dest.Height) { dmap.Dispose(); }
 
                             found = cnterr <= permitcnterr;
                             if (found) { goto END; }
@@ -1846,8 +1851,8 @@ namespace PictureViewer
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            if (sourh > desth) { smap.Dispose(); }
-                            if (sourh < desth) { dmap.Dispose(); }
+                            if (sourh > dest.Height) { smap.Dispose(); }
+                            if (sourh < dest.Height) { dmap.Dispose(); }
 
                             found = cnterr <= permitcnterr;
                             if (found) { goto END; } else { goto END_COL_CMP; }
@@ -1909,8 +1914,8 @@ namespace PictureViewer
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            if (sourh > destw) { smap.Dispose(); }
-                            if (sourh < destw) { dmap.Dispose(); }
+                            if (sourh > dest.Width) { smap.Dispose(); }
+                            if (sourh < dest.Width) { dmap.Dispose(); }
 
                             found = cnterr <= permitcnterr;
                             if (found) { goto END; }
@@ -1972,8 +1977,8 @@ namespace PictureViewer
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            if (sourh > destw) { smap.Dispose(); }
-                            if (sourh < destw) { dmap.Dispose(); }
+                            if (sourh > dest.Width) { smap.Dispose(); }
+                            if (sourh < dest.Width) { dmap.Dispose(); }
 
                             found = cnterr <= permitcnterr;
                             if (found) { goto END; } else { goto END_COL_CMP; }
@@ -2226,6 +2231,11 @@ namespace PictureViewer
                         int errparallel = 0;
                         double h2h = 1;
                         if (sourh > desth) { h2h = (double)sourh / desth; errparallel = (int)(sourw / h2h) - destw; }
+                        else { h2h = (double)desth / sourh; errparallel = (int)(destw / h2h) - sourw; }
+                        if (errparallel < 0) { errparallel = -errparallel; }
+                        if (errparallel > 1) { goto END_ROW_CMP; }
+
+                        if (sourh > desth) { h2h = (double)sourh / desth; errparallel = (int)(sourw / h2h) - destw; }
                         if (sourh < desth) { h2h = (double)desth / sourh; errparallel = (int)(destw / h2h) - sourw; }
                         if (errparallel < 0) { errparallel = -errparallel; }
                         if (errparallel > 1) { goto END_ROW_CMP; }
@@ -2277,8 +2287,8 @@ namespace PictureViewer
                             if (cnterr > permitcnterr) { break; }
                         }
 
-                        if (sourh > desth) { smap.Dispose(); }
-                        if (sourh < desth) { dmap.Dispose(); }
+                        if (sourh > dest.Height) { smap.Dispose(); }
+                        if (sourh < dest.Height) { dmap.Dispose(); }
                         found = cnterr <= permitcnterr;
                         if (found) { goto END; } else { goto END_ROW_CMP; }
                     }
@@ -2292,9 +2302,9 @@ namespace PictureViewer
                         int errparallel = 0, errcross = 0;
                         double h2h = 1;
                         if (sourh > desth) { h2h = (double)sourh / desth; errparallel = (int)(sourw / h2h) - destw; }
-                        if (sourh < desth) { h2h = (double)desth / sourh; errparallel = (int)(destw / h2h) - sourw; }
+                        else { h2h = (double)desth / sourh; errparallel = (int)(destw / h2h) - sourw; }
                         if (sourh > destw) { h2h = (double)sourh / destw; errcross = (int)(sourw / h2h) - desth; }
-                        if (sourh < destw) { h2h = (double)destw / sourh; errcross = (int)(desth / h2h) - sourw; }
+                        else { h2h = (double)destw / sourh; errcross = (int)(desth / h2h) - sourw; }
                         if (errparallel < 0) { errparallel = -errparallel; }
                         if (errcross < 0) { errcross = -errcross; }
 
@@ -2351,8 +2361,8 @@ namespace PictureViewer
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            if (sourh > desth) { smap.Dispose(); }
-                            if (sourh < desth) { dmap.Dispose(); }
+                            if (sourh > dest.Height) { smap.Dispose(); }
+                            if (sourh < dest.Height) { dmap.Dispose(); }
 
                             found = cnterr <= permitcnterr;
                             if (found) { goto END; }
@@ -2415,8 +2425,8 @@ namespace PictureViewer
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            if (sourh > desth) { smap.Dispose(); }
-                            if (sourh < desth) { dmap.Dispose(); }
+                            if (sourh > dest.Height) { smap.Dispose(); }
+                            if (sourh < dest.Height) { dmap.Dispose(); }
 
                             found = cnterr <= permitcnterr;
                             if (found) { goto END; } else { goto END_ROW_CMP; }
@@ -2480,8 +2490,8 @@ namespace PictureViewer
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            if (sourh > destw) { smap.Dispose(); }
-                            if (sourh < destw) { dmap.Dispose(); }
+                            if (sourh > dest.Width) { smap.Dispose(); }
+                            if (sourh < dest.Width) { dmap.Dispose(); }
 
                             found = cnterr <= permitcnterr;
                             if (found) { goto END; }
@@ -2545,8 +2555,8 @@ namespace PictureViewer
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            if (sourh > destw) { smap.Dispose(); }
-                            if (sourh < destw) { dmap.Dispose(); }
+                            if (sourh > dest.Width) { smap.Dispose(); }
+                            if (sourh < dest.Width) { dmap.Dispose(); }
 
                             found = cnterr <= permitcnterr;
                             if (found) { goto END; } else { goto END_ROW_CMP; }
@@ -2773,7 +2783,7 @@ namespace PictureViewer
                         int errparallel = 0;
                         double h2h = 1;
                         if (sourh > desth) { h2h = (double)sourh / desth; errparallel = (int)(sourw / h2h) - destw; }
-                        if (sourh < desth) { h2h = (double)desth / sourh; errparallel = (int)(destw / h2h) - sourw; }
+                        else { h2h = (double)desth / sourh; errparallel = (int)(destw / h2h) - sourw; }
                         if (errparallel < 0) { errparallel = -errparallel; }
                         if (errparallel > 1) { goto END_COL_CMP; }
 
@@ -2825,8 +2835,8 @@ namespace PictureViewer
                             if (cnterr > permitcnterr) { break; }
                         }
 
-                        if (sourh > desth) { smap.Dispose(); }
-                        if (sourh < desth) { dmap.Dispose(); }
+                        if (sourh > dest.Height) { smap.Dispose(); }
+                        if (sourh < dest.Height) { dmap.Dispose(); }
                         found = cnterr <= permitcnterr;
                         if (found) { goto END; } else { goto END_COL_CMP; }
                     }
@@ -2840,9 +2850,9 @@ namespace PictureViewer
                         int errparallel = 0, errcross = 0;
                         double h2h = 1;
                         if (sourh > desth) { h2h = (double)sourh / desth; errparallel = (int)(sourw / h2h) - destw; }
-                        if (sourh < desth) { h2h = (double)desth / sourh; errparallel = (int)(destw / h2h) - sourw; }
+                        else { h2h = (double)desth / sourh; errparallel = (int)(destw / h2h) - sourw; }
                         if (sourh > destw) { h2h = (double)sourh / destw; errcross = (int)(sourw / h2h) - desth; }
-                        if (sourh < destw) { h2h = (double)destw / sourh; errcross = (int)(desth / h2h) - sourw; }
+                        else { h2h = (double)destw / sourh; errcross = (int)(desth / h2h) - sourw; }
                         if (errparallel < 0) { errparallel = -errparallel; }
                         if (errcross < 0) { errcross = -errcross; }
 
@@ -2898,8 +2908,8 @@ namespace PictureViewer
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            if (sourh > desth) { smap.Dispose(); }
-                            if (sourh < desth) { dmap.Dispose(); }
+                            if (sourh > dest.Height) { smap.Dispose(); }
+                            if (sourh < dest.Height) { dmap.Dispose(); }
 
                             found = cnterr <= permitcnterr;
                             if (found) { goto END; }
@@ -2960,8 +2970,8 @@ namespace PictureViewer
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            if (sourh > desth) { smap.Dispose(); }
-                            if (sourh < desth) { dmap.Dispose(); }
+                            if (sourh > dest.Height) { smap.Dispose(); }
+                            if (sourh < dest.Height) { dmap.Dispose(); }
 
                             found = cnterr <= permitcnterr;
                             if (found) { goto END; } else { goto END_COL_CMP; }
@@ -3023,8 +3033,8 @@ namespace PictureViewer
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            if (sourh > destw) { smap.Dispose(); }
-                            if (sourh < destw) { dmap.Dispose(); }
+                            if (sourh > dest.Width) { smap.Dispose(); }
+                            if (sourh < dest.Width) { dmap.Dispose(); }
 
                             found = cnterr <= permitcnterr;
                             if (found) { goto END; }
@@ -3086,8 +3096,8 @@ namespace PictureViewer
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            if (sourh > destw) { smap.Dispose(); }
-                            if (sourh < destw) { dmap.Dispose(); }
+                            if (sourh > dest.Width) { smap.Dispose(); }
+                            if (sourh < dest.Width) { dmap.Dispose(); }
 
                             found = cnterr <= permitcnterr;
                             if (found) { goto END; } else { goto END_COL_CMP; }
@@ -3340,6 +3350,11 @@ namespace PictureViewer
                         int errparallel = 0;
                         double h2h = 1;
                         if (sourh > desth) { h2h = (double)sourh / desth; errparallel = (int)(sourw / h2h) - destw; }
+                        else { h2h = (double)desth / sourh; errparallel = (int)(destw / h2h) - sourw; }
+                        if (errparallel < 0) { errparallel = -errparallel; }
+                        if (errparallel > 1) { goto END_ROW_CMP; }
+
+                        if (sourh > desth) { h2h = (double)sourh / desth; errparallel = (int)(sourw / h2h) - destw; }
                         if (sourh < desth) { h2h = (double)desth / sourh; errparallel = (int)(destw / h2h) - sourw; }
                         if (errparallel < 0) { errparallel = -errparallel; }
                         if (errparallel > 1) { goto END_ROW_CMP; }
@@ -3391,8 +3406,8 @@ namespace PictureViewer
                             if (cnterr > permitcnterr) { break; }
                         }
 
-                        if (sourh > desth) { smap.Dispose(); }
-                        if (sourh < desth) { dmap.Dispose(); }
+                        if (sourh > dest.Height) { smap.Dispose(); }
+                        if (sourh < dest.Height) { dmap.Dispose(); }
                         found = cnterr <= permitcnterr;
                         if (found) { goto END; } else { goto END_ROW_CMP; }
                     }
@@ -3406,9 +3421,9 @@ namespace PictureViewer
                         int errparallel = 0, errcross = 0;
                         double h2h = 1;
                         if (sourh > desth) { h2h = (double)sourh / desth; errparallel = (int)(sourw / h2h) - destw; }
-                        if (sourh < desth) { h2h = (double)desth / sourh; errparallel = (int)(destw / h2h) - sourw; }
+                        else { h2h = (double)desth / sourh; errparallel = (int)(destw / h2h) - sourw; }
                         if (sourh > destw) { h2h = (double)sourh / destw; errcross = (int)(sourw / h2h) - desth; }
-                        if (sourh < destw) { h2h = (double)destw / sourh; errcross = (int)(desth / h2h) - sourw; }
+                        else { h2h = (double)destw / sourh; errcross = (int)(desth / h2h) - sourw; }
                         if (errparallel < 0) { errparallel = -errparallel; }
                         if (errcross < 0) { errcross = -errcross; }
 
@@ -3465,8 +3480,8 @@ namespace PictureViewer
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            if (sourh > desth) { smap.Dispose(); }
-                            if (sourh < desth) { dmap.Dispose(); }
+                            if (sourh > dest.Height) { smap.Dispose(); }
+                            if (sourh < dest.Height) { dmap.Dispose(); }
 
                             found = cnterr <= permitcnterr;
                             if (found) { goto END; }
@@ -3529,8 +3544,8 @@ namespace PictureViewer
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            if (sourh > desth) { smap.Dispose(); }
-                            if (sourh < desth) { dmap.Dispose(); }
+                            if (sourh > dest.Height) { smap.Dispose(); }
+                            if (sourh < dest.Height) { dmap.Dispose(); }
 
                             found = cnterr <= permitcnterr;
                             if (found) { goto END; } else { goto END_ROW_CMP; }
@@ -3594,8 +3609,8 @@ namespace PictureViewer
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            if (sourh > destw) { smap.Dispose(); }
-                            if (sourh < destw) { dmap.Dispose(); }
+                            if (sourh > dest.Width) { smap.Dispose(); }
+                            if (sourh < dest.Width) { dmap.Dispose(); }
 
                             found = cnterr <= permitcnterr;
                             if (found) { goto END; }
@@ -3659,8 +3674,8 @@ namespace PictureViewer
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            if (sourh > destw) { smap.Dispose(); }
-                            if (sourh < destw) { dmap.Dispose(); }
+                            if (sourh > dest.Width) { smap.Dispose(); }
+                            if (sourh < dest.Width) { dmap.Dispose(); }
 
                             found = cnterr <= permitcnterr;
                             if (found) { goto END; } else { goto END_ROW_CMP; }
@@ -3887,7 +3902,7 @@ namespace PictureViewer
                         int errparallel = 0;
                         double h2h = 1;
                         if (sourh > desth) { h2h = (double)sourh / desth; errparallel = (int)(sourw / h2h) - destw; }
-                        if (sourh < desth) { h2h = (double)desth / sourh; errparallel = (int)(destw / h2h) - sourw; }
+                        else { h2h = (double)desth / sourh; errparallel = (int)(destw / h2h) - sourw; }
                         if (errparallel < 0) { errparallel = -errparallel; }
                         if (errparallel > 1) { goto END_COL_CMP; }
 
@@ -3939,8 +3954,8 @@ namespace PictureViewer
                             if (cnterr > permitcnterr) { break; }
                         }
 
-                        if (sourh > desth) { smap.Dispose(); }
-                        if (sourh < desth) { dmap.Dispose(); }
+                        if (sourh > dest.Height) { smap.Dispose(); }
+                        if (sourh < dest.Height) { dmap.Dispose(); }
                         found = cnterr <= permitcnterr;
                         if (found) { goto END; } else { goto END_COL_CMP; }
                     }
@@ -3954,9 +3969,9 @@ namespace PictureViewer
                         int errparallel = 0, errcross = 0;
                         double h2h = 1;
                         if (sourh > desth) { h2h = (double)sourh / desth; errparallel = (int)(sourw / h2h) - destw; }
-                        if (sourh < desth) { h2h = (double)desth / sourh; errparallel = (int)(destw / h2h) - sourw; }
+                        else { h2h = (double)desth / sourh; errparallel = (int)(destw / h2h) - sourw; }
                         if (sourh > destw) { h2h = (double)sourh / destw; errcross = (int)(sourw / h2h) - desth; }
-                        if (sourh < destw) { h2h = (double)destw / sourh; errcross = (int)(desth / h2h) - sourw; }
+                        else { h2h = (double)destw / sourh; errcross = (int)(desth / h2h) - sourw; }
                         if (errparallel < 0) { errparallel = -errparallel; }
                         if (errcross < 0) { errcross = -errcross; }
 
@@ -4012,8 +4027,8 @@ namespace PictureViewer
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            if (sourh > desth) { smap.Dispose(); }
-                            if (sourh < desth) { dmap.Dispose(); }
+                            if (sourh > dest.Height) { smap.Dispose(); }
+                            if (sourh < dest.Height) { dmap.Dispose(); }
 
                             found = cnterr <= permitcnterr;
                             if (found) { goto END; }
@@ -4074,8 +4089,8 @@ namespace PictureViewer
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            if (sourh > desth) { smap.Dispose(); }
-                            if (sourh < desth) { dmap.Dispose(); }
+                            if (sourh > dest.Height) { smap.Dispose(); }
+                            if (sourh < dest.Height) { dmap.Dispose(); }
 
                             found = cnterr <= permitcnterr;
                             if (found) { goto END; } else { goto END_COL_CMP; }
@@ -4137,8 +4152,8 @@ namespace PictureViewer
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            if (sourh > destw) { smap.Dispose(); }
-                            if (sourh < destw) { dmap.Dispose(); }
+                            if (sourh > dest.Width) { smap.Dispose(); }
+                            if (sourh < dest.Width) { dmap.Dispose(); }
 
                             found = cnterr <= permitcnterr;
                             if (found) { goto END; }
@@ -4200,8 +4215,8 @@ namespace PictureViewer
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            if (sourh > destw) { smap.Dispose(); }
-                            if (sourh < destw) { dmap.Dispose(); }
+                            if (sourh > dest.Width) { smap.Dispose(); }
+                            if (sourh < dest.Width) { dmap.Dispose(); }
 
                             found = cnterr <= permitcnterr;
                             if (found) { goto END; } else { goto END_COL_CMP; }
@@ -4454,6 +4469,11 @@ namespace PictureViewer
                         int errparallel = 0;
                         double h2h = 1;
                         if (sourh > desth) { h2h = (double)sourh / desth; errparallel = (int)(sourw / h2h) - destw; }
+                        else { h2h = (double)desth / sourh; errparallel = (int)(destw / h2h) - sourw; }
+                        if (errparallel < 0) { errparallel = -errparallel; }
+                        if (errparallel > 1) { goto END_ROW_CMP; }
+
+                        if (sourh > desth) { h2h = (double)sourh / desth; errparallel = (int)(sourw / h2h) - destw; }
                         if (sourh < desth) { h2h = (double)desth / sourh; errparallel = (int)(destw / h2h) - sourw; }
                         if (errparallel < 0) { errparallel = -errparallel; }
                         if (errparallel > 1) { goto END_ROW_CMP; }
@@ -4505,8 +4525,8 @@ namespace PictureViewer
                             if (cnterr > permitcnterr) { break; }
                         }
 
-                        if (sourh > desth) { smap.Dispose(); }
-                        if (sourh < desth) { dmap.Dispose(); }
+                        if (sourh > dest.Height) { smap.Dispose(); }
+                        if (sourh < dest.Height) { dmap.Dispose(); }
                         found = cnterr <= permitcnterr;
                         if (found) { goto END; } else { goto END_ROW_CMP; }
                     }
@@ -4520,9 +4540,9 @@ namespace PictureViewer
                         int errparallel = 0, errcross = 0;
                         double h2h = 1;
                         if (sourh > desth) { h2h = (double)sourh / desth; errparallel = (int)(sourw / h2h) - destw; }
-                        if (sourh < desth) { h2h = (double)desth / sourh; errparallel = (int)(destw / h2h) - sourw; }
+                        else { h2h = (double)desth / sourh; errparallel = (int)(destw / h2h) - sourw; }
                         if (sourh > destw) { h2h = (double)sourh / destw; errcross = (int)(sourw / h2h) - desth; }
-                        if (sourh < destw) { h2h = (double)destw / sourh; errcross = (int)(desth / h2h) - sourw; }
+                        else { h2h = (double)destw / sourh; errcross = (int)(desth / h2h) - sourw; }
                         if (errparallel < 0) { errparallel = -errparallel; }
                         if (errcross < 0) { errcross = -errcross; }
 
@@ -4579,8 +4599,8 @@ namespace PictureViewer
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            if (sourh > desth) { smap.Dispose(); }
-                            if (sourh < desth) { dmap.Dispose(); }
+                            if (sourh > dest.Height) { smap.Dispose(); }
+                            if (sourh < dest.Height) { dmap.Dispose(); }
 
                             found = cnterr <= permitcnterr;
                             if (found) { goto END; }
@@ -4643,8 +4663,8 @@ namespace PictureViewer
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            if (sourh > desth) { smap.Dispose(); }
-                            if (sourh < desth) { dmap.Dispose(); }
+                            if (sourh > dest.Height) { smap.Dispose(); }
+                            if (sourh < dest.Height) { dmap.Dispose(); }
 
                             found = cnterr <= permitcnterr;
                             if (found) { goto END; } else { goto END_ROW_CMP; }
@@ -4708,8 +4728,8 @@ namespace PictureViewer
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            if (sourh > destw) { smap.Dispose(); }
-                            if (sourh < destw) { dmap.Dispose(); }
+                            if (sourh > dest.Width) { smap.Dispose(); }
+                            if (sourh < dest.Width) { dmap.Dispose(); }
 
                             found = cnterr <= permitcnterr;
                             if (found) { goto END; }
@@ -4773,8 +4793,8 @@ namespace PictureViewer
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            if (sourh > destw) { smap.Dispose(); }
-                            if (sourh < destw) { dmap.Dispose(); }
+                            if (sourh > dest.Width) { smap.Dispose(); }
+                            if (sourh < dest.Width) { dmap.Dispose(); }
 
                             found = cnterr <= permitcnterr;
                             if (found) { goto END; } else { goto END_ROW_CMP; }
@@ -5001,7 +5021,7 @@ namespace PictureViewer
                         int errparallel = 0;
                         double h2h = 1;
                         if (sourh > desth) { h2h = (double)sourh / desth; errparallel = (int)(sourw / h2h) - destw; }
-                        if (sourh < desth) { h2h = (double)desth / sourh; errparallel = (int)(destw / h2h) - sourw; }
+                        else { h2h = (double)desth / sourh; errparallel = (int)(destw / h2h) - sourw; }
                         if (errparallel < 0) { errparallel = -errparallel; }
                         if (errparallel > 1) { goto END_COL_CMP; }
 
@@ -5053,8 +5073,8 @@ namespace PictureViewer
                             if (cnterr > permitcnterr) { break; }
                         }
 
-                        if (sourh > desth) { smap.Dispose(); }
-                        if (sourh < desth) { dmap.Dispose(); }
+                        if (sourh > dest.Height) { smap.Dispose(); }
+                        if (sourh < dest.Height) { dmap.Dispose(); }
                         found = cnterr <= permitcnterr;
                         if (found) { goto END; } else { goto END_COL_CMP; }
                     }
@@ -5068,9 +5088,9 @@ namespace PictureViewer
                         int errparallel = 0, errcross = 0;
                         double h2h = 1;
                         if (sourh > desth) { h2h = (double)sourh / desth; errparallel = (int)(sourw / h2h) - destw; }
-                        if (sourh < desth) { h2h = (double)desth / sourh; errparallel = (int)(destw / h2h) - sourw; }
+                        else { h2h = (double)desth / sourh; errparallel = (int)(destw / h2h) - sourw; }
                         if (sourh > destw) { h2h = (double)sourh / destw; errcross = (int)(sourw / h2h) - desth; }
-                        if (sourh < destw) { h2h = (double)destw / sourh; errcross = (int)(desth / h2h) - sourw; }
+                        else { h2h = (double)destw / sourh; errcross = (int)(desth / h2h) - sourw; }
                         if (errparallel < 0) { errparallel = -errparallel; }
                         if (errcross < 0) { errcross = -errcross; }
 
@@ -5126,8 +5146,8 @@ namespace PictureViewer
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            if (sourh > desth) { smap.Dispose(); }
-                            if (sourh < desth) { dmap.Dispose(); }
+                            if (sourh > dest.Height) { smap.Dispose(); }
+                            if (sourh < dest.Height) { dmap.Dispose(); }
 
                             found = cnterr <= permitcnterr;
                             if (found) { goto END; }
@@ -5188,8 +5208,8 @@ namespace PictureViewer
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            if (sourh > desth) { smap.Dispose(); }
-                            if (sourh < desth) { dmap.Dispose(); }
+                            if (sourh > dest.Height) { smap.Dispose(); }
+                            if (sourh < dest.Height) { dmap.Dispose(); }
 
                             found = cnterr <= permitcnterr;
                             if (found) { goto END; } else { goto END_COL_CMP; }
@@ -5251,8 +5271,8 @@ namespace PictureViewer
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            if (sourh > destw) { smap.Dispose(); }
-                            if (sourh < destw) { dmap.Dispose(); }
+                            if (sourh > dest.Width) { smap.Dispose(); }
+                            if (sourh < dest.Width) { dmap.Dispose(); }
 
                             found = cnterr <= permitcnterr;
                             if (found) { goto END; }
@@ -5314,8 +5334,8 @@ namespace PictureViewer
                                 if (cnterr > permitcnterr) { break; }
                             }
 
-                            if (sourh > destw) { smap.Dispose(); }
-                            if (sourh < destw) { dmap.Dispose(); }
+                            if (sourh > dest.Width) { smap.Dispose(); }
+                            if (sourh < dest.Width) { dmap.Dispose(); }
 
                             found = cnterr <= permitcnterr;
                             if (found) { goto END; } else { goto END_COL_CMP; }
