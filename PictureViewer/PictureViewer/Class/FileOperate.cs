@@ -64,6 +64,25 @@ namespace PictureViewer.Class
             name = fullname.Substring(cut + 1);
             return;
         }
+        /// <summary>
+        /// 获取显示文本（适用于窗体）。
+        /// </summary>
+        /// <param name="text">用于显示的文本</param>
+        /// <param name="nShow">允许显示长度</param>
+        /// <param name="nLink">连接符的数量</param>
+        /// <param name="getTail">保留尾部，为真时保留头部</param>
+        /// <param name="link">连接符（当文本过长的省略符）</param>
+        /// <returns></returns>
+        public static string getShowString(string text, int nShow, int nLink, bool getTail = true, char link = '.')
+        {
+            if (text == null) { return text; }
+            if (text.Length <= nShow) { return text; }
+
+            string linkstr = "";
+            for (int i = 0; i < nLink; i++) { linkstr += link; }
+            if (getTail) { return linkstr + text.Substring(text.Length - nShow - nLink); }
+            return text.Substring(text.Length - nShow - nLink) + linkstr;
+        }
 
         /// <summary>
         /// 搜索根目录

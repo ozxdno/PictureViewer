@@ -38,13 +38,15 @@
             this.toolTip2 = new System.Windows.Forms.ToolTip(this.components);
             this.textBox1 = new System.Windows.Forms.TextBox();
             this.contextMenuStrip1 = new System.Windows.Forms.ContextMenuStrip(this.components);
-            this.startToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.exportToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.export2ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.label1 = new System.Windows.Forms.Label();
-            this.label2 = new System.Windows.Forms.Label();
+            this.startToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.pixesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.openToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.label1 = new System.Windows.Forms.Label();
+            this.label2 = new System.Windows.Forms.Label();
+            this.switchToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.degreeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox2)).BeginInit();
             this.contextMenuStrip1.SuspendLayout();
@@ -53,11 +55,13 @@
             // pictureBox1
             // 
             this.pictureBox1.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.pictureBox1.ContextMenuStrip = this.contextMenuStrip1;
             this.pictureBox1.Location = new System.Drawing.Point(197, 0);
             this.pictureBox1.Name = "pictureBox1";
             this.pictureBox1.Size = new System.Drawing.Size(320, 320);
             this.pictureBox1.TabIndex = 1;
             this.pictureBox1.TabStop = false;
+            this.pictureBox1.DoubleClick += new System.EventHandler(this.RightMenu_Switch);
             // 
             // pictureBox2
             // 
@@ -126,17 +130,12 @@
             this.exportToolStripMenuItem,
             this.export2ToolStripMenuItem,
             this.startToolStripMenuItem,
+            this.degreeToolStripMenuItem,
             this.pixesToolStripMenuItem,
+            this.switchToolStripMenuItem,
             this.openToolStripMenuItem});
             this.contextMenuStrip1.Name = "contextMenuStrip1";
-            this.contextMenuStrip1.Size = new System.Drawing.Size(122, 114);
-            // 
-            // startToolStripMenuItem
-            // 
-            this.startToolStripMenuItem.Name = "startToolStripMenuItem";
-            this.startToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
-            this.startToolStripMenuItem.Text = "Start";
-            this.startToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Start);
+            this.contextMenuStrip1.Size = new System.Drawing.Size(122, 158);
             // 
             // exportToolStripMenuItem
             // 
@@ -148,9 +147,30 @@
             // export2ToolStripMenuItem
             // 
             this.export2ToolStripMenuItem.Name = "export2ToolStripMenuItem";
-            this.export2ToolStripMenuItem.Size = new System.Drawing.Size(121, 22);
+            this.export2ToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
             this.export2ToolStripMenuItem.Text = "Export2";
             this.export2ToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Export2);
+            // 
+            // startToolStripMenuItem
+            // 
+            this.startToolStripMenuItem.Name = "startToolStripMenuItem";
+            this.startToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.startToolStripMenuItem.Text = "Start";
+            this.startToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Start);
+            // 
+            // pixesToolStripMenuItem
+            // 
+            this.pixesToolStripMenuItem.Name = "pixesToolStripMenuItem";
+            this.pixesToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.pixesToolStripMenuItem.Text = "Pixes";
+            this.pixesToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Pixes);
+            // 
+            // openToolStripMenuItem
+            // 
+            this.openToolStripMenuItem.Name = "openToolStripMenuItem";
+            this.openToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.openToolStripMenuItem.Text = "Open";
+            this.openToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Open);
             // 
             // label1
             // 
@@ -178,19 +198,19 @@
             this.label2.Visible = false;
             this.label2.Click += new System.EventHandler(this.RightMenu_Export);
             // 
-            // pixesToolStripMenuItem
+            // switchToolStripMenuItem
             // 
-            this.pixesToolStripMenuItem.Name = "pixesToolStripMenuItem";
-            this.pixesToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
-            this.pixesToolStripMenuItem.Text = "Pixes";
-            this.pixesToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Pixes);
+            this.switchToolStripMenuItem.Name = "switchToolStripMenuItem";
+            this.switchToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.switchToolStripMenuItem.Text = "Switch";
+            this.switchToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Switch);
             // 
-            // openToolStripMenuItem
+            // degreeToolStripMenuItem
             // 
-            this.openToolStripMenuItem.Name = "openToolStripMenuItem";
-            this.openToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
-            this.openToolStripMenuItem.Text = "Open";
-            this.openToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Open);
+            this.degreeToolStripMenuItem.Name = "degreeToolStripMenuItem";
+            this.degreeToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.degreeToolStripMenuItem.Text = "Degree";
+            this.degreeToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Degree);
             // 
             // Form_Find
             // 
@@ -206,12 +226,14 @@
             this.Controls.Add(this.pictureBox1);
             this.Controls.Add(this.textBox1);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
+            this.KeyPreview = true;
             this.MaximizeBox = false;
             this.Name = "Form_Find";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Form_Find";
             this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.Form_Close);
             this.Load += new System.EventHandler(this.Form_Load);
+            this.KeyUp += new System.Windows.Forms.KeyEventHandler(this.Form_KeyUp);
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox2)).EndInit();
             this.contextMenuStrip1.ResumeLayout(false);
@@ -237,5 +259,7 @@
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.ToolStripMenuItem pixesToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem openToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem degreeToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem switchToolStripMenuItem;
     }
 }

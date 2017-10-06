@@ -1898,6 +1898,7 @@ namespace PictureViewer
 
             Form_Find find = new Form_Find(config.SourPicture, path + "\\" + name, (Form_Find.MODE)mode);
             find.ShowDialog();
+            ShowCurrent();
         }
         private void RightMenu_Find_Full(object sender, EventArgs e)
         {

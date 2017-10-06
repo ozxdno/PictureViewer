@@ -82,6 +82,7 @@ namespace PictureViewer
         {
             public Thread thread;
             public Bitmap sour;
+            public bool abort;
             public bool finish;
             public int begin;
             public int end;
@@ -122,6 +123,10 @@ namespace PictureViewer
             /// 最小比较元素个数
             /// </summary>
             public int MinCmpPix;
+            /// <summary>
+            /// 相似程度
+            /// </summary>
+            public int Degree;
             /// <summary>
             /// Grays 所在行
             /// </summary>
@@ -180,12 +185,7 @@ namespace PictureViewer
         }
         private void Form_Close(object sender, FormClosedEventArgs e)
         {
-            while (Threads[0].thread != null && Threads[0].thread.ThreadState == ThreadState.Running) { Threads[0].thread.Abort(); }
-            while (Threads[1].thread != null && Threads[0].thread.ThreadState == ThreadState.Running) { Threads[1].thread.Abort(); }
-            while (Threads[2].thread != null && Threads[0].thread.ThreadState == ThreadState.Running) { Threads[2].thread.Abort(); }
-            while (Threads[3].thread != null && Threads[0].thread.ThreadState == ThreadState.Running) { Threads[3].thread.Abort(); }
-
-            Timer.Close();
+            Stop(); Timer.Close();
 
             try { SourPic.Dispose(); } catch { }
             try { DestPic.Dispose(); } catch { }
@@ -204,22 +204,25 @@ namespace PictureViewer
                 double usedTime = (double)(config.TimeED - config.TimeBG) / 10;
                 string usedtime = usedTime.ToString();
                 if (usedtime.Length < 2 || usedtime[usedtime.Length - 2] != '.') { usedtime += ".0"; }
-                int findfiles = 0; lock (config.Lock) { findfiles = config.CountFiles; }
-                this.Text = IsFinish ?
-                    "[Find]: " + findfiles.ToString() + "/" + Names.Count.ToString() + " Files [State]: Finished [Used Time]: " + usedtime + " s" :
-                    "[Find]: " + findfiles.ToString() + "/" + Names.Count.ToString() + " Files [State]: Finding... [Used Time]: " + usedtime + " s";
+                int findfiles = 0;
+                int found = 0;
+                lock (config.Lock) { findfiles = config.CountFiles; found = config.Results.Count; }
+                string findstr = "[Find]: " + findfiles.ToString() + "/" + Names.Count.ToString() + " files";
+                string resultstr = "[Result]: " + found.ToString();
+                string statestr = IsFinish ? "[State]: Finished" : "[State]: Finding...";
+                string timestr = "[Used Time]: " + usedtime + " s";
+                this.Text = findstr + " " + timestr + " " + resultstr;
 
-                ShowList();
-
-                //if (config.Index != this.listBox1.SelectedIndex && this.listBox1.SelectedIndex == -1)
-                //{ try { this.listBox1.SelectedIndex = config.Index; } catch { } }
+                if (!prevState || !IsFinish) { ShowList(); }
                 
                 if (IsFinish && prevState != IsFinish)
                 {
                     this.startToolStripMenuItem.Text = "Start";
-                    config.Index = 0;
-                    ShowDestPic();
-                    //this.listBox1.SelectedIndex = 0;
+                    if (this.listBox1.SelectedIndex == -1)
+                    {
+                        if (config.Current.Count == 0) { ShowDestPic(); }
+                        else { this.listBox1.SelectedIndex = 0; }
+                    }
                 }
 
                 int ptX = MousePosition.X - this.Location.X;
@@ -237,11 +240,11 @@ namespace PictureViewer
 
                 xbg = this.label1.Location.X + 10; xed = xbg + this.label1.Width;
                 ybg = this.label1.Location.Y + 30; yed = ybg + this.label1.Height;
-                this.label1.Visible = xbg <= ptX && ptX <= xed && ybg <= ptY && ptY <= yed && config.Current.Count > 0;
+                this.label1.Visible = false;// xbg <= ptX && ptX <= xed && ybg <= ptY && ptY <= yed && config.Current.Count > 0;
 
                 xbg = this.label2.Location.X + 10; xed = xbg + this.label2.Width;
                 ybg = this.label2.Location.Y + 30; yed = ybg + this.label2.Height;
-                this.label2.Visible = xbg <= ptX && ptX <= xed && ybg <= ptY && ptY <= yed && config.Current.Count > 0;
+                this.label2.Visible = false;// xbg <= ptX && ptX <= xed && ybg <= ptY && ptY <= yed && config.Current.Count > 0;
 
                 //if (this.label1.Visible || this.label2.Visible || this.label4.Visible || this.label5.Visible)
                 //{
@@ -249,29 +252,28 @@ namespace PictureViewer
                 //else {  }
             });
         }
+        private void Form_KeyUp(object sender, KeyEventArgs e)
+        {
+            if (e.KeyValue == 27) { this.Close(); return; }
+        }
         
         private void Previous(object sender, EventArgs e)
         {
-            config.Index--;
-            int total = 0; lock (config.Lock) { total = config.Results.Count; }
-            if (config.Index < 0) { config.Index = total - 1; }
-
-            ShowDestPic();
-            try { this.listBox1.SelectedIndex = config.Index; } catch { }
+            int index = this.listBox1.SelectedIndex - 1;
+            if (index < 0) { index = this.listBox1.Items.Count - 1; }
+            this.listBox1.SelectedIndex = index;
         }
         private void Next(object sender, EventArgs e)
         {
-            config.Index++;
-            int total = 0; lock (config.Lock) { total = config.Results.Count; }
-            if (config.Index >= total) { config.Index = 0; }
-
-            ShowDestPic();
-            try { this.listBox1.SelectedIndex = config.Index; } catch { }
+            if (this.listBox1.Items.Count == 0) { return; }
+            int index = this.listBox1.SelectedIndex + 1;
+            if (index >= this.listBox1.Items.Count) { index = 0; }
+            this.listBox1.SelectedIndex = index;
         }
         private void ListClicked(object sender, EventArgs e)
         {
             int index = this.listBox1.SelectedIndex;
-            if (index == -1) { return; }
+            //if (index == -1) { return; }
             config.Index = index;
             ShowDestPic();
         }
@@ -284,6 +286,7 @@ namespace PictureViewer
         }
         private void RightMenu_Export(object sender, EventArgs e)
         {
+            if (!IsFinish) { MessageBox.Show("正在搜索，请勿操作！", "提示"); return; }
             if (config.Index < 0 || config.Index >= config.Current.Count) { MessageBox.Show("文件不存在！", "提示"); return; }
             int index = config.Current[config.Index];
             if (index < 0 || index >= Names.Count) { MessageBox.Show("文件不存在！", "提示"); return; }
@@ -305,23 +308,49 @@ namespace PictureViewer
             if (DialogResult.Cancel == MessageBox.Show("把 “" + sour  + "” 导出到：\n" + dest  + "？", "确认导出", MessageBoxButtons.OKCancel))
             { return; }
 
-            if (DestPic != null) { DestPic.Dispose(); }
-            File.Move(sour, dest);
-
-            lock (config.Lock) { config.Results.RemoveAt(config.Index); }
-            config.Current.RemoveAt(config.Index);
-            index = this.listBox1.SelectedIndex;
-            if (index < 0) { index = 0; }
-            if (index >= config.Current.Count) { index = config.Current.Count - 1; }
-            this.listBox1.Items.RemoveAt(config.Index);
-            this.listBox1.SelectedIndex = index;
-
-            config.Index = index;
-            ShowDestPic();
+            try { DestPic.Dispose(); } catch {  }
+            try { File.Move(sour, dest); } catch { MessageBox.Show("移动失败！", "提示"); return; }
+            RemoveCurrent(config.Index);
         }
         private void RightMenu_Export2(object sender, EventArgs e)
         {
-            MessageBox.Show("功能暂时没有实现！", "提示");
+            if (!IsFinish) { MessageBox.Show("正在搜索，请勿操作！", "提示"); return; }
+            if (config.Current.Count == 0) { MessageBox.Show("文件不存在！", "提示"); return; }
+
+            string sourpath;
+            string sourname;
+            string sour;
+            string destpath = Form_Main.config.ExportFolder; if (!Directory.Exists(destpath)) { destpath = FileOperate.getExePath(); }
+            string destname;
+            string dest;
+
+            if (DialogResult.Cancel == MessageBox.Show("把所有重复文件导出到：\n" + destpath + "？", "确认导出", MessageBoxButtons.OKCancel))
+            { return; }
+
+            List<string> fails = new List<string>();
+            List<string> reasons = new List<string>();
+            
+            for (int i = config.Current.Count - 1; i >= 0; i--)
+            {
+                int index = config.Current[i];
+                sourpath = Paths[index];
+                sourname = Names[index];
+                destname = sourname;
+
+                sour = sourpath + "\\" + sourname;
+                dest = destpath + "\\" + destname;
+                if (!File.Exists(sour)) { fails.Add(sour); reasons.Add("源文件不存在！"); continue; }
+                if (File.Exists(dest)) { fails.Add(sour); reasons.Add("目标文件已存在！"); continue; }
+
+                try { DestPic.Dispose(); } catch { }
+                try { File.Move(sour, dest); } catch { fails.Add(sour); reasons.Add("移动失败！"); continue; }
+                RemoveCurrent(i);
+            }
+            
+            if (fails.Count == 0) { return; }
+            string msg = "错误列表：";
+            for (int i = 0; i < fails.Count; i++) { msg += "\n[" + i.ToString() + "] " + reasons[i] + " " + fails[i]; }
+            MessageBox.Show(msg, "错误");
         }
         private void RightMenu_Open(object sender, EventArgs e)
         {
@@ -339,7 +368,9 @@ namespace PictureViewer
         }
         private void RightMenu_Pixes(object sender, EventArgs e)
         {
-            Form_Input input = new Form_Input();
+            if (!IsFinish) { MessageBox.Show("正在搜索，请勿操作！", "提示"); return; }
+
+            Form_Input input = new Form_Input(config.MinCmpPix.ToString());
             input.Location = MousePosition;
             input.ShowDialog();
 
@@ -347,7 +378,75 @@ namespace PictureViewer
             try { MinCmpPixes = int.Parse(input.Input); } catch { MessageBox.Show("必须输入正整数！", "提示"); return; }
             if (MinCmpPixes < 0) { MessageBox.Show("必须输入正整数！", "提示"); return; }
 
-            config.MinCmpPix = Math.Min(Math.Max(SourPic.Height, SourPic.Width), MinCmpPixes);
+            config.MinCmpPix = MinCmpPixes;
+        }
+        private void RightMenu_Switch(object sender, EventArgs e)
+        {
+            if (!IsFinish) { MessageBox.Show("正在搜索，请勿操作！", "提示"); return; }
+
+            if (config.Current.Count == 0) { MessageBox.Show("文件不存在，无法转到！", "提示"); return; }
+            int index = config.Index;
+            if (index < 0 || index >= config.Current.Count) { MessageBox.Show("文件不存在，无法转到！", "提示"); return; }
+
+            string path = Paths[config.Current[index]];
+            string name = Names[config.Current[index]];
+
+            for (int i = 0; i < FileOperate.RootFiles.Count; i++)
+            {
+                string ipath = FileOperate.RootFiles[i].Path;
+                for (int j = 0; j < FileOperate.RootFiles[i].Name.Count; j++)
+                {
+                    string jname = FileOperate.RootFiles[i].Name[j];
+                    int type = FileOperate.getFileType(FileOperate.getHideExtension(jname));
+
+                    if (type == 1)
+                    {
+                        ipath = ipath + jname;
+                        List<string> subnames = FileOperate.getSubFiles(ipath);
+
+                        for (int k = 0; k < subnames.Count; k++)
+                        {
+                            jname = subnames[k];
+                            if (ipath == path && jname == name)
+                            {
+                                Form_Main.config.FolderIndex = i;
+                                Form_Main.config.FileIndex = j;
+                                Form_Main.config.SubIndex = k;
+
+                                this.Close(); return;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (ipath == path && jname == name)
+                        {
+                            Form_Main.config.FolderIndex = i;
+                            Form_Main.config.FileIndex = j;
+                            Form_Main.config.SubIndex = 0;
+
+                            this.Close(); return;
+                        }
+                    }
+                }
+            }
+
+            MessageBox.Show("未找到该文件！", "提示");
+        }
+        private void RightMenu_Degree(object sender, EventArgs e)
+        {
+            if (!IsFinish) { MessageBox.Show("正在搜索，请勿操作！", "提示"); return; }
+
+            Form_Input input = new Form_Input(config.Degree.ToString());
+            input.Location = MousePosition;
+            input.ShowDialog();
+
+            double Degree = 0;
+            try { Degree = double.Parse(input.Input); } catch { MessageBox.Show("必须输入 0-100 之间的数！", "提示"); return; }
+            if (Degree < 0) { MessageBox.Show("必须输入 0-100 之间的数！", "提示"); return; }
+            if (Degree > 100) { MessageBox.Show("必须输入 0-100 之间的数！", "提示"); return; }
+
+            config.Degree = (int)Degree;
         }
 
         private void ShowSourPic()
@@ -379,7 +478,7 @@ namespace PictureViewer
             
             if (Index < 0 || Index >= Paths.Count)
             {
-                config.Path = "Not Exist "; config.Name = " Unknow";
+                config.Path = "Not Exist "; config.Name = " Unselect File";
                 if (DestPic != null) { DestPic.Dispose(); }
                 string unkfile = FileOperate.getExePath() + "\\unk.tip";
                 if (File.Exists(unkfile)) { DestPic = (Bitmap)Image.FromFile(unkfile); }
@@ -450,6 +549,9 @@ namespace PictureViewer
             this.listBox1.Items.Clear();
             config.Results.Clear();
             config.Current.Clear();
+            config.CountFiles = 0;
+
+            FillPathsNames();
 
             while (Threads[0].thread != null && Threads[0].thread.ThreadState == ThreadState.Running) { Threads[0].thread.Abort(); }
             while (Threads[1].thread != null && Threads[0].thread.ThreadState == ThreadState.Running) { Threads[1].thread.Abort(); }
@@ -462,6 +564,7 @@ namespace PictureViewer
             bg = ed; ed = bg + pace;
             Threads[0].thread = new Thread(TH_CMP1);
             Threads[0].sour = CopyPicture(SourPic, 1);
+            Threads[0].abort = false;
             Threads[0].finish = false;
             Threads[0].begin = 1;
             Threads[0].end = (int)ed;
@@ -470,6 +573,7 @@ namespace PictureViewer
             bg = ed; ed = bg + pace;
             Threads[1].thread = new Thread(TH_CMP2);
             Threads[1].sour = CopyPicture(SourPic, 1);
+            Threads[1].abort = false;
             Threads[1].finish = false;
             Threads[1].begin = (int)bg + 1;
             Threads[1].end = (int)ed;
@@ -478,6 +582,7 @@ namespace PictureViewer
             bg = ed; ed = bg + pace;
             Threads[2].thread = new Thread(TH_CMP3);
             Threads[2].sour = CopyPicture(SourPic, 1);
+            Threads[2].abort = false;
             Threads[2].finish = false;
             Threads[2].begin = (int)bg + 1;
             Threads[2].end = (int)ed;
@@ -486,6 +591,7 @@ namespace PictureViewer
             bg = ed; ed = bg + pace;
             Threads[3].thread = new Thread(TH_CMP4);
             Threads[3].sour = CopyPicture(SourPic, 1);
+            Threads[3].abort = false;
             Threads[3].finish = false;
             Threads[3].begin = (int)bg + 1;
             Threads[3].end = (int)ed;
@@ -493,17 +599,17 @@ namespace PictureViewer
 
             config.TimeBG = config.CountTime;
 
-            //Threads[0].begin = 1;
-            //Threads[0].end = Names.Count;
-            //Threads[1].begin = 1;
-            //Threads[1].end = 0;
-            //Threads[2].begin = 1;
-            //Threads[2].end = 0;
-            //Threads[3].begin = 1;
-            //Threads[3].end = 0;
-            //Threads[1].finish = true;
-            //Threads[2].finish = true;
-            //Threads[3].finish = true;
+            Threads[0].begin = 1;
+            Threads[0].end = Names.Count;
+            Threads[1].begin = 1;
+            Threads[1].end = 0;
+            Threads[2].begin = 1;
+            Threads[2].end = 0;
+            Threads[3].begin = 1;
+            Threads[3].end = 0;
+            Threads[1].finish = true;
+            Threads[2].finish = true;
+            Threads[3].finish = true;
 
             Threads[0].thread.Start();
             Threads[1].thread.Start();
@@ -514,10 +620,12 @@ namespace PictureViewer
         }
         private void Stop()
         {
-            while (Threads[0].thread != null && Threads[0].thread.ThreadState == ThreadState.Running) { Threads[0].thread.Abort(); }
-            while (Threads[1].thread != null && Threads[0].thread.ThreadState == ThreadState.Running) { Threads[1].thread.Abort(); }
-            while (Threads[2].thread != null && Threads[0].thread.ThreadState == ThreadState.Running) { Threads[2].thread.Abort(); }
-            while (Threads[3].thread != null && Threads[0].thread.ThreadState == ThreadState.Running) { Threads[3].thread.Abort(); }
+            lock (config.Lock) { for (int i = 0; i < Threads.Length; i++) { Threads[i].abort = true; } }
+
+            while (Threads[0].thread != null && Threads[0].thread.ThreadState == ThreadState.Running) ;
+            while (Threads[1].thread != null && Threads[0].thread.ThreadState == ThreadState.Running) ;
+            while (Threads[2].thread != null && Threads[0].thread.ThreadState == ThreadState.Running) ;
+            while (Threads[3].thread != null && Threads[0].thread.ThreadState == ThreadState.Running) ;
 
             this.startToolStripMenuItem.Text = "Start"; return;
         }
@@ -529,11 +637,12 @@ namespace PictureViewer
             config.Current = new List<int>();
             config.Index = 0;
             config.Path = "Not Exist";
-            config.Name = "Unknow";
+            config.Name = "Unselect File";
 
             config.Lock = new object();
             if (config.Mode == MODE.DEFAULT) { config.Mode = MODE.FULL_SAME_NOTURN; }
-            config.MinCmpPix = Math.Min(Math.Max(SourPic.Height, SourPic.Width), 50);
+            config.Degree = 80;
+            config.MinCmpPix = 100;
             config.Row = -1;
             config.Col = -1;
             config.Results = new List<int>();
@@ -554,6 +663,16 @@ namespace PictureViewer
 
             #endregion
 
+            #region 比较方式
+            
+            //if (SourPic.Height > SourPic.Width) { GetBestCol(); } else { GetBestRow(); }
+            GetBestRow();
+            GetBestCol();
+
+            #endregion
+        }
+        private void FillPathsNames()
+        {
             #region 填充 Paths 和 Names
 
             string path;
@@ -597,6 +716,7 @@ namespace PictureViewer
                     {
                         if (!NoHide && FileOperate.IsSupportHide(ex)) { continue; }
                         if (config.Sour == path + "\\" + name) { continue; }
+                        if (!File.Exists(path + "\\" + name)) { continue; }
                         Paths.Add(path); Names.Add(name);
                         continue;
                     }
@@ -604,14 +724,25 @@ namespace PictureViewer
             }
 
             #endregion
+        }
+        private void RemoveCurrent(int index)
+        {
+            config.Current.RemoveAt(index);
+            int next = this.listBox1.SelectedIndex - 1;
+            if (next < 0) { next = 0; }
+            if (next >= config.Current.Count) { next = config.Current.Count - 1; }
+            this.listBox1.SelectedIndex = -1;
 
-            #region 比较方式
-            
-            //if (SourPic.Height > SourPic.Width) { GetBestCol(); } else { GetBestRow(); }
-            GetBestRow();
-            GetBestCol();
+            this.listBox1.Items.Clear();
+            for (int i = 0; i < config.Current.Count; i++)
+            {
+                string sequence = "[" + (i + 1).ToString() + "] ";
+                string name = Names[config.Current[i]];
+                if (name.Length > 24) { name = "." + name.Substring(name.Length - 24); }
 
-            #endregion
+                this.listBox1.Items.Add(sequence + name);
+            }
+            this.listBox1.SelectedIndex = next;
         }
         private Bitmap CopyPicture(Bitmap sour, double rate)
         {
@@ -772,8 +903,8 @@ namespace PictureViewer
             int sourh = sour.Height, sourw = sour.Width;
             int desth = 0, destw = 0;
             bool found = false;
-            
-            for (int i = Threads[0].begin - 1; i < Threads[0].end; ++i)
+
+            for (int i = Threads[0].begin - 1; i < Threads[0].end && !Threads[0].abort; ++i)
             {
                 #region 初始化变量
                 
@@ -798,17 +929,18 @@ namespace PictureViewer
                     if (config.Mode == MODE.FULL_SAME_NOTURN)
                     {
                         if (sourh != desth || sourw != destw) { goto END_ROW_CMP; }
-                        
-                        double pace = (double)sourw / config.MinCmpPix;
-                        int permitcnterr = config.MinCmpPix / 10;
+
+                        double pace = sourw > config.MinCmpPix ? (double)sourw / config.MinCmpPix : 1;
+                        int permitcnterr = sourw > config.MinCmpPix ?
+                            config.MinCmpPix * (100 - config.Degree) / 100 :
+                            sourw * (100 - config.Degree) / 100;
                         int permiterr = 10;
                         int cnterr = 0;
-                        double x = 0;
 
-                        for (; x < sourw; x += pace)
+                        for (double p=0; p < sourw; p += pace)
                         {
-                            Color sc = sour.GetPixel((int)x, config.Row);
-                            Color dc = dest.GetPixel((int)x, config.Row);
+                            Color sc = sour.GetPixel((int)p, config.Row);
+                            Color dc = dest.GetPixel((int)p, config.Row);
                             int sgray = sc.R + sc.B + sc.B;
                             int dgray = dc.R + dc.G + dc.B;
 
@@ -832,16 +964,17 @@ namespace PictureViewer
 
                         if (sourh == desth && sourw == destw)
                         {
-                            double pace = (double)sourw / config.MinCmpPix;
-                            int permitcnterr = config.MinCmpPix / 10;
+                            double pace = sourw > config.MinCmpPix ? (double)sourw / config.MinCmpPix : 1;
+                            int permitcnterr = sourw > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                sourw * (100 - config.Degree) / 100;
                             int permiterr = 10;
                             int cnterr = 0;
-                            double x = 0;
 
-                            for (; x < sourw; x += pace)
+                            for (double p = 0; p < sourw; p += pace)
                             {
-                                Color sc = sour.GetPixel((int)x, config.Row);
-                                Color dc = dest.GetPixel((int)x, config.Row);
+                                Color sc = sour.GetPixel((int)p, config.Row);
+                                Color dc = dest.GetPixel((int)p, config.Row);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
@@ -861,17 +994,18 @@ namespace PictureViewer
 
                         if (sourh == desth && sourw == destw)
                         {
-                            double pace = (double)sourw / config.MinCmpPix;
+                            double pace = sourw > config.MinCmpPix ? (double)sourw / config.MinCmpPix : 1;
+                            int permitcnterr = sourw > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                sourw * (100 - config.Degree) / 100;
                             int cmprow = sourh - 1 - config.Row;
-                            int permitcnterr = config.MinCmpPix / 10;
                             int permiterr = 10;
                             int cnterr = 0;
-                            double x = 0;
 
-                            for (; x < sourw; x += pace)
+                            for (double p = 0; p < sourw; p += pace)
                             {
-                                Color sc = sour.GetPixel((int)x, config.Row);
-                                Color dc = dest.GetPixel(sourw - 1 - (int)x, cmprow);
+                                Color sc = sour.GetPixel((int)p, config.Row);
+                                Color dc = dest.GetPixel(sourw - 1 - (int)p, cmprow);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
@@ -891,16 +1025,17 @@ namespace PictureViewer
 
                         if (sourh == destw && sourw == desth)
                         {
-                            double pace = (double)sourw / config.MinCmpPix;
-                            int permitcnterr = config.MinCmpPix / 10;
+                            double pace = sourw > config.MinCmpPix ? (double)sourw / config.MinCmpPix : 1;
+                            int permitcnterr = sourw > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                sourw * (100 - config.Degree) / 100;
                             int permiterr = 10;
                             int cnterr = 0;
-                            double y = 0;
 
-                            for (; y < sourw; y += pace)
+                            for (double p = 0; p < sourw; p += pace)
                             {
-                                Color sc = sour.GetPixel((int)y, config.Row);
-                                Color dc = dest.GetPixel(config.Row, sourw - 1 - (int)y);
+                                Color sc = sour.GetPixel((int)p, config.Row);
+                                Color dc = dest.GetPixel(config.Row, sourw - 1 - (int)p);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
@@ -920,17 +1055,18 @@ namespace PictureViewer
 
                         if (sourh == destw && sourw == desth)
                         {
-                            double pace = (double)sourw / config.MinCmpPix;
+                            double pace = sourw > config.MinCmpPix ? (double)sourw / config.MinCmpPix : 1;
+                            int permitcnterr = sourw > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                sourw * (100 - config.Degree) / 100;
                             int cmprow = sourh - 1 - config.Row;
-                            int permitcnterr = config.MinCmpPix / 10;
                             int permiterr = 10;
                             int cnterr = 0;
-                            double y = 0;
 
-                            for (; y < sourw; y += pace)
+                            for (double p = 0; p < sourw; p += pace)
                             {
-                                Color sc = sour.GetPixel((int)y, config.Row);
-                                Color dc = dest.GetPixel(cmprow, (int)y);
+                                Color sc = sour.GetPixel((int)p, config.Row);
+                                Color dc = dest.GetPixel(cmprow, (int)p);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
@@ -1006,21 +1142,22 @@ namespace PictureViewer
                         desth = dmap.Height;
                         destw = dmap.Width;
                         int cmprow = (int)((double)config.Row / sourh * desth);
-                        
-                        //List<long> errlist = new List<long>();
-                        int permitcnterr = destw / 10 + (int)(rate * 10);
+
+                        double pace = destw > config.MinCmpPix ? (double)destw / config.MinCmpPix : 1;
+                        int permitcnterr = destw > config.MinCmpPix ?
+                            config.MinCmpPix * (100 - config.Degree) / 100 :
+                            destw * (100 - config.Degree) / 100;
                         int permiterr = 10;
                         int cnterr = 0;
-                        
-                        for (int x = 0; x < destw; ++x)
+
+                        for (double p = 0; p < destw; p += pace)
                         {
-                            Color sc = smap.GetPixel(x, cmprow);
-                            Color dc = dmap.GetPixel(x, cmprow);
+                            Color sc = smap.GetPixel((int)p, cmprow);
+                            Color dc = dmap.GetPixel((int)p, cmprow);
                             int sgray = sc.R + sc.G + sc.B;
                             int dgray = dc.R + dc.G + dc.B;
 
                             int ierr = (sgray - dgray) / 3;
-                            //errlist.Add(ierr);
                             if (ierr < 0) { ierr = -ierr; }
                             if (ierr > permiterr) { ++cnterr; }
                             if (cnterr > permitcnterr) { break; }
@@ -1080,20 +1217,21 @@ namespace PictureViewer
                             destw = dmap.Width;
                             int cmprow = (int)((double)config.Row / sourh * desth);
 
-                            //List<long> errlist = new List<long>();
-                            int permitcnterr = destw > 100 ? destw * 2 / 10 : destw * 4 / 10;
+                            double pace = destw > config.MinCmpPix ? (double)destw / config.MinCmpPix : 1;
+                            int permitcnterr = destw > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                destw * (100 - config.Degree) / 100;
                             int permiterr = 10;
                             int cnterr = 0;
 
-                            for (int x = 0; x < destw; ++x)
+                            for (double p = 0; p < destw; p += pace)
                             {
-                                Color sc = smap.GetPixel(x, cmprow);
-                                Color dc = dmap.GetPixel(x, cmprow);
+                                Color sc = smap.GetPixel((int)p, cmprow);
+                                Color dc = dmap.GetPixel((int)p, cmprow);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
                                 int ierr = (sgray - dgray) / 3;
-                                //errlist.Add(ierr);
                                 if (ierr < 0) { ierr = -ierr; }
                                 if (ierr > permiterr) { ++cnterr; }
                                 if (cnterr > permitcnterr) { break; }
@@ -1143,20 +1281,21 @@ namespace PictureViewer
                             int srow = (int)((double)config.Row / sourh * desth);
                             int drow = desth - 1 - srow;
 
-                            //List<long> errlist = new List<long>();
-                            int permitcnterr = destw > 100 ? destw * 2 / 10 : destw * 4 / 10;
+                            double pace = destw > config.MinCmpPix ? (double)destw / config.MinCmpPix : 1;
+                            int permitcnterr = destw > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                destw * (100 - config.Degree) / 100;
                             int permiterr = 10;
                             int cnterr = 0;
 
-                            for (int x = 0; x < destw; ++x)
+                            for (double x = 0; x < destw; x += pace)
                             {
-                                Color sc = smap.GetPixel(x, srow);
-                                Color dc = dmap.GetPixel(destw - 1 - x, drow);
+                                Color sc = smap.GetPixel((int)x, srow);
+                                Color dc = dmap.GetPixel(destw - 1 - (int)x, drow);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
                                 int ierr = (sgray - dgray) / 3;
-                                //errlist.Add(ierr);
                                 if (ierr < 0) { ierr = -ierr; }
                                 if (ierr > permiterr) { ++cnterr; }
                                 if (cnterr > permitcnterr) { break; }
@@ -1206,15 +1345,17 @@ namespace PictureViewer
                             int srow = (int)((double)config.Row / sourh * destw);
                             int drow = srow;
 
-                            //List<long> errlist = new List<long>();
-                            int permitcnterr = destw > 100 ? desth * 2 / 10 : desth * 4 / 10;
+                            double pace = desth > config.MinCmpPix ? (double)desth / config.MinCmpPix : 1;
+                            int permitcnterr = desth > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                desth * (100 - config.Degree) / 100;
                             int permiterr = 10;
                             int cnterr = 0;
 
-                            for (int y = 0; y < desth; ++y)
+                            for (double y = 0; y < desth; y += pace)
                             {
-                                Color sc = smap.GetPixel(y, srow);
-                                Color dc = dmap.GetPixel(drow, desth - 1 - y);
+                                Color sc = smap.GetPixel((int)y, srow);
+                                Color dc = dmap.GetPixel(drow, desth - 1 - (int)y);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
@@ -1269,15 +1410,17 @@ namespace PictureViewer
                             int srow = (int)((double)config.Row / sourh * destw);
                             int drow = destw - 1 - srow;
 
-                            //List<long> errlist = new List<long>();
-                            int permitcnterr = desth > 100 ? desth * 2 / 10 : desth * 4 / 10;
+                            double pace = desth > config.MinCmpPix ? (double)desth / config.MinCmpPix : 1;
+                            int permitcnterr = desth > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                desth * (100 - config.Degree) / 100;
                             int permiterr = 10;
                             int cnterr = 0;
 
-                            for (int y = 0; y < desth; ++y)
+                            for (double p = 0; p < desth; p += pace)
                             {
-                                Color sc = smap.GetPixel(y, srow);
-                                Color dc = dmap.GetPixel(drow, y);
+                                Color sc = smap.GetPixel((int)p, srow);
+                                Color dc = dmap.GetPixel(drow, (int)p);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
@@ -1334,16 +1477,17 @@ namespace PictureViewer
                     {
                         if (sourh != desth || sourw != destw) { goto END_COL_CMP; }
 
-                        double pace = (double)sourh / config.MinCmpPix;
-                        int permitcnterr = config.MinCmpPix / 10;
+                        double pace = sourh > config.MinCmpPix ? (double)sourh / config.MinCmpPix : 1;
+                        int permitcnterr = sourh > config.MinCmpPix ?
+                            config.MinCmpPix * (100 - config.Degree) / 100 :
+                            sourh * (100 - config.Degree) / 100;
                         int permiterr = 10;
                         int cnterr = 0;
-                        double y = 0;
 
-                        for (; y < sourh; y += pace)
+                        for (double p=0; p < sourh; p += pace)
                         {
-                            Color sc = sour.GetPixel(config.Col, (int)y);
-                            Color dc = dest.GetPixel(config.Col, (int)y);
+                            Color sc = sour.GetPixel(config.Col, (int)p);
+                            Color dc = dest.GetPixel(config.Col, (int)p);
                             int sgray = sc.R + sc.G + sc.B;
                             int dgray = dc.R + dc.G + dc.B;
 
@@ -1367,16 +1511,17 @@ namespace PictureViewer
 
                         if (sourh == desth && sourw == destw)
                         {
-                            double pace = (double)sourh / config.MinCmpPix;
-                            int permitcnterr = config.MinCmpPix / 10;
+                            double pace = sourh > config.MinCmpPix ? (double)sourh / config.MinCmpPix : 1;
+                            int permitcnterr = sourh > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                sourh * (100 - config.Degree) / 100;
                             int permiterr = 10;
                             int cnterr = 0;
-                            double y = 0;
 
-                            for (; y < sourh; y += pace)
+                            for (double p=0; p < sourh; p += pace)
                             {
-                                Color sc = sour.GetPixel(config.Col, (int)y);
-                                Color dc = dest.GetPixel(config.Col, (int)y);
+                                Color sc = sour.GetPixel(config.Col, (int)p);
+                                Color dc = dest.GetPixel(config.Col, (int)p);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
@@ -1396,17 +1541,18 @@ namespace PictureViewer
 
                         if (sourh == desth && sourw == destw)
                         {
-                            double pace = (double)sourh / config.MinCmpPix;
+                            double pace = sourh > config.MinCmpPix ? (double)sourh / config.MinCmpPix : 1;
+                            int permitcnterr = sourh > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                sourh * (100 - config.Degree) / 100;
                             int cmpcol = sourw - config.Col - 1;
-                            int permitcnterr = config.MinCmpPix / 10;
                             int permiterr = 10;
                             int cnterr = 0;
-                            double y = 0;
 
-                            for (; y < sourh; y += pace)
+                            for (double p = 0; p < sourh; p += pace)
                             {
-                                Color sc = sour.GetPixel(config.Col, (int)y);
-                                Color dc = dest.GetPixel(cmpcol, sourh - 1 - (int)y);
+                                Color sc = sour.GetPixel(config.Col, (int)p);
+                                Color dc = dest.GetPixel(cmpcol, sourh - 1 - (int)p);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
@@ -1426,17 +1572,18 @@ namespace PictureViewer
 
                         if (sourh == destw && sourw == desth)
                         {
-                            double pace = (double)sourh / config.MinCmpPix;
+                            double pace = sourh > config.MinCmpPix ? (double)sourh / config.MinCmpPix : 1;
+                            int permitcnterr = sourh > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                sourh * (100 - config.Degree) / 100;
                             int cmpcol = sourw - config.Col - 1;
-                            int permitcnterr = config.MinCmpPix / 10;
                             int permiterr = 10;
                             int cnterr = 0;
-                            double x = 0;
 
-                            for (; x < sourh; x += pace)
+                            for (double p = 0; p < sourh; p += pace)
                             {
-                                Color sc = sour.GetPixel(config.Col, (int)x);
-                                Color dc = dest.GetPixel((int)x, cmpcol);
+                                Color sc = sour.GetPixel(config.Col, (int)p);
+                                Color dc = dest.GetPixel((int)p, cmpcol);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
@@ -1456,16 +1603,17 @@ namespace PictureViewer
 
                         if (sourh == destw && sourw == desth)
                         {
-                            double pace = (double)sourh / config.MinCmpPix;
-                            int permitcnterr = config.MinCmpPix / 10;
+                            double pace = sourh > config.MinCmpPix ? (double)sourh / config.MinCmpPix : 1;
+                            int permitcnterr = sourh > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                sourh * (100 - config.Degree) / 100;
                             int permiterr = 10;
                             int cnterr = 0;
-                            double x = 0;
 
-                            for (; x < sourh; x += pace)
+                            for (double p = 0; p < sourh; p += pace)
                             {
-                                Color sc = sour.GetPixel(config.Col, (int)x);
-                                Color dc = dest.GetPixel(sourh - 1 - (int)x, config.Col);
+                                Color sc = sour.GetPixel(config.Col, (int)p);
+                                Color dc = dest.GetPixel(sourh - 1 - (int)p, config.Col);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
@@ -1542,15 +1690,17 @@ namespace PictureViewer
                         destw = dmap.Width;
                         int cmpcol = (int)((double)config.Col / sourw * destw);
 
-                        //List<long> errlist = new List<long>();
-                        int permitcnterr = desth * 2 / 10;
+                        double pace = desth > config.MinCmpPix ? (double)desth / config.MinCmpPix : 1;
+                        int permitcnterr = desth > config.MinCmpPix ?
+                            config.MinCmpPix * (100 - config.Degree) / 100 :
+                            desth * (100 - config.Degree) / 100;
                         int permiterr = 10;
                         int cnterr = 0;
 
-                        for (int y = 0; y < desth; ++y)
+                        for (double p = 0; p < desth; p += pace)
                         {
-                            Color sc = smap.GetPixel(cmpcol, y);
-                            Color dc = dmap.GetPixel(cmpcol, y);
+                            Color sc = smap.GetPixel(cmpcol, (int)p);
+                            Color dc = dmap.GetPixel(cmpcol, (int)p);
                             int sgray = sc.R + sc.G + sc.B;
                             int dgray = dc.R + dc.G + dc.B;
 
@@ -1614,20 +1764,21 @@ namespace PictureViewer
                             destw = dmap.Width;
                             int cmpcol = (int)((double)config.Col / sourw * destw);
 
-                            //List<long> errlist = new List<long>();
-                            int permitcnterr = desth > 100 ? desth * 2 / 10 : desth * 4 / 10;
+                            double pace = desth > config.MinCmpPix ? (double)desth / config.MinCmpPix : 1;
+                            int permitcnterr = desth > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                desth * (100 - config.Degree) / 100;
                             int permiterr = 10;
                             int cnterr = 0;
 
-                            for (int y = 0; y < desth; ++y)
+                            for (double p = 0; p < desth; p += pace)
                             {
-                                Color sc = smap.GetPixel(cmpcol, y);
-                                Color dc = dmap.GetPixel(cmpcol, y);
+                                Color sc = smap.GetPixel(cmpcol, (int)p);
+                                Color dc = dmap.GetPixel(cmpcol, (int)p);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
                                 int ierr = (sgray - dgray) / 3;
-                                //errlist.Add(ierr);
                                 if (ierr < 0) { ierr = -ierr; }
                                 if (ierr > permiterr) { ++cnterr; }
                                 if (cnterr > permitcnterr) { break; }
@@ -1675,20 +1826,21 @@ namespace PictureViewer
                             int scol = (int)((double)config.Col / sourw * destw);
                             int dcol = destw - 1 - scol;
 
-                            //List<long> errlist = new List<long>();
-                            int permitcnterr = desth > 100 ? desth * 2 / 10 : desth * 4 / 10;
+                            double pace = desth > config.MinCmpPix ? (double)desth / config.MinCmpPix : 1;
+                            int permitcnterr = desth > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                desth * (100 - config.Degree) / 100;
                             int permiterr = 10;
                             int cnterr = 0;
 
-                            for (int y = 0; y < desth; ++y)
+                            for (double p = 0; p < desth; p += pace)
                             {
-                                Color sc = smap.GetPixel(scol, y);
-                                Color dc = dmap.GetPixel(dcol, desth - 1 - y);
+                                Color sc = smap.GetPixel(scol, (int)p);
+                                Color dc = dmap.GetPixel(dcol, desth - 1 - (int)p);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
                                 int ierr = (sgray - dgray) / 3;
-                                //errlist.Add(ierr);
                                 if (ierr < 0) { ierr = -ierr; }
                                 if (ierr > permiterr) { ++cnterr; }
                                 if (cnterr > permitcnterr) { break; }
@@ -1736,15 +1888,17 @@ namespace PictureViewer
                             int scol = (int)((double)config.Col / sourw * desth);
                             int dcol = desth - 1 - scol;
 
-                            //List<long> errlist = new List<long>();
-                            int permitcnterr = destw > 100 ? destw * 2 / 10 : destw * 4 / 10;
+                            double pace = destw > config.MinCmpPix ? (double)destw / config.MinCmpPix : 1;
+                            int permitcnterr = destw > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                destw * (100 - config.Degree) / 100;
                             int permiterr = 10;
                             int cnterr = 0;
 
-                            for (int y = 0; y < destw; ++y)
+                            for (double p = 0; p < destw; p += pace)
                             {
-                                Color sc = smap.GetPixel(scol, y);
-                                Color dc = dmap.GetPixel(y, dcol);
+                                Color sc = smap.GetPixel(scol, (int)p);
+                                Color dc = dmap.GetPixel((int)p, dcol);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
@@ -1797,15 +1951,17 @@ namespace PictureViewer
                             int scol = (int)((double)config.Col / sourw * desth);
                             int dcol = scol;
 
-                            //List<long> errlist = new List<long>();
-                            int permitcnterr = destw > 100 ? destw * 2 / 10 : destw * 4 / 10;
+                            double pace = destw > config.MinCmpPix ? (double)destw / config.MinCmpPix : 1;
+                            int permitcnterr = destw > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                destw * (100 - config.Degree) / 100;
                             int permiterr = 10;
                             int cnterr = 0;
 
-                            for (int y = 0; y < destw; ++y)
+                            for (double p = 0; p < destw; p += pace)
                             {
-                                Color sc = smap.GetPixel(scol, y);
-                                Color dc = dmap.GetPixel(destw - 1 - y, dcol);
+                                Color sc = smap.GetPixel(scol, (int)p);
+                                Color dc = dmap.GetPixel(destw - 1 - (int)p, dcol);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
@@ -1867,7 +2023,7 @@ namespace PictureViewer
             int desth = 0, destw = 0;
             bool found = false;
 
-            for (int i = Threads[1].begin - 1; i < Threads[1].end; ++i)
+            for (int i = Threads[1].begin - 1; i < Threads[1].end && !Threads[1].abort; ++i)
             {
                 #region 初始化变量
 
@@ -1888,16 +2044,17 @@ namespace PictureViewer
                     {
                         if (sourh != desth || sourw != destw) { goto END_ROW_CMP; }
 
-                        double pace = (double)sourw / config.MinCmpPix;
-                        int permitcnterr = config.MinCmpPix / 10;
+                        double pace = sourw > config.MinCmpPix ? (double)sourw / config.MinCmpPix : 1;
+                        int permitcnterr = sourw > config.MinCmpPix ?
+                            config.MinCmpPix * (100 - config.Degree) / 100 :
+                            sourw * (100 - config.Degree) / 100;
                         int permiterr = 10;
                         int cnterr = 0;
-                        double x = 0;
 
-                        for (; x < sourw; x += pace)
+                        for (double p = 0; p < sourw; p += pace)
                         {
-                            Color sc = sour.GetPixel((int)x, config.Row);
-                            Color dc = dest.GetPixel((int)x, config.Row);
+                            Color sc = sour.GetPixel((int)p, config.Row);
+                            Color dc = dest.GetPixel((int)p, config.Row);
                             int sgray = sc.R + sc.B + sc.B;
                             int dgray = dc.R + dc.G + dc.B;
 
@@ -1921,16 +2078,17 @@ namespace PictureViewer
 
                         if (sourh == desth && sourw == destw)
                         {
-                            double pace = (double)sourw / config.MinCmpPix;
-                            int permitcnterr = config.MinCmpPix / 10;
+                            double pace = sourw > config.MinCmpPix ? (double)sourw / config.MinCmpPix : 1;
+                            int permitcnterr = sourw > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                sourw * (100 - config.Degree) / 100;
                             int permiterr = 10;
                             int cnterr = 0;
-                            double x = 0;
 
-                            for (; x < sourw; x += pace)
+                            for (double p = 0; p < sourw; p += pace)
                             {
-                                Color sc = sour.GetPixel((int)x, config.Row);
-                                Color dc = dest.GetPixel((int)x, config.Row);
+                                Color sc = sour.GetPixel((int)p, config.Row);
+                                Color dc = dest.GetPixel((int)p, config.Row);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
@@ -1950,17 +2108,18 @@ namespace PictureViewer
 
                         if (sourh == desth && sourw == destw)
                         {
-                            double pace = (double)sourw / config.MinCmpPix;
+                            double pace = sourw > config.MinCmpPix ? (double)sourw / config.MinCmpPix : 1;
+                            int permitcnterr = sourw > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                sourw * (100 - config.Degree) / 100;
                             int cmprow = sourh - 1 - config.Row;
-                            int permitcnterr = config.MinCmpPix / 10;
                             int permiterr = 10;
                             int cnterr = 0;
-                            double x = 0;
 
-                            for (; x < sourw; x += pace)
+                            for (double p = 0; p < sourw; p += pace)
                             {
-                                Color sc = sour.GetPixel((int)x, config.Row);
-                                Color dc = dest.GetPixel(sourw - 1 - (int)x, cmprow);
+                                Color sc = sour.GetPixel((int)p, config.Row);
+                                Color dc = dest.GetPixel(sourw - 1 - (int)p, cmprow);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
@@ -1980,16 +2139,17 @@ namespace PictureViewer
 
                         if (sourh == destw && sourw == desth)
                         {
-                            double pace = (double)sourw / config.MinCmpPix;
-                            int permitcnterr = config.MinCmpPix / 10;
+                            double pace = sourw > config.MinCmpPix ? (double)sourw / config.MinCmpPix : 1;
+                            int permitcnterr = sourw > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                sourw * (100 - config.Degree) / 100;
                             int permiterr = 10;
                             int cnterr = 0;
-                            double y = 0;
 
-                            for (; y < sourw; y += pace)
+                            for (double p = 0; p < sourw; p += pace)
                             {
-                                Color sc = sour.GetPixel((int)y, config.Row);
-                                Color dc = dest.GetPixel(config.Row, sourw - 1 - (int)y);
+                                Color sc = sour.GetPixel((int)p, config.Row);
+                                Color dc = dest.GetPixel(config.Row, sourw - 1 - (int)p);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
@@ -2009,17 +2169,18 @@ namespace PictureViewer
 
                         if (sourh == destw && sourw == desth)
                         {
-                            double pace = (double)sourw / config.MinCmpPix;
+                            double pace = sourw > config.MinCmpPix ? (double)sourw / config.MinCmpPix : 1;
+                            int permitcnterr = sourw > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                sourw * (100 - config.Degree) / 100;
                             int cmprow = sourh - 1 - config.Row;
-                            int permitcnterr = config.MinCmpPix / 10;
                             int permiterr = 10;
                             int cnterr = 0;
-                            double y = 0;
 
-                            for (; y < sourw; y += pace)
+                            for (double p = 0; p < sourw; p += pace)
                             {
-                                Color sc = sour.GetPixel((int)y, config.Row);
-                                Color dc = dest.GetPixel(cmprow, (int)y);
+                                Color sc = sour.GetPixel((int)p, config.Row);
+                                Color dc = dest.GetPixel(cmprow, (int)p);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
@@ -2096,20 +2257,21 @@ namespace PictureViewer
                         destw = dmap.Width;
                         int cmprow = (int)((double)config.Row / sourh * desth);
 
-                        //List<long> errlist = new List<long>();
-                        int permitcnterr = destw / 10 + (int)(rate * 10);
+                        double pace = destw > config.MinCmpPix ? (double)destw / config.MinCmpPix : 1;
+                        int permitcnterr = destw > config.MinCmpPix ?
+                            config.MinCmpPix * (100 - config.Degree) / 100 :
+                            destw * (100 - config.Degree) / 100;
                         int permiterr = 10;
                         int cnterr = 0;
 
-                        for (int x = 0; x < destw; ++x)
+                        for (double p = 0; p < destw; p += pace)
                         {
-                            Color sc = smap.GetPixel(x, cmprow);
-                            Color dc = dmap.GetPixel(x, cmprow);
+                            Color sc = smap.GetPixel((int)p, cmprow);
+                            Color dc = dmap.GetPixel((int)p, cmprow);
                             int sgray = sc.R + sc.G + sc.B;
                             int dgray = dc.R + dc.G + dc.B;
 
                             int ierr = (sgray - dgray) / 3;
-                            //errlist.Add(ierr);
                             if (ierr < 0) { ierr = -ierr; }
                             if (ierr > permiterr) { ++cnterr; }
                             if (cnterr > permitcnterr) { break; }
@@ -2169,20 +2331,21 @@ namespace PictureViewer
                             destw = dmap.Width;
                             int cmprow = (int)((double)config.Row / sourh * desth);
 
-                            //List<long> errlist = new List<long>();
-                            int permitcnterr = destw > 100 ? destw * 2 / 10 : destw * 4 / 10;
+                            double pace = destw > config.MinCmpPix ? (double)destw / config.MinCmpPix : 1;
+                            int permitcnterr = destw > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                destw * (100 - config.Degree) / 100;
                             int permiterr = 10;
                             int cnterr = 0;
 
-                            for (int x = 0; x < destw; ++x)
+                            for (double p = 0; p < destw; p += pace)
                             {
-                                Color sc = smap.GetPixel(x, cmprow);
-                                Color dc = dmap.GetPixel(x, cmprow);
+                                Color sc = smap.GetPixel((int)p, cmprow);
+                                Color dc = dmap.GetPixel((int)p, cmprow);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
                                 int ierr = (sgray - dgray) / 3;
-                                //errlist.Add(ierr);
                                 if (ierr < 0) { ierr = -ierr; }
                                 if (ierr > permiterr) { ++cnterr; }
                                 if (cnterr > permitcnterr) { break; }
@@ -2232,20 +2395,21 @@ namespace PictureViewer
                             int srow = (int)((double)config.Row / sourh * desth);
                             int drow = desth - 1 - srow;
 
-                            //List<long> errlist = new List<long>();
-                            int permitcnterr = destw > 100 ? destw * 2 / 10 : destw * 4 / 10;
+                            double pace = destw > config.MinCmpPix ? (double)destw / config.MinCmpPix : 1;
+                            int permitcnterr = destw > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                destw * (100 - config.Degree) / 100;
                             int permiterr = 10;
                             int cnterr = 0;
 
-                            for (int x = 0; x < destw; ++x)
+                            for (double x = 0; x < destw; x += pace)
                             {
-                                Color sc = smap.GetPixel(x, srow);
-                                Color dc = dmap.GetPixel(destw - 1 - x, drow);
+                                Color sc = smap.GetPixel((int)x, srow);
+                                Color dc = dmap.GetPixel(destw - 1 - (int)x, drow);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
                                 int ierr = (sgray - dgray) / 3;
-                                //errlist.Add(ierr);
                                 if (ierr < 0) { ierr = -ierr; }
                                 if (ierr > permiterr) { ++cnterr; }
                                 if (cnterr > permitcnterr) { break; }
@@ -2295,15 +2459,17 @@ namespace PictureViewer
                             int srow = (int)((double)config.Row / sourh * destw);
                             int drow = srow;
 
-                            //List<long> errlist = new List<long>();
-                            int permitcnterr = destw > 100 ? desth * 2 / 10 : desth * 4 / 10;
+                            double pace = desth > config.MinCmpPix ? (double)desth / config.MinCmpPix : 1;
+                            int permitcnterr = desth > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                desth * (100 - config.Degree) / 100;
                             int permiterr = 10;
                             int cnterr = 0;
 
-                            for (int y = 0; y < desth; ++y)
+                            for (double y = 0; y < desth; y += pace)
                             {
-                                Color sc = smap.GetPixel(y, srow);
-                                Color dc = dmap.GetPixel(drow, desth - 1 - y);
+                                Color sc = smap.GetPixel((int)y, srow);
+                                Color dc = dmap.GetPixel(drow, desth - 1 - (int)y);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
@@ -2358,15 +2524,17 @@ namespace PictureViewer
                             int srow = (int)((double)config.Row / sourh * destw);
                             int drow = destw - 1 - srow;
 
-                            //List<long> errlist = new List<long>();
-                            int permitcnterr = desth > 100 ? desth * 2 / 10 : desth * 4 / 10;
+                            double pace = desth > config.MinCmpPix ? (double)desth / config.MinCmpPix : 1;
+                            int permitcnterr = desth > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                desth * (100 - config.Degree) / 100;
                             int permiterr = 10;
                             int cnterr = 0;
 
-                            for (int y = 0; y < desth; ++y)
+                            for (double p = 0; p < desth; p += pace)
                             {
-                                Color sc = smap.GetPixel(y, srow);
-                                Color dc = dmap.GetPixel(drow, y);
+                                Color sc = smap.GetPixel((int)p, srow);
+                                Color dc = dmap.GetPixel(drow, (int)p);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
@@ -2423,16 +2591,17 @@ namespace PictureViewer
                     {
                         if (sourh != desth || sourw != destw) { goto END_COL_CMP; }
 
-                        double pace = (double)sourh / config.MinCmpPix;
-                        int permitcnterr = config.MinCmpPix / 10;
+                        double pace = sourh > config.MinCmpPix ? (double)sourh / config.MinCmpPix : 1;
+                        int permitcnterr = sourh > config.MinCmpPix ?
+                            config.MinCmpPix * (100 - config.Degree) / 100 :
+                            sourh * (100 - config.Degree) / 100;
                         int permiterr = 10;
                         int cnterr = 0;
-                        double y = 0;
 
-                        for (; y < sourh; y += pace)
+                        for (double p = 0; p < sourh; p += pace)
                         {
-                            Color sc = sour.GetPixel(config.Col, (int)y);
-                            Color dc = dest.GetPixel(config.Col, (int)y);
+                            Color sc = sour.GetPixel(config.Col, (int)p);
+                            Color dc = dest.GetPixel(config.Col, (int)p);
                             int sgray = sc.R + sc.G + sc.B;
                             int dgray = dc.R + dc.G + dc.B;
 
@@ -2456,16 +2625,17 @@ namespace PictureViewer
 
                         if (sourh == desth && sourw == destw)
                         {
-                            double pace = (double)sourh / config.MinCmpPix;
-                            int permitcnterr = config.MinCmpPix / 10;
+                            double pace = sourh > config.MinCmpPix ? (double)sourh / config.MinCmpPix : 1;
+                            int permitcnterr = sourh > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                sourh * (100 - config.Degree) / 100;
                             int permiterr = 10;
                             int cnterr = 0;
-                            double y = 0;
 
-                            for (; y < sourh; y += pace)
+                            for (double p = 0; p < sourh; p += pace)
                             {
-                                Color sc = sour.GetPixel(config.Col, (int)y);
-                                Color dc = dest.GetPixel(config.Col, (int)y);
+                                Color sc = sour.GetPixel(config.Col, (int)p);
+                                Color dc = dest.GetPixel(config.Col, (int)p);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
@@ -2485,17 +2655,18 @@ namespace PictureViewer
 
                         if (sourh == desth && sourw == destw)
                         {
-                            double pace = (double)sourh / config.MinCmpPix;
+                            double pace = sourh > config.MinCmpPix ? (double)sourh / config.MinCmpPix : 1;
+                            int permitcnterr = sourh > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                sourh * (100 - config.Degree) / 100;
                             int cmpcol = sourw - config.Col - 1;
-                            int permitcnterr = config.MinCmpPix / 10;
                             int permiterr = 10;
                             int cnterr = 0;
-                            double y = 0;
 
-                            for (; y < sourh; y += pace)
+                            for (double p = 0; p < sourh; p += pace)
                             {
-                                Color sc = sour.GetPixel(config.Col, (int)y);
-                                Color dc = dest.GetPixel(cmpcol, sourh - 1 - (int)y);
+                                Color sc = sour.GetPixel(config.Col, (int)p);
+                                Color dc = dest.GetPixel(cmpcol, sourh - 1 - (int)p);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
@@ -2515,17 +2686,18 @@ namespace PictureViewer
 
                         if (sourh == destw && sourw == desth)
                         {
-                            double pace = (double)sourh / config.MinCmpPix;
+                            double pace = sourh > config.MinCmpPix ? (double)sourh / config.MinCmpPix : 1;
+                            int permitcnterr = sourh > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                sourh * (100 - config.Degree) / 100;
                             int cmpcol = sourw - config.Col - 1;
-                            int permitcnterr = config.MinCmpPix / 10;
                             int permiterr = 10;
                             int cnterr = 0;
-                            double x = 0;
 
-                            for (; x < sourh; x += pace)
+                            for (double p = 0; p < sourh; p += pace)
                             {
-                                Color sc = sour.GetPixel(config.Col, (int)x);
-                                Color dc = dest.GetPixel((int)x, cmpcol);
+                                Color sc = sour.GetPixel(config.Col, (int)p);
+                                Color dc = dest.GetPixel((int)p, cmpcol);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
@@ -2545,16 +2717,17 @@ namespace PictureViewer
 
                         if (sourh == destw && sourw == desth)
                         {
-                            double pace = (double)sourh / config.MinCmpPix;
-                            int permitcnterr = config.MinCmpPix / 10;
+                            double pace = sourh > config.MinCmpPix ? (double)sourh / config.MinCmpPix : 1;
+                            int permitcnterr = sourh > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                sourh * (100 - config.Degree) / 100;
                             int permiterr = 10;
                             int cnterr = 0;
-                            double x = 0;
 
-                            for (; x < sourh; x += pace)
+                            for (double p = 0; p < sourh; p += pace)
                             {
-                                Color sc = sour.GetPixel(config.Col, (int)x);
-                                Color dc = dest.GetPixel(sourh - 1 - (int)x, config.Col);
+                                Color sc = sour.GetPixel(config.Col, (int)p);
+                                Color dc = dest.GetPixel(sourh - 1 - (int)p, config.Col);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
@@ -2631,15 +2804,17 @@ namespace PictureViewer
                         destw = dmap.Width;
                         int cmpcol = (int)((double)config.Col / sourw * destw);
 
-                        //List<long> errlist = new List<long>();
-                        int permitcnterr = desth * 2 / 10;
+                        double pace = desth > config.MinCmpPix ? (double)desth / config.MinCmpPix : 1;
+                        int permitcnterr = desth > config.MinCmpPix ?
+                            config.MinCmpPix * (100 - config.Degree) / 100 :
+                            desth * (100 - config.Degree) / 100;
                         int permiterr = 10;
                         int cnterr = 0;
 
-                        for (int y = 0; y < desth; ++y)
+                        for (double p = 0; p < desth; p += pace)
                         {
-                            Color sc = smap.GetPixel(cmpcol, y);
-                            Color dc = dmap.GetPixel(cmpcol, y);
+                            Color sc = smap.GetPixel(cmpcol, (int)p);
+                            Color dc = dmap.GetPixel(cmpcol, (int)p);
                             int sgray = sc.R + sc.G + sc.B;
                             int dgray = dc.R + dc.G + dc.B;
 
@@ -2703,20 +2878,21 @@ namespace PictureViewer
                             destw = dmap.Width;
                             int cmpcol = (int)((double)config.Col / sourw * destw);
 
-                            //List<long> errlist = new List<long>();
-                            int permitcnterr = desth > 100 ? desth * 2 / 10 : desth * 4 / 10;
+                            double pace = desth > config.MinCmpPix ? (double)desth / config.MinCmpPix : 1;
+                            int permitcnterr = desth > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                desth * (100 - config.Degree) / 100;
                             int permiterr = 10;
                             int cnterr = 0;
 
-                            for (int y = 0; y < desth; ++y)
+                            for (double p = 0; p < desth; p += pace)
                             {
-                                Color sc = smap.GetPixel(cmpcol, y);
-                                Color dc = dmap.GetPixel(cmpcol, y);
+                                Color sc = smap.GetPixel(cmpcol, (int)p);
+                                Color dc = dmap.GetPixel(cmpcol, (int)p);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
                                 int ierr = (sgray - dgray) / 3;
-                                //errlist.Add(ierr);
                                 if (ierr < 0) { ierr = -ierr; }
                                 if (ierr > permiterr) { ++cnterr; }
                                 if (cnterr > permitcnterr) { break; }
@@ -2764,20 +2940,21 @@ namespace PictureViewer
                             int scol = (int)((double)config.Col / sourw * destw);
                             int dcol = destw - 1 - scol;
 
-                            //List<long> errlist = new List<long>();
-                            int permitcnterr = desth > 100 ? desth * 2 / 10 : desth * 4 / 10;
+                            double pace = desth > config.MinCmpPix ? (double)desth / config.MinCmpPix : 1;
+                            int permitcnterr = desth > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                desth * (100 - config.Degree) / 100;
                             int permiterr = 10;
                             int cnterr = 0;
 
-                            for (int y = 0; y < desth; ++y)
+                            for (double p = 0; p < desth; p += pace)
                             {
-                                Color sc = smap.GetPixel(scol, y);
-                                Color dc = dmap.GetPixel(dcol, desth - 1 - y);
+                                Color sc = smap.GetPixel(scol, (int)p);
+                                Color dc = dmap.GetPixel(dcol, desth - 1 - (int)p);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
                                 int ierr = (sgray - dgray) / 3;
-                                //errlist.Add(ierr);
                                 if (ierr < 0) { ierr = -ierr; }
                                 if (ierr > permiterr) { ++cnterr; }
                                 if (cnterr > permitcnterr) { break; }
@@ -2825,15 +3002,17 @@ namespace PictureViewer
                             int scol = (int)((double)config.Col / sourw * desth);
                             int dcol = desth - 1 - scol;
 
-                            //List<long> errlist = new List<long>();
-                            int permitcnterr = destw > 100 ? destw * 2 / 10 : destw * 4 / 10;
+                            double pace = destw > config.MinCmpPix ? (double)destw / config.MinCmpPix : 1;
+                            int permitcnterr = destw > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                destw * (100 - config.Degree) / 100;
                             int permiterr = 10;
                             int cnterr = 0;
 
-                            for (int y = 0; y < destw; ++y)
+                            for (double p = 0; p < destw; p += pace)
                             {
-                                Color sc = smap.GetPixel(scol, y);
-                                Color dc = dmap.GetPixel(y, dcol);
+                                Color sc = smap.GetPixel(scol, (int)p);
+                                Color dc = dmap.GetPixel((int)p, dcol);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
@@ -2886,15 +3065,17 @@ namespace PictureViewer
                             int scol = (int)((double)config.Col / sourw * desth);
                             int dcol = scol;
 
-                            //List<long> errlist = new List<long>();
-                            int permitcnterr = destw > 100 ? destw * 2 / 10 : destw * 4 / 10;
+                            double pace = destw > config.MinCmpPix ? (double)destw / config.MinCmpPix : 1;
+                            int permitcnterr = destw > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                destw * (100 - config.Degree) / 100;
                             int permiterr = 10;
                             int cnterr = 0;
 
-                            for (int y = 0; y < destw; ++y)
+                            for (double p = 0; p < destw; p += pace)
                             {
-                                Color sc = smap.GetPixel(scol, y);
-                                Color dc = dmap.GetPixel(destw - 1 - y, dcol);
+                                Color sc = smap.GetPixel(scol, (int)p);
+                                Color dc = dmap.GetPixel(destw - 1 - (int)p, dcol);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
@@ -2956,7 +3137,7 @@ namespace PictureViewer
             int desth = 0, destw = 0;
             bool found = false;
 
-            for (int i = Threads[2].begin - 1; i < Threads[2].end; ++i)
+            for (int i = Threads[2].begin - 1; i < Threads[2].end && !Threads[2].abort; ++i)
             {
                 #region 初始化变量
 
@@ -2977,16 +3158,17 @@ namespace PictureViewer
                     {
                         if (sourh != desth || sourw != destw) { goto END_ROW_CMP; }
 
-                        double pace = (double)sourw / config.MinCmpPix;
-                        int permitcnterr = config.MinCmpPix / 10;
+                        double pace = sourw > config.MinCmpPix ? (double)sourw / config.MinCmpPix : 1;
+                        int permitcnterr = sourw > config.MinCmpPix ?
+                            config.MinCmpPix * (100 - config.Degree) / 100 :
+                            sourw * (100 - config.Degree) / 100;
                         int permiterr = 10;
                         int cnterr = 0;
-                        double x = 0;
 
-                        for (; x < sourw; x += pace)
+                        for (double p = 0; p < sourw; p += pace)
                         {
-                            Color sc = sour.GetPixel((int)x, config.Row);
-                            Color dc = dest.GetPixel((int)x, config.Row);
+                            Color sc = sour.GetPixel((int)p, config.Row);
+                            Color dc = dest.GetPixel((int)p, config.Row);
                             int sgray = sc.R + sc.B + sc.B;
                             int dgray = dc.R + dc.G + dc.B;
 
@@ -3010,16 +3192,17 @@ namespace PictureViewer
 
                         if (sourh == desth && sourw == destw)
                         {
-                            double pace = (double)sourw / config.MinCmpPix;
-                            int permitcnterr = config.MinCmpPix / 10;
+                            double pace = sourw > config.MinCmpPix ? (double)sourw / config.MinCmpPix : 1;
+                            int permitcnterr = sourw > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                sourw * (100 - config.Degree) / 100;
                             int permiterr = 10;
                             int cnterr = 0;
-                            double x = 0;
 
-                            for (; x < sourw; x += pace)
+                            for (double p = 0; p < sourw; p += pace)
                             {
-                                Color sc = sour.GetPixel((int)x, config.Row);
-                                Color dc = dest.GetPixel((int)x, config.Row);
+                                Color sc = sour.GetPixel((int)p, config.Row);
+                                Color dc = dest.GetPixel((int)p, config.Row);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
@@ -3039,17 +3222,18 @@ namespace PictureViewer
 
                         if (sourh == desth && sourw == destw)
                         {
-                            double pace = (double)sourw / config.MinCmpPix;
+                            double pace = sourw > config.MinCmpPix ? (double)sourw / config.MinCmpPix : 1;
+                            int permitcnterr = sourw > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                sourw * (100 - config.Degree) / 100;
                             int cmprow = sourh - 1 - config.Row;
-                            int permitcnterr = config.MinCmpPix / 10;
                             int permiterr = 10;
                             int cnterr = 0;
-                            double x = 0;
 
-                            for (; x < sourw; x += pace)
+                            for (double p = 0; p < sourw; p += pace)
                             {
-                                Color sc = sour.GetPixel((int)x, config.Row);
-                                Color dc = dest.GetPixel(sourw - 1 - (int)x, cmprow);
+                                Color sc = sour.GetPixel((int)p, config.Row);
+                                Color dc = dest.GetPixel(sourw - 1 - (int)p, cmprow);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
@@ -3069,16 +3253,17 @@ namespace PictureViewer
 
                         if (sourh == destw && sourw == desth)
                         {
-                            double pace = (double)sourw / config.MinCmpPix;
-                            int permitcnterr = config.MinCmpPix / 10;
+                            double pace = sourw > config.MinCmpPix ? (double)sourw / config.MinCmpPix : 1;
+                            int permitcnterr = sourw > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                sourw * (100 - config.Degree) / 100;
                             int permiterr = 10;
                             int cnterr = 0;
-                            double y = 0;
 
-                            for (; y < sourw; y += pace)
+                            for (double p = 0; p < sourw; p += pace)
                             {
-                                Color sc = sour.GetPixel((int)y, config.Row);
-                                Color dc = dest.GetPixel(config.Row, sourw - 1 - (int)y);
+                                Color sc = sour.GetPixel((int)p, config.Row);
+                                Color dc = dest.GetPixel(config.Row, sourw - 1 - (int)p);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
@@ -3098,17 +3283,18 @@ namespace PictureViewer
 
                         if (sourh == destw && sourw == desth)
                         {
-                            double pace = (double)sourw / config.MinCmpPix;
+                            double pace = sourw > config.MinCmpPix ? (double)sourw / config.MinCmpPix : 1;
+                            int permitcnterr = sourw > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                sourw * (100 - config.Degree) / 100;
                             int cmprow = sourh - 1 - config.Row;
-                            int permitcnterr = config.MinCmpPix / 10;
                             int permiterr = 10;
                             int cnterr = 0;
-                            double y = 0;
 
-                            for (; y < sourw; y += pace)
+                            for (double p = 0; p < sourw; p += pace)
                             {
-                                Color sc = sour.GetPixel((int)y, config.Row);
-                                Color dc = dest.GetPixel(cmprow, (int)y);
+                                Color sc = sour.GetPixel((int)p, config.Row);
+                                Color dc = dest.GetPixel(cmprow, (int)p);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
@@ -3185,20 +3371,21 @@ namespace PictureViewer
                         destw = dmap.Width;
                         int cmprow = (int)((double)config.Row / sourh * desth);
 
-                        //List<long> errlist = new List<long>();
-                        int permitcnterr = destw / 10 + (int)(rate * 10);
+                        double pace = destw > config.MinCmpPix ? (double)destw / config.MinCmpPix : 1;
+                        int permitcnterr = destw > config.MinCmpPix ?
+                            config.MinCmpPix * (100 - config.Degree) / 100 :
+                            destw * (100 - config.Degree) / 100;
                         int permiterr = 10;
                         int cnterr = 0;
 
-                        for (int x = 0; x < destw; ++x)
+                        for (double p = 0; p < destw; p += pace)
                         {
-                            Color sc = smap.GetPixel(x, cmprow);
-                            Color dc = dmap.GetPixel(x, cmprow);
+                            Color sc = smap.GetPixel((int)p, cmprow);
+                            Color dc = dmap.GetPixel((int)p, cmprow);
                             int sgray = sc.R + sc.G + sc.B;
                             int dgray = dc.R + dc.G + dc.B;
 
                             int ierr = (sgray - dgray) / 3;
-                            //errlist.Add(ierr);
                             if (ierr < 0) { ierr = -ierr; }
                             if (ierr > permiterr) { ++cnterr; }
                             if (cnterr > permitcnterr) { break; }
@@ -3258,20 +3445,21 @@ namespace PictureViewer
                             destw = dmap.Width;
                             int cmprow = (int)((double)config.Row / sourh * desth);
 
-                            //List<long> errlist = new List<long>();
-                            int permitcnterr = destw > 100 ? destw * 2 / 10 : destw * 4 / 10;
+                            double pace = destw > config.MinCmpPix ? (double)destw / config.MinCmpPix : 1;
+                            int permitcnterr = destw > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                destw * (100 - config.Degree) / 100;
                             int permiterr = 10;
                             int cnterr = 0;
 
-                            for (int x = 0; x < destw; ++x)
+                            for (double p = 0; p < destw; p += pace)
                             {
-                                Color sc = smap.GetPixel(x, cmprow);
-                                Color dc = dmap.GetPixel(x, cmprow);
+                                Color sc = smap.GetPixel((int)p, cmprow);
+                                Color dc = dmap.GetPixel((int)p, cmprow);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
                                 int ierr = (sgray - dgray) / 3;
-                                //errlist.Add(ierr);
                                 if (ierr < 0) { ierr = -ierr; }
                                 if (ierr > permiterr) { ++cnterr; }
                                 if (cnterr > permitcnterr) { break; }
@@ -3321,20 +3509,21 @@ namespace PictureViewer
                             int srow = (int)((double)config.Row / sourh * desth);
                             int drow = desth - 1 - srow;
 
-                            //List<long> errlist = new List<long>();
-                            int permitcnterr = destw > 100 ? destw * 2 / 10 : destw * 4 / 10;
+                            double pace = destw > config.MinCmpPix ? (double)destw / config.MinCmpPix : 1;
+                            int permitcnterr = destw > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                destw * (100 - config.Degree) / 100;
                             int permiterr = 10;
                             int cnterr = 0;
 
-                            for (int x = 0; x < destw; ++x)
+                            for (double x = 0; x < destw; x += pace)
                             {
-                                Color sc = smap.GetPixel(x, srow);
-                                Color dc = dmap.GetPixel(destw - 1 - x, drow);
+                                Color sc = smap.GetPixel((int)x, srow);
+                                Color dc = dmap.GetPixel(destw - 1 - (int)x, drow);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
                                 int ierr = (sgray - dgray) / 3;
-                                //errlist.Add(ierr);
                                 if (ierr < 0) { ierr = -ierr; }
                                 if (ierr > permiterr) { ++cnterr; }
                                 if (cnterr > permitcnterr) { break; }
@@ -3384,15 +3573,17 @@ namespace PictureViewer
                             int srow = (int)((double)config.Row / sourh * destw);
                             int drow = srow;
 
-                            //List<long> errlist = new List<long>();
-                            int permitcnterr = destw > 100 ? desth * 2 / 10 : desth * 4 / 10;
+                            double pace = desth > config.MinCmpPix ? (double)desth / config.MinCmpPix : 1;
+                            int permitcnterr = desth > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                desth * (100 - config.Degree) / 100;
                             int permiterr = 10;
                             int cnterr = 0;
 
-                            for (int y = 0; y < desth; ++y)
+                            for (double y = 0; y < desth; y += pace)
                             {
-                                Color sc = smap.GetPixel(y, srow);
-                                Color dc = dmap.GetPixel(drow, desth - 1 - y);
+                                Color sc = smap.GetPixel((int)y, srow);
+                                Color dc = dmap.GetPixel(drow, desth - 1 - (int)y);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
@@ -3447,15 +3638,17 @@ namespace PictureViewer
                             int srow = (int)((double)config.Row / sourh * destw);
                             int drow = destw - 1 - srow;
 
-                            //List<long> errlist = new List<long>();
-                            int permitcnterr = desth > 100 ? desth * 2 / 10 : desth * 4 / 10;
+                            double pace = desth > config.MinCmpPix ? (double)desth / config.MinCmpPix : 1;
+                            int permitcnterr = desth > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                desth * (100 - config.Degree) / 100;
                             int permiterr = 10;
                             int cnterr = 0;
 
-                            for (int y = 0; y < desth; ++y)
+                            for (double p = 0; p < desth; p += pace)
                             {
-                                Color sc = smap.GetPixel(y, srow);
-                                Color dc = dmap.GetPixel(drow, y);
+                                Color sc = smap.GetPixel((int)p, srow);
+                                Color dc = dmap.GetPixel(drow, (int)p);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
@@ -3512,16 +3705,17 @@ namespace PictureViewer
                     {
                         if (sourh != desth || sourw != destw) { goto END_COL_CMP; }
 
-                        double pace = (double)sourh / config.MinCmpPix;
-                        int permitcnterr = config.MinCmpPix / 10;
+                        double pace = sourh > config.MinCmpPix ? (double)sourh / config.MinCmpPix : 1;
+                        int permitcnterr = sourh > config.MinCmpPix ?
+                            config.MinCmpPix * (100 - config.Degree) / 100 :
+                            sourh * (100 - config.Degree) / 100;
                         int permiterr = 10;
                         int cnterr = 0;
-                        double y = 0;
 
-                        for (; y < sourh; y += pace)
+                        for (double p = 0; p < sourh; p += pace)
                         {
-                            Color sc = sour.GetPixel(config.Col, (int)y);
-                            Color dc = dest.GetPixel(config.Col, (int)y);
+                            Color sc = sour.GetPixel(config.Col, (int)p);
+                            Color dc = dest.GetPixel(config.Col, (int)p);
                             int sgray = sc.R + sc.G + sc.B;
                             int dgray = dc.R + dc.G + dc.B;
 
@@ -3545,16 +3739,17 @@ namespace PictureViewer
 
                         if (sourh == desth && sourw == destw)
                         {
-                            double pace = (double)sourh / config.MinCmpPix;
-                            int permitcnterr = config.MinCmpPix / 10;
+                            double pace = sourh > config.MinCmpPix ? (double)sourh / config.MinCmpPix : 1;
+                            int permitcnterr = sourh > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                sourh * (100 - config.Degree) / 100;
                             int permiterr = 10;
                             int cnterr = 0;
-                            double y = 0;
 
-                            for (; y < sourh; y += pace)
+                            for (double p = 0; p < sourh; p += pace)
                             {
-                                Color sc = sour.GetPixel(config.Col, (int)y);
-                                Color dc = dest.GetPixel(config.Col, (int)y);
+                                Color sc = sour.GetPixel(config.Col, (int)p);
+                                Color dc = dest.GetPixel(config.Col, (int)p);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
@@ -3574,17 +3769,18 @@ namespace PictureViewer
 
                         if (sourh == desth && sourw == destw)
                         {
-                            double pace = (double)sourh / config.MinCmpPix;
+                            double pace = sourh > config.MinCmpPix ? (double)sourh / config.MinCmpPix : 1;
+                            int permitcnterr = sourh > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                sourh * (100 - config.Degree) / 100;
                             int cmpcol = sourw - config.Col - 1;
-                            int permitcnterr = config.MinCmpPix / 10;
                             int permiterr = 10;
                             int cnterr = 0;
-                            double y = 0;
 
-                            for (; y < sourh; y += pace)
+                            for (double p = 0; p < sourh; p += pace)
                             {
-                                Color sc = sour.GetPixel(config.Col, (int)y);
-                                Color dc = dest.GetPixel(cmpcol, sourh - 1 - (int)y);
+                                Color sc = sour.GetPixel(config.Col, (int)p);
+                                Color dc = dest.GetPixel(cmpcol, sourh - 1 - (int)p);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
@@ -3604,17 +3800,18 @@ namespace PictureViewer
 
                         if (sourh == destw && sourw == desth)
                         {
-                            double pace = (double)sourh / config.MinCmpPix;
+                            double pace = sourh > config.MinCmpPix ? (double)sourh / config.MinCmpPix : 1;
+                            int permitcnterr = sourh > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                sourh * (100 - config.Degree) / 100;
                             int cmpcol = sourw - config.Col - 1;
-                            int permitcnterr = config.MinCmpPix / 10;
                             int permiterr = 10;
                             int cnterr = 0;
-                            double x = 0;
 
-                            for (; x < sourh; x += pace)
+                            for (double p = 0; p < sourh; p += pace)
                             {
-                                Color sc = sour.GetPixel(config.Col, (int)x);
-                                Color dc = dest.GetPixel((int)x, cmpcol);
+                                Color sc = sour.GetPixel(config.Col, (int)p);
+                                Color dc = dest.GetPixel((int)p, cmpcol);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
@@ -3634,16 +3831,17 @@ namespace PictureViewer
 
                         if (sourh == destw && sourw == desth)
                         {
-                            double pace = (double)sourh / config.MinCmpPix;
-                            int permitcnterr = config.MinCmpPix / 10;
+                            double pace = sourh > config.MinCmpPix ? (double)sourh / config.MinCmpPix : 1;
+                            int permitcnterr = sourh > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                sourh * (100 - config.Degree) / 100;
                             int permiterr = 10;
                             int cnterr = 0;
-                            double x = 0;
 
-                            for (; x < sourh; x += pace)
+                            for (double p = 0; p < sourh; p += pace)
                             {
-                                Color sc = sour.GetPixel(config.Col, (int)x);
-                                Color dc = dest.GetPixel(sourh - 1 - (int)x, config.Col);
+                                Color sc = sour.GetPixel(config.Col, (int)p);
+                                Color dc = dest.GetPixel(sourh - 1 - (int)p, config.Col);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
@@ -3720,15 +3918,17 @@ namespace PictureViewer
                         destw = dmap.Width;
                         int cmpcol = (int)((double)config.Col / sourw * destw);
 
-                        //List<long> errlist = new List<long>();
-                        int permitcnterr = desth * 2 / 10;
+                        double pace = desth > config.MinCmpPix ? (double)desth / config.MinCmpPix : 1;
+                        int permitcnterr = desth > config.MinCmpPix ?
+                            config.MinCmpPix * (100 - config.Degree) / 100 :
+                            desth * (100 - config.Degree) / 100;
                         int permiterr = 10;
                         int cnterr = 0;
 
-                        for (int y = 0; y < desth; ++y)
+                        for (double p = 0; p < desth; p += pace)
                         {
-                            Color sc = smap.GetPixel(cmpcol, y);
-                            Color dc = dmap.GetPixel(cmpcol, y);
+                            Color sc = smap.GetPixel(cmpcol, (int)p);
+                            Color dc = dmap.GetPixel(cmpcol, (int)p);
                             int sgray = sc.R + sc.G + sc.B;
                             int dgray = dc.R + dc.G + dc.B;
 
@@ -3792,20 +3992,21 @@ namespace PictureViewer
                             destw = dmap.Width;
                             int cmpcol = (int)((double)config.Col / sourw * destw);
 
-                            //List<long> errlist = new List<long>();
-                            int permitcnterr = desth > 100 ? desth * 2 / 10 : desth * 4 / 10;
+                            double pace = desth > config.MinCmpPix ? (double)desth / config.MinCmpPix : 1;
+                            int permitcnterr = desth > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                desth * (100 - config.Degree) / 100;
                             int permiterr = 10;
                             int cnterr = 0;
 
-                            for (int y = 0; y < desth; ++y)
+                            for (double p = 0; p < desth; p += pace)
                             {
-                                Color sc = smap.GetPixel(cmpcol, y);
-                                Color dc = dmap.GetPixel(cmpcol, y);
+                                Color sc = smap.GetPixel(cmpcol, (int)p);
+                                Color dc = dmap.GetPixel(cmpcol, (int)p);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
                                 int ierr = (sgray - dgray) / 3;
-                                //errlist.Add(ierr);
                                 if (ierr < 0) { ierr = -ierr; }
                                 if (ierr > permiterr) { ++cnterr; }
                                 if (cnterr > permitcnterr) { break; }
@@ -3853,20 +4054,21 @@ namespace PictureViewer
                             int scol = (int)((double)config.Col / sourw * destw);
                             int dcol = destw - 1 - scol;
 
-                            //List<long> errlist = new List<long>();
-                            int permitcnterr = desth > 100 ? desth * 2 / 10 : desth * 4 / 10;
+                            double pace = desth > config.MinCmpPix ? (double)desth / config.MinCmpPix : 1;
+                            int permitcnterr = desth > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                desth * (100 - config.Degree) / 100;
                             int permiterr = 10;
                             int cnterr = 0;
 
-                            for (int y = 0; y < desth; ++y)
+                            for (double p = 0; p < desth; p += pace)
                             {
-                                Color sc = smap.GetPixel(scol, y);
-                                Color dc = dmap.GetPixel(dcol, desth - 1 - y);
+                                Color sc = smap.GetPixel(scol, (int)p);
+                                Color dc = dmap.GetPixel(dcol, desth - 1 - (int)p);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
                                 int ierr = (sgray - dgray) / 3;
-                                //errlist.Add(ierr);
                                 if (ierr < 0) { ierr = -ierr; }
                                 if (ierr > permiterr) { ++cnterr; }
                                 if (cnterr > permitcnterr) { break; }
@@ -3914,15 +4116,17 @@ namespace PictureViewer
                             int scol = (int)((double)config.Col / sourw * desth);
                             int dcol = desth - 1 - scol;
 
-                            //List<long> errlist = new List<long>();
-                            int permitcnterr = destw > 100 ? destw * 2 / 10 : destw * 4 / 10;
+                            double pace = destw > config.MinCmpPix ? (double)destw / config.MinCmpPix : 1;
+                            int permitcnterr = destw > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                destw * (100 - config.Degree) / 100;
                             int permiterr = 10;
                             int cnterr = 0;
 
-                            for (int y = 0; y < destw; ++y)
+                            for (double p = 0; p < destw; p += pace)
                             {
-                                Color sc = smap.GetPixel(scol, y);
-                                Color dc = dmap.GetPixel(y, dcol);
+                                Color sc = smap.GetPixel(scol, (int)p);
+                                Color dc = dmap.GetPixel((int)p, dcol);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
@@ -3975,15 +4179,17 @@ namespace PictureViewer
                             int scol = (int)((double)config.Col / sourw * desth);
                             int dcol = scol;
 
-                            //List<long> errlist = new List<long>();
-                            int permitcnterr = destw > 100 ? destw * 2 / 10 : destw * 4 / 10;
+                            double pace = destw > config.MinCmpPix ? (double)destw / config.MinCmpPix : 1;
+                            int permitcnterr = destw > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                destw * (100 - config.Degree) / 100;
                             int permiterr = 10;
                             int cnterr = 0;
 
-                            for (int y = 0; y < destw; ++y)
+                            for (double p = 0; p < destw; p += pace)
                             {
-                                Color sc = smap.GetPixel(scol, y);
-                                Color dc = dmap.GetPixel(destw - 1 - y, dcol);
+                                Color sc = smap.GetPixel(scol, (int)p);
+                                Color dc = dmap.GetPixel(destw - 1 - (int)p, dcol);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
@@ -4045,7 +4251,7 @@ namespace PictureViewer
             int desth = 0, destw = 0;
             bool found = false;
 
-            for (int i = Threads[3].begin - 1; i < Threads[3].end; ++i)
+            for (int i = Threads[3].begin - 1; i < Threads[3].end && !Threads[3].abort; ++i)
             {
                 #region 初始化变量
 
@@ -4066,16 +4272,17 @@ namespace PictureViewer
                     {
                         if (sourh != desth || sourw != destw) { goto END_ROW_CMP; }
 
-                        double pace = (double)sourw / config.MinCmpPix;
-                        int permitcnterr = config.MinCmpPix / 10;
+                        double pace = sourw > config.MinCmpPix ? (double)sourw / config.MinCmpPix : 1;
+                        int permitcnterr = sourw > config.MinCmpPix ?
+                            config.MinCmpPix * (100 - config.Degree) / 100 :
+                            sourw * (100 - config.Degree) / 100;
                         int permiterr = 10;
                         int cnterr = 0;
-                        double x = 0;
 
-                        for (; x < sourw; x += pace)
+                        for (double p = 0; p < sourw; p += pace)
                         {
-                            Color sc = sour.GetPixel((int)x, config.Row);
-                            Color dc = dest.GetPixel((int)x, config.Row);
+                            Color sc = sour.GetPixel((int)p, config.Row);
+                            Color dc = dest.GetPixel((int)p, config.Row);
                             int sgray = sc.R + sc.B + sc.B;
                             int dgray = dc.R + dc.G + dc.B;
 
@@ -4099,16 +4306,17 @@ namespace PictureViewer
 
                         if (sourh == desth && sourw == destw)
                         {
-                            double pace = (double)sourw / config.MinCmpPix;
-                            int permitcnterr = config.MinCmpPix / 10;
+                            double pace = sourw > config.MinCmpPix ? (double)sourw / config.MinCmpPix : 1;
+                            int permitcnterr = sourw > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                sourw * (100 - config.Degree) / 100;
                             int permiterr = 10;
                             int cnterr = 0;
-                            double x = 0;
 
-                            for (; x < sourw; x += pace)
+                            for (double p = 0; p < sourw; p += pace)
                             {
-                                Color sc = sour.GetPixel((int)x, config.Row);
-                                Color dc = dest.GetPixel((int)x, config.Row);
+                                Color sc = sour.GetPixel((int)p, config.Row);
+                                Color dc = dest.GetPixel((int)p, config.Row);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
@@ -4128,17 +4336,18 @@ namespace PictureViewer
 
                         if (sourh == desth && sourw == destw)
                         {
-                            double pace = (double)sourw / config.MinCmpPix;
+                            double pace = sourw > config.MinCmpPix ? (double)sourw / config.MinCmpPix : 1;
+                            int permitcnterr = sourw > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                sourw * (100 - config.Degree) / 100;
                             int cmprow = sourh - 1 - config.Row;
-                            int permitcnterr = config.MinCmpPix / 10;
                             int permiterr = 10;
                             int cnterr = 0;
-                            double x = 0;
 
-                            for (; x < sourw; x += pace)
+                            for (double p = 0; p < sourw; p += pace)
                             {
-                                Color sc = sour.GetPixel((int)x, config.Row);
-                                Color dc = dest.GetPixel(sourw - 1 - (int)x, cmprow);
+                                Color sc = sour.GetPixel((int)p, config.Row);
+                                Color dc = dest.GetPixel(sourw - 1 - (int)p, cmprow);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
@@ -4158,16 +4367,17 @@ namespace PictureViewer
 
                         if (sourh == destw && sourw == desth)
                         {
-                            double pace = (double)sourw / config.MinCmpPix;
-                            int permitcnterr = config.MinCmpPix / 10;
+                            double pace = sourw > config.MinCmpPix ? (double)sourw / config.MinCmpPix : 1;
+                            int permitcnterr = sourw > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                sourw * (100 - config.Degree) / 100;
                             int permiterr = 10;
                             int cnterr = 0;
-                            double y = 0;
 
-                            for (; y < sourw; y += pace)
+                            for (double p = 0; p < sourw; p += pace)
                             {
-                                Color sc = sour.GetPixel((int)y, config.Row);
-                                Color dc = dest.GetPixel(config.Row, sourw - 1 - (int)y);
+                                Color sc = sour.GetPixel((int)p, config.Row);
+                                Color dc = dest.GetPixel(config.Row, sourw - 1 - (int)p);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
@@ -4187,17 +4397,18 @@ namespace PictureViewer
 
                         if (sourh == destw && sourw == desth)
                         {
-                            double pace = (double)sourw / config.MinCmpPix;
+                            double pace = sourw > config.MinCmpPix ? (double)sourw / config.MinCmpPix : 1;
+                            int permitcnterr = sourw > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                sourw * (100 - config.Degree) / 100;
                             int cmprow = sourh - 1 - config.Row;
-                            int permitcnterr = config.MinCmpPix / 10;
                             int permiterr = 10;
                             int cnterr = 0;
-                            double y = 0;
 
-                            for (; y < sourw; y += pace)
+                            for (double p = 0; p < sourw; p += pace)
                             {
-                                Color sc = sour.GetPixel((int)y, config.Row);
-                                Color dc = dest.GetPixel(cmprow, (int)y);
+                                Color sc = sour.GetPixel((int)p, config.Row);
+                                Color dc = dest.GetPixel(cmprow, (int)p);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
@@ -4274,20 +4485,21 @@ namespace PictureViewer
                         destw = dmap.Width;
                         int cmprow = (int)((double)config.Row / sourh * desth);
 
-                        //List<long> errlist = new List<long>();
-                        int permitcnterr = destw / 10 + (int)(rate * 10);
+                        double pace = destw > config.MinCmpPix ? (double)destw / config.MinCmpPix : 1;
+                        int permitcnterr = destw > config.MinCmpPix ?
+                            config.MinCmpPix * (100 - config.Degree) / 100 :
+                            destw * (100 - config.Degree) / 100;
                         int permiterr = 10;
                         int cnterr = 0;
 
-                        for (int x = 0; x < destw; ++x)
+                        for (double p = 0; p < destw; p += pace)
                         {
-                            Color sc = smap.GetPixel(x, cmprow);
-                            Color dc = dmap.GetPixel(x, cmprow);
+                            Color sc = smap.GetPixel((int)p, cmprow);
+                            Color dc = dmap.GetPixel((int)p, cmprow);
                             int sgray = sc.R + sc.G + sc.B;
                             int dgray = dc.R + dc.G + dc.B;
 
                             int ierr = (sgray - dgray) / 3;
-                            //errlist.Add(ierr);
                             if (ierr < 0) { ierr = -ierr; }
                             if (ierr > permiterr) { ++cnterr; }
                             if (cnterr > permitcnterr) { break; }
@@ -4347,20 +4559,21 @@ namespace PictureViewer
                             destw = dmap.Width;
                             int cmprow = (int)((double)config.Row / sourh * desth);
 
-                            //List<long> errlist = new List<long>();
-                            int permitcnterr = destw > 100 ? destw * 2 / 10 : destw * 4 / 10;
+                            double pace = destw > config.MinCmpPix ? (double)destw / config.MinCmpPix : 1;
+                            int permitcnterr = destw > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                destw * (100 - config.Degree) / 100;
                             int permiterr = 10;
                             int cnterr = 0;
 
-                            for (int x = 0; x < destw; ++x)
+                            for (double p = 0; p < destw; p += pace)
                             {
-                                Color sc = smap.GetPixel(x, cmprow);
-                                Color dc = dmap.GetPixel(x, cmprow);
+                                Color sc = smap.GetPixel((int)p, cmprow);
+                                Color dc = dmap.GetPixel((int)p, cmprow);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
                                 int ierr = (sgray - dgray) / 3;
-                                //errlist.Add(ierr);
                                 if (ierr < 0) { ierr = -ierr; }
                                 if (ierr > permiterr) { ++cnterr; }
                                 if (cnterr > permitcnterr) { break; }
@@ -4410,20 +4623,21 @@ namespace PictureViewer
                             int srow = (int)((double)config.Row / sourh * desth);
                             int drow = desth - 1 - srow;
 
-                            //List<long> errlist = new List<long>();
-                            int permitcnterr = destw > 100 ? destw * 2 / 10 : destw * 4 / 10;
+                            double pace = destw > config.MinCmpPix ? (double)destw / config.MinCmpPix : 1;
+                            int permitcnterr = destw > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                destw * (100 - config.Degree) / 100;
                             int permiterr = 10;
                             int cnterr = 0;
 
-                            for (int x = 0; x < destw; ++x)
+                            for (double x = 0; x < destw; x += pace)
                             {
-                                Color sc = smap.GetPixel(x, srow);
-                                Color dc = dmap.GetPixel(destw - 1 - x, drow);
+                                Color sc = smap.GetPixel((int)x, srow);
+                                Color dc = dmap.GetPixel(destw - 1 - (int)x, drow);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
                                 int ierr = (sgray - dgray) / 3;
-                                //errlist.Add(ierr);
                                 if (ierr < 0) { ierr = -ierr; }
                                 if (ierr > permiterr) { ++cnterr; }
                                 if (cnterr > permitcnterr) { break; }
@@ -4473,15 +4687,17 @@ namespace PictureViewer
                             int srow = (int)((double)config.Row / sourh * destw);
                             int drow = srow;
 
-                            //List<long> errlist = new List<long>();
-                            int permitcnterr = destw > 100 ? desth * 2 / 10 : desth * 4 / 10;
+                            double pace = desth > config.MinCmpPix ? (double)desth / config.MinCmpPix : 1;
+                            int permitcnterr = desth > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                desth * (100 - config.Degree) / 100;
                             int permiterr = 10;
                             int cnterr = 0;
 
-                            for (int y = 0; y < desth; ++y)
+                            for (double y = 0; y < desth; y += pace)
                             {
-                                Color sc = smap.GetPixel(y, srow);
-                                Color dc = dmap.GetPixel(drow, desth - 1 - y);
+                                Color sc = smap.GetPixel((int)y, srow);
+                                Color dc = dmap.GetPixel(drow, desth - 1 - (int)y);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
@@ -4536,15 +4752,17 @@ namespace PictureViewer
                             int srow = (int)((double)config.Row / sourh * destw);
                             int drow = destw - 1 - srow;
 
-                            //List<long> errlist = new List<long>();
-                            int permitcnterr = desth > 100 ? desth * 2 / 10 : desth * 4 / 10;
+                            double pace = desth > config.MinCmpPix ? (double)desth / config.MinCmpPix : 1;
+                            int permitcnterr = desth > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                desth * (100 - config.Degree) / 100;
                             int permiterr = 10;
                             int cnterr = 0;
 
-                            for (int y = 0; y < desth; ++y)
+                            for (double p = 0; p < desth; p += pace)
                             {
-                                Color sc = smap.GetPixel(y, srow);
-                                Color dc = dmap.GetPixel(drow, y);
+                                Color sc = smap.GetPixel((int)p, srow);
+                                Color dc = dmap.GetPixel(drow, (int)p);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
@@ -4601,16 +4819,17 @@ namespace PictureViewer
                     {
                         if (sourh != desth || sourw != destw) { goto END_COL_CMP; }
 
-                        double pace = (double)sourh / config.MinCmpPix;
-                        int permitcnterr = config.MinCmpPix / 10;
+                        double pace = sourh > config.MinCmpPix ? (double)sourh / config.MinCmpPix : 1;
+                        int permitcnterr = sourh > config.MinCmpPix ?
+                            config.MinCmpPix * (100 - config.Degree) / 100 :
+                            sourh * (100 - config.Degree) / 100;
                         int permiterr = 10;
                         int cnterr = 0;
-                        double y = 0;
 
-                        for (; y < sourh; y += pace)
+                        for (double p = 0; p < sourh; p += pace)
                         {
-                            Color sc = sour.GetPixel(config.Col, (int)y);
-                            Color dc = dest.GetPixel(config.Col, (int)y);
+                            Color sc = sour.GetPixel(config.Col, (int)p);
+                            Color dc = dest.GetPixel(config.Col, (int)p);
                             int sgray = sc.R + sc.G + sc.B;
                             int dgray = dc.R + dc.G + dc.B;
 
@@ -4634,16 +4853,17 @@ namespace PictureViewer
 
                         if (sourh == desth && sourw == destw)
                         {
-                            double pace = (double)sourh / config.MinCmpPix;
-                            int permitcnterr = config.MinCmpPix / 10;
+                            double pace = sourh > config.MinCmpPix ? (double)sourh / config.MinCmpPix : 1;
+                            int permitcnterr = sourh > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                sourh * (100 - config.Degree) / 100;
                             int permiterr = 10;
                             int cnterr = 0;
-                            double y = 0;
 
-                            for (; y < sourh; y += pace)
+                            for (double p = 0; p < sourh; p += pace)
                             {
-                                Color sc = sour.GetPixel(config.Col, (int)y);
-                                Color dc = dest.GetPixel(config.Col, (int)y);
+                                Color sc = sour.GetPixel(config.Col, (int)p);
+                                Color dc = dest.GetPixel(config.Col, (int)p);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
@@ -4663,17 +4883,18 @@ namespace PictureViewer
 
                         if (sourh == desth && sourw == destw)
                         {
-                            double pace = (double)sourh / config.MinCmpPix;
+                            double pace = sourh > config.MinCmpPix ? (double)sourh / config.MinCmpPix : 1;
+                            int permitcnterr = sourh > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                sourh * (100 - config.Degree) / 100;
                             int cmpcol = sourw - config.Col - 1;
-                            int permitcnterr = config.MinCmpPix / 10;
                             int permiterr = 10;
                             int cnterr = 0;
-                            double y = 0;
 
-                            for (; y < sourh; y += pace)
+                            for (double p = 0; p < sourh; p += pace)
                             {
-                                Color sc = sour.GetPixel(config.Col, (int)y);
-                                Color dc = dest.GetPixel(cmpcol, sourh - 1 - (int)y);
+                                Color sc = sour.GetPixel(config.Col, (int)p);
+                                Color dc = dest.GetPixel(cmpcol, sourh - 1 - (int)p);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
@@ -4693,17 +4914,18 @@ namespace PictureViewer
 
                         if (sourh == destw && sourw == desth)
                         {
-                            double pace = (double)sourh / config.MinCmpPix;
+                            double pace = sourh > config.MinCmpPix ? (double)sourh / config.MinCmpPix : 1;
+                            int permitcnterr = sourh > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                sourh * (100 - config.Degree) / 100;
                             int cmpcol = sourw - config.Col - 1;
-                            int permitcnterr = config.MinCmpPix / 10;
                             int permiterr = 10;
                             int cnterr = 0;
-                            double x = 0;
 
-                            for (; x < sourh; x += pace)
+                            for (double p = 0; p < sourh; p += pace)
                             {
-                                Color sc = sour.GetPixel(config.Col, (int)x);
-                                Color dc = dest.GetPixel((int)x, cmpcol);
+                                Color sc = sour.GetPixel(config.Col, (int)p);
+                                Color dc = dest.GetPixel((int)p, cmpcol);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
@@ -4723,16 +4945,17 @@ namespace PictureViewer
 
                         if (sourh == destw && sourw == desth)
                         {
-                            double pace = (double)sourh / config.MinCmpPix;
-                            int permitcnterr = config.MinCmpPix / 10;
+                            double pace = sourh > config.MinCmpPix ? (double)sourh / config.MinCmpPix : 1;
+                            int permitcnterr = sourh > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                sourh * (100 - config.Degree) / 100;
                             int permiterr = 10;
                             int cnterr = 0;
-                            double x = 0;
 
-                            for (; x < sourh; x += pace)
+                            for (double p = 0; p < sourh; p += pace)
                             {
-                                Color sc = sour.GetPixel(config.Col, (int)x);
-                                Color dc = dest.GetPixel(sourh - 1 - (int)x, config.Col);
+                                Color sc = sour.GetPixel(config.Col, (int)p);
+                                Color dc = dest.GetPixel(sourh - 1 - (int)p, config.Col);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
@@ -4809,15 +5032,17 @@ namespace PictureViewer
                         destw = dmap.Width;
                         int cmpcol = (int)((double)config.Col / sourw * destw);
 
-                        //List<long> errlist = new List<long>();
-                        int permitcnterr = desth * 2 / 10;
+                        double pace = desth > config.MinCmpPix ? (double)desth / config.MinCmpPix : 1;
+                        int permitcnterr = desth > config.MinCmpPix ?
+                            config.MinCmpPix * (100 - config.Degree) / 100 :
+                            desth * (100 - config.Degree) / 100;
                         int permiterr = 10;
                         int cnterr = 0;
 
-                        for (int y = 0; y < desth; ++y)
+                        for (double p = 0; p < desth; p += pace)
                         {
-                            Color sc = smap.GetPixel(cmpcol, y);
-                            Color dc = dmap.GetPixel(cmpcol, y);
+                            Color sc = smap.GetPixel(cmpcol, (int)p);
+                            Color dc = dmap.GetPixel(cmpcol, (int)p);
                             int sgray = sc.R + sc.G + sc.B;
                             int dgray = dc.R + dc.G + dc.B;
 
@@ -4881,20 +5106,21 @@ namespace PictureViewer
                             destw = dmap.Width;
                             int cmpcol = (int)((double)config.Col / sourw * destw);
 
-                            //List<long> errlist = new List<long>();
-                            int permitcnterr = desth > 100 ? desth * 2 / 10 : desth * 4 / 10;
+                            double pace = desth > config.MinCmpPix ? (double)desth / config.MinCmpPix : 1;
+                            int permitcnterr = desth > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                desth * (100 - config.Degree) / 100;
                             int permiterr = 10;
                             int cnterr = 0;
 
-                            for (int y = 0; y < desth; ++y)
+                            for (double p = 0; p < desth; p += pace)
                             {
-                                Color sc = smap.GetPixel(cmpcol, y);
-                                Color dc = dmap.GetPixel(cmpcol, y);
+                                Color sc = smap.GetPixel(cmpcol, (int)p);
+                                Color dc = dmap.GetPixel(cmpcol, (int)p);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
                                 int ierr = (sgray - dgray) / 3;
-                                //errlist.Add(ierr);
                                 if (ierr < 0) { ierr = -ierr; }
                                 if (ierr > permiterr) { ++cnterr; }
                                 if (cnterr > permitcnterr) { break; }
@@ -4942,20 +5168,21 @@ namespace PictureViewer
                             int scol = (int)((double)config.Col / sourw * destw);
                             int dcol = destw - 1 - scol;
 
-                            //List<long> errlist = new List<long>();
-                            int permitcnterr = desth > 100 ? desth * 2 / 10 : desth * 4 / 10;
+                            double pace = desth > config.MinCmpPix ? (double)desth / config.MinCmpPix : 1;
+                            int permitcnterr = desth > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                desth * (100 - config.Degree) / 100;
                             int permiterr = 10;
                             int cnterr = 0;
 
-                            for (int y = 0; y < desth; ++y)
+                            for (double p = 0; p < desth; p += pace)
                             {
-                                Color sc = smap.GetPixel(scol, y);
-                                Color dc = dmap.GetPixel(dcol, desth - 1 - y);
+                                Color sc = smap.GetPixel(scol, (int)p);
+                                Color dc = dmap.GetPixel(dcol, desth - 1 - (int)p);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
                                 int ierr = (sgray - dgray) / 3;
-                                //errlist.Add(ierr);
                                 if (ierr < 0) { ierr = -ierr; }
                                 if (ierr > permiterr) { ++cnterr; }
                                 if (cnterr > permitcnterr) { break; }
@@ -5003,15 +5230,17 @@ namespace PictureViewer
                             int scol = (int)((double)config.Col / sourw * desth);
                             int dcol = desth - 1 - scol;
 
-                            //List<long> errlist = new List<long>();
-                            int permitcnterr = destw > 100 ? destw * 2 / 10 : destw * 4 / 10;
+                            double pace = destw > config.MinCmpPix ? (double)destw / config.MinCmpPix : 1;
+                            int permitcnterr = destw > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                destw * (100 - config.Degree) / 100;
                             int permiterr = 10;
                             int cnterr = 0;
 
-                            for (int y = 0; y < destw; ++y)
+                            for (double p = 0; p < destw; p += pace)
                             {
-                                Color sc = smap.GetPixel(scol, y);
-                                Color dc = dmap.GetPixel(y, dcol);
+                                Color sc = smap.GetPixel(scol, (int)p);
+                                Color dc = dmap.GetPixel((int)p, dcol);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 
@@ -5064,15 +5293,17 @@ namespace PictureViewer
                             int scol = (int)((double)config.Col / sourw * desth);
                             int dcol = scol;
 
-                            //List<long> errlist = new List<long>();
-                            int permitcnterr = destw > 100 ? destw * 2 / 10 : destw * 4 / 10;
+                            double pace = destw > config.MinCmpPix ? (double)destw / config.MinCmpPix : 1;
+                            int permitcnterr = destw > config.MinCmpPix ?
+                                config.MinCmpPix * (100 - config.Degree) / 100 :
+                                destw * (100 - config.Degree) / 100;
                             int permiterr = 10;
                             int cnterr = 0;
 
-                            for (int y = 0; y < destw; ++y)
+                            for (double p = 0; p < destw; p += pace)
                             {
-                                Color sc = smap.GetPixel(scol, y);
-                                Color dc = dmap.GetPixel(destw - 1 - y, dcol);
+                                Color sc = smap.GetPixel(scol, (int)p);
+                                Color dc = dmap.GetPixel(destw - 1 - (int)p, dcol);
                                 int sgray = sc.R + sc.G + sc.B;
                                 int dgray = dc.R + dc.G + dc.B;
 

@@ -19,8 +19,8 @@ namespace PictureViewer
             InitializeComponent();
         }
 
-        public int FolderIndex = 0;
-        public int FileIndex = 0;
+        public int FolderIndex = -1;
+        public int FileIndex = -1;
         public bool Cancle = true;
 
         private int LastSelectFolder;
@@ -39,7 +39,12 @@ namespace PictureViewer
             this.comboBox1.Items.Clear();
             this.comboBox1.Items.Add("All");
             for (int i = 0; i < FileOperate.RootFiles.Count; i++)
-            { this.comboBox1.Items.Add(FileOperate.RootFiles[i].Path); }
+            {
+                string upperPath = "";
+                string lowerPath = "";
+                FileOperate.getPathName(FileOperate.RootFiles[i].Path, ref upperPath, ref lowerPath);
+                this.comboBox1.Items.Add(lowerPath);
+            }
 
             if (ExistFolder)
             { this.comboBox1.SelectedIndex = Form_Main.config.FolderIndex + 1; }
@@ -57,6 +62,7 @@ namespace PictureViewer
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
             int select = this.comboBox1.SelectedIndex;
+            ShowToolTip(true);
             if (select == -1) { return; }
 
             LastSelectFolder = select; select--;
@@ -64,6 +70,10 @@ namespace PictureViewer
 
             if (this.listBox1.SelectedIndex >= FileIndexs.Count)
             { this.listBox1.SelectedIndex = FileIndexs.Count - 1; }
+        }
+        private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            ShowToolTip(false);
         }
         private void listBox1_DoubleClick(object sender, EventArgs e)
         {
@@ -121,6 +131,30 @@ namespace PictureViewer
                 FileIndexs.Add(i);
                 FileNames.Add(FileOperate.RootFiles[select].Name[i]);
             }
+        }
+        private void ShowToolTip(bool pathChanged)
+        {
+            int sfolder = this.comboBox1.SelectedIndex;
+            int sfile = this.listBox1.SelectedIndex;
+
+            string path = "Not Exist";
+            string name = "Unselect File";
+
+            if (sfolder == 0) { path = "All"; }
+            if (sfolder > 0 && sfolder <= FileOperate.RootFiles.Count) { path = FileOperate.RootFiles[sfolder - 1].Path; }
+
+            if (pathChanged)
+            {
+                this.toolTip1.ToolTipTitle = path;
+                this.toolTip1.SetToolTip(this.listBox1, name);
+                return;
+            }
+
+            if (sfile >= 0 && sfile < FileNames.Count)
+            { path = FileOperate.RootFiles[FolderIndexs[sfile]].Path; name = FileNames[sfile]; }
+
+            this.toolTip1.ToolTipTitle = path;
+            this.toolTip1.SetToolTip(this.listBox1, name);
         }
         private void Search(string exp)
         {
