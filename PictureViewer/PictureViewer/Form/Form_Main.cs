@@ -51,6 +51,7 @@ namespace PictureViewer
         private bool UseSmallWindowOpen = false;
         private bool UseBoard = true;
         private bool UseShapeWindow = false;
+        private int ShapeWindowRate = 80;
         private MOUSE mouse;
         private KEY key;
         private struct MOUSE
@@ -998,8 +999,10 @@ namespace PictureViewer
         {
             if (!UseBoard && !NextShowBigPicture)
             {
-                if (e.Delta > 0) { this.Height += 5; this.Width += 5; }
-                if (e.Delta < 0) { this.Height -= 5; this.Width -= 5; }
+                if (e.Delta > 0) { ShapeWindowRate += 5; }
+                if (e.Delta < 0) { ShapeWindowRate -= 5; }
+                if (ShapeWindowRate < 10) { ShapeWindowRate = 10; }
+                if (ShapeWindowRate > 100) { ShapeWindowRate = 100; }
                 ShowCurrent();
             }
         }
@@ -1555,8 +1558,8 @@ namespace PictureViewer
             
             int ch = this.Height;
             int cw = this.Width;
-            if (UseBoard) { ch -= 30; cw -= 10; }
-            if (show) { ch += 30; cw += 10; }
+            if (UseBoard) { ch -= 39; cw -= 16; }
+            if (show) { ch += 39; cw += 16; }
             if (show) { this.FormBorderStyle = FormBorderStyle.Sizable; } else { this.FormBorderStyle = FormBorderStyle.None; }
             this.Height = ch; this.Width = cw;
             UseBoard = show;// ShowCurrent();
@@ -1565,7 +1568,7 @@ namespace PictureViewer
         {
             if (config.SourPicture == null) { return; }
             int recth = this.Height; int rectw = this.Width;
-            if (UseBoard) { recth -= 30; rectw -= 10; }
+            if (UseBoard) { recth -= 39; rectw -= 16; }
 
             int inith = recth;
             int initw = rectw;
@@ -1578,8 +1581,8 @@ namespace PictureViewer
             int xloc = this.Location.X;
             int yloc = this.Location.Y;
 
-            int maxh = sh * 90 / 100, minh = sh * 50 / 100;
-            int maxw = sw * 90 / 100, minw = sw * 50 / 100;
+            int maxh = sh * ShapeWindowRate / 100, minh = sh * ShapeWindowRate / 100;
+            int maxw = sw * ShapeWindowRate / 100, minw = sw * ShapeWindowRate / 100;
             if (recth > maxh) { recth = maxh; }
             if (recth < minh) { recth = minh; }
             if (rectw > maxw) { rectw = maxw; }
@@ -1590,7 +1593,7 @@ namespace PictureViewer
                 xloc -= (pw - initw) / 2; yloc -= (ph - inith) / 2;
                 this.Location = new Point(xloc, yloc);
 
-                if (UseBoard) { this.Height = ph + 30; this.Width = pw + 10; return; }
+                if (UseBoard) { this.Height = ph + 39; this.Width = pw + 16; return; }
                 this.Height = ph; this.Width = pw; return;
             }
 
@@ -1601,7 +1604,7 @@ namespace PictureViewer
             xloc -= (shapew - initw) / 2; yloc -= (shapeh - inith) / 2;
             this.Location = new Point(xloc, yloc);
 
-            if (UseBoard) { this.Height = shapeh + 30; this.Width = shapew + 10; return; }
+            if (UseBoard) { this.Height = shapeh + 39; this.Width = shapew + 16; return; }
             this.Height = shapeh; this.Width = shapew;
         }
 

@@ -192,8 +192,8 @@ namespace PictureViewer.Class
             if (!Found.Form_Find_Pixes) { settings.Form_Find_Pixes = 100; }
 
             if (!Found.Form_Main_UseSmallWindowOpen) { settings.Form_Main_UseSmallWindowOpen = false; }
-            if (!Found.Form_Main_Height) { settings.Form_Main_Height = 150; }
-            if (!Found.Form_Main_Width) { settings.Form_Main_Width = 200; }
+            if (!Found.Form_Main_Height) { settings.Form_Main_Height = 400; }
+            if (!Found.Form_Main_Width) { settings.Form_Main_Width = 400; }
             if (settings.Form_Main_UseSmallWindowOpen)
             { settings.Form_Main_Height = 150; settings.Form_Main_Width = 200; }
 

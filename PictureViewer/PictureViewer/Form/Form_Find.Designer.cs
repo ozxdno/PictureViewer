@@ -31,8 +31,8 @@
             this.components = new System.ComponentModel.Container();
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.contextMenuStrip1 = new System.Windows.Forms.ContextMenuStrip(this.components);
-            this.exportToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.export2ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.exportToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.startToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.degreeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.pixesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -66,8 +66,8 @@
             // contextMenuStrip1
             // 
             this.contextMenuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.export2ToolStripMenuItem,
             this.exportToolStripMenuItem,
+            this.export2ToolStripMenuItem,
             this.startToolStripMenuItem,
             this.degreeToolStripMenuItem,
             this.pixesToolStripMenuItem,
@@ -76,19 +76,19 @@
             this.contextMenuStrip1.Name = "contextMenuStrip1";
             this.contextMenuStrip1.Size = new System.Drawing.Size(153, 180);
             // 
-            // exportToolStripMenuItem
-            // 
-            this.exportToolStripMenuItem.Name = "exportToolStripMenuItem";
-            this.exportToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
-            this.exportToolStripMenuItem.Text = "Export";
-            this.exportToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Export);
-            // 
             // export2ToolStripMenuItem
             // 
             this.export2ToolStripMenuItem.Name = "export2ToolStripMenuItem";
             this.export2ToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
             this.export2ToolStripMenuItem.Text = "Export2";
             this.export2ToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Export2);
+            // 
+            // exportToolStripMenuItem
+            // 
+            this.exportToolStripMenuItem.Name = "exportToolStripMenuItem";
+            this.exportToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.exportToolStripMenuItem.Text = "Export";
+            this.exportToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Export);
             // 
             // startToolStripMenuItem
             // 

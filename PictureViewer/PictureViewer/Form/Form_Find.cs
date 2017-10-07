@@ -164,7 +164,9 @@ namespace PictureViewer
         {
             InitializeComponent();
 
-            SourPic = CopyPicture((Bitmap)pic, 1);
+            double rate = 1000.0 / Math.Min(pic.Height, pic.Width);
+            if (rate > 1) { rate = 1; }
+            SourPic = CopyPicture((Bitmap)pic, rate);
             config.Sour = fullpath;
             config.Mode = mode;
         }
@@ -563,10 +565,13 @@ namespace PictureViewer
 
             double pace = (double)Paths.Count / Threads.Length;
             double bg = 0, ed = 0;
+            //double rate = 1000.0 / Math.Min(SourPic.Height, SourPic.Width);
+            //if (rate > 1) { rate = 1; }
+            double rate = 1;
 
             bg = ed; ed = bg + pace;
             Threads[0].thread = new Thread(TH_CMP1);
-            Threads[0].sour = CopyPicture(SourPic, 1);
+            Threads[0].sour = CopyPicture(SourPic, rate);
             Threads[0].abort = false;
             Threads[0].finish = false;
             Threads[0].begin = 1;
@@ -575,7 +580,7 @@ namespace PictureViewer
 
             bg = ed; ed = bg + pace;
             Threads[1].thread = new Thread(TH_CMP2);
-            Threads[1].sour = CopyPicture(SourPic, 1);
+            Threads[1].sour = CopyPicture(SourPic, rate);
             Threads[1].abort = false;
             Threads[1].finish = false;
             Threads[1].begin = (int)bg + 1;
@@ -584,7 +589,7 @@ namespace PictureViewer
 
             bg = ed; ed = bg + pace;
             Threads[2].thread = new Thread(TH_CMP3);
-            Threads[2].sour = CopyPicture(SourPic, 1);
+            Threads[2].sour = CopyPicture(SourPic, rate);
             Threads[2].abort = false;
             Threads[2].finish = false;
             Threads[2].begin = (int)bg + 1;
@@ -593,7 +598,7 @@ namespace PictureViewer
 
             bg = ed; ed = bg + pace;
             Threads[3].thread = new Thread(TH_CMP4);
-            Threads[3].sour = CopyPicture(SourPic, 1);
+            Threads[3].sour = CopyPicture(SourPic, rate);
             Threads[3].abort = false;
             Threads[3].finish = false;
             Threads[3].begin = (int)bg + 1;
