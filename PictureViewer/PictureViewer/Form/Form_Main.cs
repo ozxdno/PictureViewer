@@ -41,12 +41,26 @@ namespace PictureViewer
 
         ///////////////////////////////////////////////////// private attribute ///////////////////////////////////////////////
 
+        // H 39 W 16
+
         private System.Timers.Timer Timer = new System.Timers.Timer(10);
         private bool MenuShowed_OnWMP = false;
         //private bool ShowedBigPicture = false;
         private bool NextShowBigPicture = false;
         private int LastKeyValue = 35;
+        private bool UseSmallWindowOpen = false;
+        private bool UseBoard = true;
+        private bool UseShapeWindow = false;
+        private MOUSE mouse;
         private KEY key;
+        private struct MOUSE
+        {
+            public bool Down;
+            public bool Up;
+            public Point pDown;
+            public Point pUp;
+            public Point Previous;
+        }
         private struct KEY
         {
             public bool Down;
@@ -62,6 +76,8 @@ namespace PictureViewer
         public Form_Main()
         {
             InitializeComponent();
+
+            this.pictureBox1.MouseWheel += Form_MouseWheel;
         }
         
         ///////////////////////////////////////////////////// private method ///////////////////////////////////////////////
@@ -69,11 +85,34 @@ namespace PictureViewer
         private void Form_Loaded(object sender, EventArgs e)
         {
             FileSupport.Initialize();
-
+            
             config.ConfigPath = FileOperate.getExePath();
             config.ConfigName = "pv.pvini";
-            if (!Class.Load.Load_CFG()) { MessageBox.Show("配置文件（pv.pvini）不存在或已损坏"); }
+            //if (!Class.Load.Load_CFG()) { MessageBox.Show("配置文件（pv.pvini）不存在或已损坏"); }
+            Class.Load.Load_CFG();
 
+            this.hideToolStripMenuItem.Checked = Class.Load.settings.Form_Main_Hide;
+            this.hideUToolStripMenuItem.Checked = Class.Load.settings.Form_Main_Hide_U;
+            this.hideDToolStripMenuItem.Checked = Class.Load.settings.Form_Main_Hide_D;
+            this.hideLToolStripMenuItem.Checked = Class.Load.settings.Form_Main_Hide_L;
+            this.hideRToolStripMenuItem.Checked = Class.Load.settings.Form_Main_Hide_R;
+
+            this.fullToolStripMenuItem.Checked = Class.Load.settings.Form_Main_Find_Full;
+            this.partToolStripMenuItem.Checked = Class.Load.settings.Form_Main_Find_Part;
+            this.sameToolStripMenuItem.Checked = Class.Load.settings.Form_Main_Find_Same;
+            this.likeToolStripMenuItem.Checked = Class.Load.settings.Form_Main_Find_Like;
+            this.turnToolStripMenuItem.Checked = Class.Load.settings.Form_Main_Find_Turn;
+
+            if (!Class.Load.settings.Form_Main_UseBoard) { this.FormBorderStyle = FormBorderStyle.None; }
+            UseBoard = Class.Load.settings.Form_Main_UseBoard;
+            UseShapeWindow = Class.Load.settings.Form_Main_ShapeWindow;
+            this.shapeToolStripMenuItem.Checked = UseShapeWindow;
+
+            this.UseSmallWindowOpen = Class.Load.settings.Form_Main_UseSmallWindowOpen;
+            this.Height = Class.Load.settings.Form_Main_Height;
+            this.Width = Class.Load.settings.Form_Main_Width;
+            this.Location = new Point(Class.Load.settings.Form_Main_Location_X, Class.Load.settings.Form_Main_Location_Y);
+            
             config.SubFiles = new List<string>();
             if (config.FolderIndex < 0 || config.FolderIndex >= FileOperate.RootFiles.Count) { config.FolderIndex = 0; }
             if (config.FileIndex < 0 || FileOperate.RootFiles.Count == 0 || config.FileIndex >= FileOperate.RootFiles[config.FolderIndex].Name.Count)
@@ -98,6 +137,27 @@ namespace PictureViewer
         }
         private void Form_Closed(object sender, FormClosedEventArgs e)
         {
+            Class.Save.settings.Form_Main_Hide = this.hideToolStripMenuItem.Checked;
+            Class.Save.settings.Form_Main_Hide_L = this.hideLToolStripMenuItem.Checked;
+            Class.Save.settings.Form_Main_Hide_R = this.hideRToolStripMenuItem.Checked;
+            Class.Save.settings.Form_Main_Hide_U = this.hideUToolStripMenuItem.Checked;
+            Class.Save.settings.Form_Main_Hide_D = this.hideDToolStripMenuItem.Checked;
+
+            Class.Save.settings.Form_Main_Find_Full = this.fullToolStripMenuItem.Checked;
+            Class.Save.settings.Form_Main_Find_Part = this.partToolStripMenuItem.Checked;
+            Class.Save.settings.Form_Main_Find_Same = this.sameToolStripMenuItem.Checked;
+            Class.Save.settings.Form_Main_Find_Like = this.likeToolStripMenuItem.Checked;
+            Class.Save.settings.Form_Main_Find_Turn = this.turnToolStripMenuItem.Checked;
+
+            Class.Save.settings.Form_Main_UseSmallWindowOpen = UseSmallWindowOpen;
+            Class.Save.settings.Form_Main_Height = this.Height;
+            Class.Save.settings.Form_Main_Width = this.Width;
+            Class.Save.settings.Form_Main_Location_X = this.Location.X;
+            Class.Save.settings.Form_Main_Location_Y = this.Location.Y;
+
+            Class.Save.settings.Form_Main_UseBoard = UseBoard;
+            Class.Save.settings.Form_Main_ShapeWindow = UseShapeWindow;
+            
             Timer.Close(); Class.Save.Save_CFG();
         }
         private void Form_KeyDown(object sender, KeyEventArgs e)
@@ -478,50 +538,43 @@ namespace PictureViewer
 
             #endregion
 
-            #region 打开根目录
-
-            if (e.KeyValue == 50)
-            {
-                bool ExistFolder = 0 <= Form_Main.config.FolderIndex && Form_Main.config.FolderIndex < FileOperate.RootFiles.Count;
-                //bool ExistFile = ExistFolder && (0 <= Form_Main.config.FileIndex && Form_Main.config.FileIndex < FileOperate.RootFiles[Form_Main.config.FolderIndex].Name.Count);
-                if (!ExistFolder) { MessageBox.Show("路径不存在，无法打开！", "提示"); return; }
-
-                string root = FileOperate.RootFiles[config.FolderIndex].Path;
-                System.Diagnostics.Process.Start("explorer.exe", root);
-            }
-
-            #endregion
-
-            #region 打开子目录
-
-            if (e.KeyValue == 51)
-            {
-                bool ExistFolder = 0 <= Form_Main.config.FolderIndex && Form_Main.config.FolderIndex < FileOperate.RootFiles.Count;
-                bool ExistFile = ExistFolder && (0 <= Form_Main.config.FileIndex && Form_Main.config.FileIndex < FileOperate.RootFiles[Form_Main.config.FolderIndex].Name.Count);
-                if (!ExistFile) { MessageBox.Show("路径不存在，无法打开！", "提示"); return; }
-                
-                string name = FileOperate.RootFiles[config.FolderIndex].Name[config.FileIndex];
-                int type = FileOperate.getFileType(FileOperate.getExtension(name));
-                if (type != 1) { MessageBox.Show("该文件不是文件夹，无法打开！", "提示"); return; }
-
-                string file = FileOperate.RootFiles[config.FolderIndex].Name[config.FileIndex];
-                System.Diagnostics.Process.Start("explorer.exe", file);
-            }
-
-            #endregion
-
             #region 打开输出目录
 
             if (e.KeyValue == 49)
             {
-                string export = config.ExportFolder;
-                if (!Directory.Exists(export)) { export = config.ConfigPath; }
-                System.Diagnostics.Process.Start("explorer.exe", export);
+                RightMenu_OpenExport(null, null); return;
             }
 
             #endregion
 
-            #region PASSWORD
+            #region 打开根目录
+
+            if (e.KeyValue == 50)
+            {
+                RightMenu_OpenRoot(null, null); return;
+            }
+
+            #endregion
+
+            #region 打开漫画目录
+
+            if (e.KeyValue == 52)
+            {
+                RightMenu_OpenComic(null, null); return;
+            }
+
+            #endregion
+
+            #region 打开当前文件
+
+            if (e.KeyValue == 51)
+            {
+                RightMenu_OpenCurrent(null, null); return;
+            }
+
+            #endregion
+
+            #region P PASSWORD
 
             if (e.KeyValue == 80)
             {
@@ -541,6 +594,8 @@ namespace PictureViewer
                 if (input.Input == "#hide2") { HideFiles(); return; }
                 if (input.Input == "#show hide") { NoHide = true; ShowCurrent(); return; }
                 if (input.Input == "#hide hide") { NoHide = false; ShowCurrent();  return; }
+                if (input.Input == "#small window") { UseSmallWindowOpen = true; return; }
+                if (input.Input == "#big window") { UseSmallWindowOpen = false; return; }
                 if (input.Input.Length != 0 && input.Input[0] != '-')
                 { ZipOperate.A_PassWord(input.Input); ShowCurrent(); }
                 if (input.Input.Length != 0 && input.Input[0] == '-')
@@ -549,9 +604,22 @@ namespace PictureViewer
 
             #endregion
 
-            #region 退出
+            #region ESC 退出
 
-            if (e.KeyValue == 27) { this.Close(); }
+            if (e.KeyValue == 27)
+            {
+                Form_Closed(null, null);
+                Application.ExitThread();
+            }
+
+            #endregion
+
+            #region A 显示/关闭 窗口外框
+
+            if (e.KeyValue == 65)
+            {
+                ShowBoard(!UseBoard); return;
+            }
 
             #endregion
         }
@@ -569,14 +637,27 @@ namespace PictureViewer
         }
         private void WMP_RightButtonClicked(object sender, AxWMPLib._WMPOCXEvents_MouseUpEvent e)
         {
+            if (e.nButton == 1)
+            {
+                Form_MouseUp(null, null);
+            }
+
             // 必须是右键按下
-            if (e.nButton != 2) { return; }
+            if (e.nButton == 2)
+            {
+                //if (!MenuShowed_OnWMP) { this.contextMenuStrip1.Show(MousePosition); }
+                //if (MenuShowed_OnWMP) { this.contextMenuStrip1.Hide(); }
 
-            //if (!MenuShowed_OnWMP) { this.contextMenuStrip1.Show(MousePosition); }
-            //if (MenuShowed_OnWMP) { this.contextMenuStrip1.Hide(); }
-
-            //MenuShowed_OnWMP = !MenuShowed_OnWMP;
-            this.contextMenuStrip1.Show(MousePosition);
+                //MenuShowed_OnWMP = !MenuShowed_OnWMP;
+                this.contextMenuStrip1.Show(MousePosition);
+            }
+        }
+        private void WMP_MouseDown(object sender, AxWMPLib._WMPOCXEvents_MouseDownEvent e)
+        {
+            if (e.nButton == 1)
+            {
+                Form_MouseDown(null, null);
+            }
         }
 
         private void Form_Main_DoubleClick(object sender, EventArgs e)
@@ -610,6 +691,7 @@ namespace PictureViewer
                 if (config.SourPicture == null) { return; }
                 NextShowBigPicture = !NextShowBigPicture;
                 if (!NextShowBigPicture) { ShowCurrent(); return; }
+                ShowBig(true); return;
 
                 // 聚焦点
                 int xF = MousePosition.X - this.Location.X - this.pictureBox1.Location.X - 10;
@@ -681,6 +763,7 @@ namespace PictureViewer
                 if (config.SourPicture == null) { return; }
                 NextShowBigPicture = !NextShowBigPicture;
                 if (!NextShowBigPicture) { ShowCurrent(); return; }
+                ShowBig(true); return;
 
                 // 聚焦点
                 int xF = MousePosition.X - this.Location.X - this.pictureBox1.Location.X - 10;
@@ -783,6 +866,7 @@ namespace PictureViewer
                 if (config.SourPicture == null) { return; }
                 NextShowBigPicture = !NextShowBigPicture;
                 if (!NextShowBigPicture) { ShowCurrent(); return; }
+                ShowBig(true); return;
 
                 // 聚焦点
                 int xF = MousePosition.X - this.Location.X - this.pictureBox1.Location.X - 10;
@@ -897,6 +981,29 @@ namespace PictureViewer
             config.SubFiles = new List<string>(); config.SubIndex = 0; ShowCurrent();
         }
 
+        private void Form_MouseDown(object sender, MouseEventArgs e)
+        {
+            mouse.Down = true;
+            mouse.Up = false;
+            mouse.pDown = MousePosition;
+            mouse.Previous = MousePosition;
+        }
+        private void Form_MouseUp(object sender, MouseEventArgs e)
+        {
+            mouse.Down = false;
+            mouse.Up = true;
+            mouse.pUp = MousePosition;
+        }
+        private void Form_MouseWheel(object sender, MouseEventArgs e)
+        {
+            if (!UseBoard && !NextShowBigPicture)
+            {
+                if (e.Delta > 0) { this.Height += 5; this.Width += 5; }
+                if (e.Delta < 0) { this.Height -= 5; this.Width -= 5; }
+                ShowCurrent();
+            }
+        }
+
         private void Updata(object source, System.Timers.ElapsedEventArgs e)
         {
             this.BeginInvoke((EventHandler)delegate
@@ -907,17 +1014,17 @@ namespace PictureViewer
                 bool hideR = this.hideRToolStripMenuItem.Checked;
                 this.hideToolStripMenuItem.Checked = hideL && hideR && hideU && hideD;
 
-                int ptX = MousePosition.X - this.Location.X;
-                int ptY = MousePosition.Y - this.Location.Y;
+                int ptX = MousePosition.X - this.Location.X; if (!UseBoard) { ptX += 10; }
+                int ptY = MousePosition.Y - this.Location.Y; if (!UseBoard) { ptY += 30; }
                 bool showPageMark = this.Width > 150 && this.Height > 150;
 
                 // 左翻页
                 int setW = this.Width / 20;
                 int setH = this.Height / 5;
                 int font = setW * 3 / 4;
-                int bgW = this.Width / 20;
-                int edW = bgW + setW;
-                int bgH = this.Height / 2 - setH / 2;
+                int bgW = this.Width / 20; if (!UseBoard) { bgW += 5; }
+                int edW = bgW + setW; 
+                int bgH = this.Height / 2 - setH / 2; if (!UseBoard) { bgH += 15; }
                 int edH = bgH + setH;
                 if (showPageMark && !hideL && bgW <= ptX && ptX <= edW && bgH <= ptY && ptY <= edH)
                 {
@@ -932,10 +1039,10 @@ namespace PictureViewer
                 setW = this.Width / 20;
                 setH = this.Height / 5;
                 font = setW * 3 / 4;
-                bgW = this.Width - setW - this.Width / 20;
-                if (this.VerticalScroll.Visible) { bgW -= 12; }
+                bgW = this.Width - setW - this.Width / 20; if (!UseBoard) { bgW += 15; }
+                if (this.VerticalScroll.Visible) { bgW -= 15; }
                 edW = bgW + setW;
-                bgH = this.Height / 2 - setH / 2;
+                bgH = this.Height / 2 - setH / 2; if (!UseBoard) { bgH += 15; }
                 edH = bgH + setH;
                 if (showPageMark && !hideR && bgW <= ptX && ptX <= edW && bgH <= ptY && ptY <= edH)
                 {
@@ -950,9 +1057,9 @@ namespace PictureViewer
                 setW = this.Width / 8;
                 setH = this.Height / 12;
                 font = setH * 3 / 4;
-                bgW = this.Width / 2 - setW / 2;
+                bgW = this.Width / 2 - setW / 2; if (!UseBoard) { bgW += 5; }
                 edW = bgW + setW;
-                bgH = this.Height / 20 + 30;
+                bgH = this.Height / 20 + 30; //if (!UseBoard) { bgH += 15; }
                 edH = bgH + setH;
                 if (showPageMark && !hideU && bgW <= ptX && ptX <= edW && bgH <= ptY && ptY <= edH && config.SubFiles.Count > 1)
                 {
@@ -967,9 +1074,9 @@ namespace PictureViewer
                 setW = this.Width / 8;
                 setH = this.Height / 12;
                 font = setH * 3 / 4;
-                bgW = this.Width / 2 - setW / 2;
+                bgW = this.Width / 2 - setW / 2; if (!UseBoard) { bgW += 5; }
                 edW = bgW + setW;
-                bgH = this.Height - this.Height / 20 - setH - 10;
+                bgH = this.Height - this.Height / 20 - setH - 10; if (!UseBoard) { bgH += 39; }
                 if (this.HorizontalScroll.Visible) { bgH -= 10; }
                 edH = bgH + setH;
                 if (showPageMark && !hideD && bgW <= ptX && ptX <= edW && bgH <= ptY && ptY <= edH && config.SubFiles.Count > 1)
@@ -981,6 +1088,15 @@ namespace PictureViewer
                     this.label4.Font = new Font("宋体", font);
                 }
                 else { this.label4.Visible = false; }
+
+                // 拖拽
+                if (mouse.Down)
+                {
+                    int xMove = MousePosition.X - mouse.Previous.X;
+                    int yMove = MousePosition.Y - mouse.Previous.Y;
+                    this.Location = new Point(this.Location.X + xMove, this.Location.Y + yMove);
+                    mouse.Previous = MousePosition;
+                }
 
                 // 滚屏
                 if (!key.Down || (!this.HorizontalScroll.Visible && !this.VerticalScroll.Visible)) { return; }
@@ -1057,12 +1173,13 @@ namespace PictureViewer
             // 关闭播放以前的文件
             if (config.SourPicture != null) { config.SourPicture.Dispose(); }
             if (config.DestPicture != null) { config.DestPicture.Dispose(); }
-            if (!this.axWindowsMediaPlayer1.IsDisposed) { this.axWindowsMediaPlayer1.Ctlcontrols.stop(); }
+            if (!this.axWindowsMediaPlayer1.IsDisposed)
+            { try { this.axWindowsMediaPlayer1.Ctlcontrols.stop(); } catch { } }
 
             this.HorizontalScroll.Value = 0;
             this.VerticalScroll.Value = 0;
             config.SubFiles.Clear();
-
+            
             // 切到当前文件夹
             for (int i = 0; i < this.filePathToolStripMenuItem.DropDownItems.Count; i++)
             {
@@ -1111,7 +1228,7 @@ namespace PictureViewer
                 config.SubFiles = FileOperate.getSubFiles(full);
                 if (config.SubFiles.Count == 0)
                 {
-                    this.Text = "[" + Index + "/" + Total + "] [ 0/0 ] [Empty Folder] Not found any file the process support in this folder";
+                    this.Text = "[" + Index + "/" + Total + "] [ 0/0 ] [Empty Folder] " + name;
                     ShowOff("unk");
                     //MessageBox.Show("在文件夹 " + full + " 中未能找到任何此程序支持的文件！", "提示");
                     return;
@@ -1184,7 +1301,7 @@ namespace PictureViewer
 
                 if (config.SubFiles.Count == 0)
                 {
-                    this.Text = "[" + Index + "/" + Total + "] [ 0/0 ] [Empty Zip File] Not found any file the process support in this zip file";
+                    this.Text = "[" + Index + "/" + Total + "] [ 0/0 ] [Empty Zip File] " + name;
                     ShowOff(); return;
                 }
 
@@ -1223,14 +1340,23 @@ namespace PictureViewer
         private void ShowPicture(string path, string name, bool load = true)
         {
             if (load) { config.SourPicture = (Bitmap)Image.FromFile(path + "\\" + name); }
-            
+            if (UseShapeWindow) { ShapeWindow(); }
+
+            this.toolTip1.ToolTipTitle = path;
+            string tip = "[" + (config.FileIndex + 1).ToString() + "/" + FileOperate.RootFiles[config.FolderIndex].Name.Count.ToString() + "] [" + (config.SubIndex + 1).ToString() + "/" + config.SubFiles.Count.ToString() + "] ";
+            if (tip == "err.tip") { tip += "Error"; }
+            else if (tip == "unk.tip") { tip += "Unknow"; }
+            else if (tip == "unp.tip") { tip += "Unsupport"; }
+            else { tip += name; }
+            this.toolTip1.SetToolTip(this.pictureBox1, tip);
+
             int sourX = config.SourPicture.Width;
             int sourY = config.SourPicture.Height;
             int destX = sourX;
             int destY = sourY;
-            int limitX = this.Width - 18;
-            int limitY = this.Height - 41;
-            
+            int limitX = this.Width - 18; if (!UseBoard) { limitX = this.Width; }
+            int limitY = this.Height - 41; if (!UseBoard) { limitY = this.Height; }
+
             double rate = Math.Max((double)sourX / limitX, (double)sourY / limitY);
             if (rate > 1) { destX = (int)(config.SourPicture.Width / rate); }
             if (rate > 1) { destY = (int)(config.SourPicture.Height / rate); }
@@ -1240,25 +1366,32 @@ namespace PictureViewer
             g.DrawImage(config.SourPicture, new Rectangle(0, 0, destX, destY), new Rectangle(0, 0, sourX, sourY), GraphicsUnit.Pixel);
             g.Dispose();
 
-            if (NextShowBigPicture) { ShowBig(); return; }
-            //ShowedBigPicture = false;
-            
-            this.pictureBox1.Width = destX;
-            this.pictureBox1.Height = destY;
-            this.pictureBox1.Location = new Point((this.Width - 18 - destX) / 2, (this.Height - 42 - destY) / 2);
-            this.pictureBox1.Image = config.DestPicture;
+            if (NextShowBigPicture) {  ShowBig(); }
+            else
+            {
+                this.pictureBox1.Width = destX;
+                this.pictureBox1.Height = destY;
+                Point location = UseBoard ? new Point((this.Width - 18 - destX) / 2, (this.Height - 42 - destY) / 2) : new Point((this.Width - destX) / 2, (this.Height - destY) / 2);
+                this.pictureBox1.Location = location;
+                this.pictureBox1.Image = config.DestPicture;
+            }
             
             this.axWindowsMediaPlayer1.Visible = false;
             this.pictureBox1.Visible = true;
         }
         private void ShowGif(string path, string name, bool load = true)
         {
-            if (load) { config.SourPicture = Image.FromFile(path + "\\" + name); }
-            
+            if (load) { config.SourPicture = (Bitmap)Image.FromFile(path + "\\" + name); }
+            if (UseShapeWindow) { ShapeWindow(); }
+
+            this.toolTip1.ToolTipTitle = path;
+            string tip = "[" + (config.FileIndex + 1).ToString() + "/" + FileOperate.RootFiles[config.FolderIndex].Name.Count.ToString() + "] [" + (config.SubIndex + 1).ToString() + "/" + config.SubFiles.Count.ToString() + "] ";
+            this.toolTip1.SetToolTip(this.pictureBox1, tip + name);
+
             int H = config.SourPicture.Height;
             int W = config.SourPicture.Width;
-            int X = (this.Width - W - 18) / 2;
-            int Y = (this.Height - H - 42) / 2;
+            int X = (this.Width - W - 18) / 2; if (!UseBoard) { X = (this.Width - W) / 2; }
+            int Y = (this.Height - H - 42) / 2; if (!UseBoard) { Y = (this.Height - H) / 2; }
             key.E = X < 0 || Y < 0;
             if (X < 1) { X = 1; }
             if (Y < 1) { Y = 1; }
@@ -1273,8 +1406,12 @@ namespace PictureViewer
         }
         private void ShowVideo(string path, string name)
         {
-            this.axWindowsMediaPlayer1.Height = this.Height - 41;
-            this.axWindowsMediaPlayer1.Width = this.Width - 18;
+            this.toolTip1.ToolTipTitle = path;
+            string tip = "[" + (config.FileIndex + 1).ToString() + "/" + FileOperate.RootFiles[config.FolderIndex].Name.Count.ToString() + "] [" + (config.SubIndex + 1).ToString() + "/" + config.SubFiles.Count.ToString() + "] ";
+            this.toolTip1.SetToolTip(this.axWindowsMediaPlayer1, tip + name);
+
+            this.axWindowsMediaPlayer1.Height = UseBoard ? this.Height - 41 : this.Height - 2;
+            this.axWindowsMediaPlayer1.Width = UseBoard ? this.Width - 18 : this.Width - 2;
             this.axWindowsMediaPlayer1.Location = new Point(1, 1);
 
             axWindowsMediaPlayer1.URL = path + "\\" + name;
@@ -1343,15 +1480,15 @@ namespace PictureViewer
         }
         private void ShowBig(bool focus = false)
         {
-            if (config.SourPicture == null || this.pictureBox1.Visible == false) { return; }
+            if (config.SourPicture == null) { return; }
 
             //this.HorizontalScroll.Value = 0;
             //this.VerticalScroll.Value = 0;
             //ShowedBigPicture = true;
             
             // 聚焦点
-            int xF = MousePosition.X - this.Location.X - this.pictureBox1.Location.X - 10;
-            int yF = MousePosition.Y - this.Location.Y - this.pictureBox1.Location.Y - 30;
+            int xF = MousePosition.X - this.Location.X - this.pictureBox1.Location.X - 10; if (!UseBoard) { xF += 10; }
+            int yF = MousePosition.Y - this.Location.Y - this.pictureBox1.Location.Y - 30; if (!UseBoard) { yF += 30; }
             double xR = (double)xF / config.DestPicture.Width;
             if (xR < 0) { xR = 0; }
             if (xR > 1) { xR = 1; }
@@ -1361,8 +1498,8 @@ namespace PictureViewer
             if (!focus) { xR = 0.0; yR = 0.0; }
 
             // 显示图片
-            int X = (this.Width - 18 - config.SourPicture.Width) / 2;
-            int Y = (this.Height - 42 - config.SourPicture.Height) / 2;
+            int X = (this.Width - 18 - config.SourPicture.Width) / 2; if (!UseBoard) { X += 9; }
+            int Y = (this.Height - 42 - config.SourPicture.Height) / 2; if (!UseBoard) { Y += 21; }
             key.E = X < 0 || Y < 0;
             if (X < 1) { X = 1; }
             if (Y < 1) { Y = 1; }
@@ -1374,10 +1511,12 @@ namespace PictureViewer
 
             // 把聚焦点放到屏幕中央
             int xS = (int)(config.SourPicture.Width * xR - this.Width / 2 + 40);
+            if (!UseBoard) { xS -= 40; }
             if (xS < this.HorizontalScroll.Minimum) { xS = this.HorizontalScroll.Minimum; }
             if (xS > this.HorizontalScroll.Maximum) { xS = this.HorizontalScroll.Maximum; }
 
             int yS = (int)(config.SourPicture.Height * yR - this.Height / 2 + 20);
+            if (!UseBoard) { yS -= 20; }
             if (yS < this.VerticalScroll.Minimum) { yS = this.VerticalScroll.Minimum; }
             if (yS > this.VerticalScroll.Maximum) { yS = this.VerticalScroll.Maximum; }
             
@@ -1409,6 +1548,61 @@ namespace PictureViewer
             this.VerticalScroll.Value = yS; return;
 
             #endregion
+        }
+        private void ShowBoard(bool show)
+        {
+            if (UseBoard == show) { return; }
+            
+            int ch = this.Height;
+            int cw = this.Width;
+            if (UseBoard) { ch -= 30; cw -= 10; }
+            if (show) { ch += 30; cw += 10; }
+            if (show) { this.FormBorderStyle = FormBorderStyle.Sizable; } else { this.FormBorderStyle = FormBorderStyle.None; }
+            this.Height = ch; this.Width = cw;
+            UseBoard = show;// ShowCurrent();
+        }
+        private void ShapeWindow()
+        {
+            if (config.SourPicture == null) { return; }
+            int recth = this.Height; int rectw = this.Width;
+            if (UseBoard) { recth -= 30; rectw -= 10; }
+
+            int inith = recth;
+            int initw = rectw;
+
+            int sh = Screen.PrimaryScreen.Bounds.Height;
+            int sw = Screen.PrimaryScreen.Bounds.Width;
+            int ph = config.SourPicture.Height;
+            int pw = config.SourPicture.Width;
+
+            int xloc = this.Location.X;
+            int yloc = this.Location.Y;
+
+            int maxh = sh * 90 / 100, minh = sh * 50 / 100;
+            int maxw = sw * 90 / 100, minw = sw * 50 / 100;
+            if (recth > maxh) { recth = maxh; }
+            if (recth < minh) { recth = minh; }
+            if (rectw > maxw) { rectw = maxw; }
+            if (rectw < minw) { rectw = minw; }
+
+            if (ph <= maxh && pw <= maxw && sh > ph && sw > pw)
+            {
+                xloc -= (pw - initw) / 2; yloc -= (ph - inith) / 2;
+                this.Location = new Point(xloc, yloc);
+
+                if (UseBoard) { this.Height = ph + 30; this.Width = pw + 10; return; }
+                this.Height = ph; this.Width = pw; return;
+            }
+
+            double h2w = (double)config.SourPicture.Height / config.SourPicture.Width;
+            int shapeh = recth; int shapew = (int)(shapeh / h2w);
+            if (shapew >= sw) { shapew = rectw; shapeh = (int)(h2w * shapew); }
+
+            xloc -= (shapew - initw) / 2; yloc -= (shapeh - inith) / 2;
+            this.Location = new Point(xloc, yloc);
+
+            if (UseBoard) { this.Height = shapeh + 30; this.Width = shapew + 10; return; }
+            this.Height = shapeh; this.Width = shapew;
         }
 
         private void HideFiles()
@@ -1826,8 +2020,11 @@ namespace PictureViewer
             int type = FileOperate.getFileType(FileOperate.getExtension(name));
             if (type != 1) { MessageBox.Show("该文件不是文件夹，无法打开！", "提示"); return; }
 
+            string path = FileOperate.RootFiles[config.FolderIndex].Path;
             string file = FileOperate.RootFiles[config.FolderIndex].Name[config.FileIndex];
-            System.Diagnostics.Process.Start("explorer.exe", file);
+            string full = path + "\\" + file;
+            if (!Directory.Exists(full)) { MessageBox.Show("路径不存在，无法打开！", "提示"); return; }
+            System.Diagnostics.Process.Start("explorer.exe", full);
         }
         private void RightMenu_Hide(object sender, EventArgs e)
         {
@@ -1869,9 +2066,22 @@ namespace PictureViewer
 
             if (type != 2) { MessageBox.Show("不能匹配图片之外的文件", "提示"); return; }
 
+            // 文件不存在
+            if (config.SourPicture == null) { MessageBox.Show("图片不存在！", "提示"); return; }
+
             // 不能匹配隐藏文件
             if (!NoHide && FileOperate.IsSupportHide(FileOperate.getExtension(name)))
             { MessageBox.Show("不能匹配图片之外的文件", "提示"); return; }
+
+            // 不支持的模式
+            if (this.likeToolStripMenuItem.Checked)
+            {
+                if (DialogResult.Cancel == MessageBox.Show("尚不支持“LIKE”模式查找，是否使用“SAME”模式？", "模式不支持", MessageBoxButtons.OKCancel))
+                { return; }
+                this.likeToolStripMenuItem.Checked = false;
+                this.sameToolStripMenuItem.Checked = true;
+            }
+
 
             // 确保没有重复路径
             for (int i = 0; i < FileOperate.RootFiles.Count; i++)
@@ -1937,6 +2147,28 @@ namespace PictureViewer
             bool curr = this.turnToolStripMenuItem.Checked;
             
             this.turnToolStripMenuItem.Checked = !curr;
+        }
+        private void RightMenu_OpenCurrent(object sender, EventArgs e)
+        {
+            bool ExistFolder = 0 <= Form_Main.config.FolderIndex && Form_Main.config.FolderIndex < FileOperate.RootFiles.Count;
+            bool ExistFile = ExistFolder && (0 <= Form_Main.config.FileIndex && Form_Main.config.FileIndex < FileOperate.RootFiles[Form_Main.config.FolderIndex].Name.Count);
+            if (!ExistFile) { MessageBox.Show("文件不存在，无法打开！", "提示"); return; }
+
+            string name = FileOperate.RootFiles[config.FolderIndex].Name[config.FileIndex];
+            int type = FileOperate.getFileType(FileOperate.getExtension(name));
+            if (type == 1) { if (config.SubIndex < 0 || config.SubIndex >= config.SubFiles.Count) { MessageBox.Show("文件不存在，无法打开！", "提示"); return; } }
+
+            string path = FileOperate.RootFiles[config.FolderIndex].Path;
+            string file = FileOperate.RootFiles[config.FolderIndex].Name[config.FileIndex];
+            if (type == 1) { path += "\\" + file; file = config.SubFiles[config.SubIndex]; }
+            string full = path + "\\" + file;
+            if (!File.Exists(full)) { MessageBox.Show("文件不存在，无法打开！", "提示"); return; }
+            System.Diagnostics.Process.Start("explorer.exe", "/select," + full);
+        }
+        private void RightMenu_Shape(object sender, EventArgs e)
+        {
+            UseShapeWindow = !this.shapeToolStripMenuItem.Checked;
+            this.shapeToolStripMenuItem.Checked = UseShapeWindow;
         }
 
         private void Form_DragEntre(object sender, DragEventArgs e)

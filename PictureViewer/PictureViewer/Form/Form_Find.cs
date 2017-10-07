@@ -185,6 +185,9 @@ namespace PictureViewer
         }
         private void Form_Close(object sender, FormClosedEventArgs e)
         {
+            Class.Save.settings.Form_Find_Degree = config.Degree;
+            Class.Save.settings.Form_Find_Pixes = config.MinCmpPix;
+
             Stop(); Timer.Close();
 
             try { SourPic.Dispose(); } catch { }
@@ -623,9 +626,9 @@ namespace PictureViewer
             lock (config.Lock) { for (int i = 0; i < Threads.Length; i++) { Threads[i].abort = true; } }
 
             while (Threads[0].thread != null && Threads[0].thread.ThreadState == ThreadState.Running) ;
-            while (Threads[1].thread != null && Threads[0].thread.ThreadState == ThreadState.Running) ;
-            while (Threads[2].thread != null && Threads[0].thread.ThreadState == ThreadState.Running) ;
-            while (Threads[3].thread != null && Threads[0].thread.ThreadState == ThreadState.Running) ;
+            while (Threads[1].thread != null && Threads[1].thread.ThreadState == ThreadState.Running) ;
+            while (Threads[2].thread != null && Threads[2].thread.ThreadState == ThreadState.Running) ;
+            while (Threads[3].thread != null && Threads[3].thread.ThreadState == ThreadState.Running) ;
 
             this.startToolStripMenuItem.Text = "Start"; return;
         }
@@ -641,8 +644,8 @@ namespace PictureViewer
 
             config.Lock = new object();
             if (config.Mode == MODE.DEFAULT) { config.Mode = MODE.FULL_SAME_NOTURN; }
-            config.Degree = 80;
-            config.MinCmpPix = 100;
+            config.Degree = Class.Load.settings.Form_Find_Degree;
+            config.MinCmpPix = Class.Load.settings.Form_Find_Pixes;
             config.Row = -1;
             config.Col = -1;
             config.Results = new List<int>();
