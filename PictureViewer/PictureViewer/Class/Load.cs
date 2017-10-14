@@ -176,12 +176,12 @@ namespace PictureViewer.Class
 
             settings.Form_Main_Hide = settings.Form_Main_Hide_U && settings.Form_Main_Hide_D && settings.Form_Main_Hide_L && settings.Form_Main_Hide_R;
 
-            if (!Found.Form_Main_Find_Full && !Found.Form_Main_Find_Part) { settings.Form_Main_Find_Part = true; }
+            if (!Found.Form_Main_Find_Full && !Found.Form_Main_Find_Part) { settings.Form_Main_Find_Part = false; }
             if (!Found.Form_Main_Find_Full && Found.Form_Main_Find_Part) { settings.Form_Main_Find_Full = !settings.Form_Main_Find_Part; }
             if (Found.Form_Main_Find_Full && !Found.Form_Main_Find_Part) { settings.Form_Main_Find_Part = !settings.Form_Main_Find_Full; }
             if (Found.Form_Main_Find_Full && Found.Form_Main_Find_Part) { settings.Form_Main_Find_Full = !settings.Form_Main_Find_Part; }
 
-            if (!Found.Form_Main_Find_Same && !Found.Form_Main_Find_Like) { settings.Form_Main_Find_Like = true; }
+            if (!Found.Form_Main_Find_Same && !Found.Form_Main_Find_Like) { settings.Form_Main_Find_Like = false; }
             if (!Found.Form_Main_Find_Same && Found.Form_Main_Find_Like) { settings.Form_Main_Find_Same = !settings.Form_Main_Find_Like; }
             if (Found.Form_Main_Find_Same && !Found.Form_Main_Find_Like) { settings.Form_Main_Find_Like = !settings.Form_Main_Find_Same; }
             if (Found.Form_Main_Find_Same && Found.Form_Main_Find_Like) { settings.Form_Main_Find_Same = !settings.Form_Main_Find_Like; }
@@ -191,14 +191,20 @@ namespace PictureViewer.Class
             if (!Found.Form_Find_Degree) { settings.Form_Find_Degree = 80; }
             if (!Found.Form_Find_Pixes) { settings.Form_Find_Pixes = 100; }
 
+            int sh = System.Windows.Forms.Screen.PrimaryScreen.Bounds.Height;
+            int sw = System.Windows.Forms.Screen.PrimaryScreen.Bounds.Width;
+
             if (!Found.Form_Main_UseSmallWindowOpen) { settings.Form_Main_UseSmallWindowOpen = false; }
-            if (!Found.Form_Main_Height) { settings.Form_Main_Height = 400; }
-            if (!Found.Form_Main_Width) { settings.Form_Main_Width = 400; }
+            if (!Found.Form_Main_Height) { settings.Form_Main_Height = sh * 50 / 100; }
+            if (!Found.Form_Main_Width) { settings.Form_Main_Width = sw * 50 / 100; }
             if (settings.Form_Main_UseSmallWindowOpen)
             { settings.Form_Main_Height = 150; settings.Form_Main_Width = 200; }
 
             if (!Found.Form_Main_UseBoard) { settings.Form_Main_UseBoard = false; }
             if (!Found.Form_Main_ShapeWindow) { settings.Form_Main_ShapeWindow = true; }
+
+            if (!Found.Form_Main_Location_X) { settings.Form_Main_Location_X = sw * 25 / 100; }
+            if (!Found.Form_Main_Location_Y) { settings.Form_Main_Location_Y = sh * 25 / 100; }
 
             #endregion
         }

@@ -324,7 +324,7 @@ namespace PictureViewer
                     if (config.SourPicture == null) { return; }
                     NextShowBigPicture = !NextShowBigPicture;
                     if (!NextShowBigPicture) { ShowCurrent(); return; }
-                    ShowBig(true); return;
+                    ShowBig(); return;
 
                     // 聚焦点
                     //int xF = MousePosition.X - this.Location.X - this.pictureBox1.Location.X;
@@ -375,7 +375,7 @@ namespace PictureViewer
                     if (config.SourPicture == null) { return; }
                     NextShowBigPicture = !NextShowBigPicture;
                     if (!NextShowBigPicture) { ShowCurrent(); return; }
-                    ShowBig(true); return;
+                    ShowBig(); return;
 
                     this.HorizontalScroll.Value = 0;
                     this.VerticalScroll.Value = 0;
@@ -449,7 +449,7 @@ namespace PictureViewer
                     if (config.SourPicture == null) { return; }
                     NextShowBigPicture = !NextShowBigPicture;
                     if (!NextShowBigPicture) { ShowCurrent(); return; }
-                    ShowBig(true); return;
+                    ShowBig(); return;
 
                     // 聚焦点
                     //int xF = MousePosition.X - this.Location.X - this.pictureBox1.Location.X;
@@ -663,8 +663,8 @@ namespace PictureViewer
 
         private void Form_Main_DoubleClick(object sender, EventArgs e)
         {
-            if (config.FolderIndex < 0 || config.FolderIndex >= FileOperate.RootFiles.Count) { return; }
-            if (config.FileIndex < 0 || config.FileIndex >= FileOperate.RootFiles[config.FolderIndex].Name.Count) { return; }
+            if (config.FolderIndex < 0 || config.FolderIndex >= FileOperate.RootFiles.Count) { ShowCurrent(); return; }
+            if (config.FileIndex < 0 || config.FileIndex >= FileOperate.RootFiles[config.FolderIndex].Name.Count) { ShowCurrent(); return; }
 
             string name = FileOperate.RootFiles[config.FolderIndex].Name[config.FileIndex];
             int type = FileOperate.getFileType(FileOperate.getExtension(name));
@@ -984,16 +984,24 @@ namespace PictureViewer
 
         private void Form_MouseDown(object sender, MouseEventArgs e)
         {
-            mouse.Down = true;
-            mouse.Up = false;
-            mouse.pDown = MousePosition;
-            mouse.Previous = MousePosition;
+            if (e.Button == MouseButtons.Left)
+            {
+                this.Cursor = Cursors.Default;
+                mouse.Down = true;
+                mouse.Up = false;
+                mouse.pDown = MousePosition;
+                mouse.Previous = MousePosition;
+            }
         }
         private void Form_MouseUp(object sender, MouseEventArgs e)
         {
-            mouse.Down = false;
-            mouse.Up = true;
-            mouse.pUp = MousePosition;
+            if (e.Button == MouseButtons.Left)
+            {
+                this.Cursor = Cursors.Default;
+                mouse.Down = false;
+                mouse.Up = true;
+                mouse.pUp = MousePosition;
+            }
         }
         private void Form_MouseWheel(object sender, MouseEventArgs e)
         {
@@ -1093,7 +1101,7 @@ namespace PictureViewer
                 else { this.label4.Visible = false; }
 
                 // 拖拽
-                if (mouse.Down)
+                if (!NextShowBigPicture && mouse.Down)
                 {
                     int xMove = MousePosition.X - mouse.Previous.X;
                     int yMove = MousePosition.Y - mouse.Previous.Y;
@@ -1101,7 +1109,31 @@ namespace PictureViewer
                     mouse.Previous = MousePosition;
                 }
 
-                // 滚屏
+                // 鼠标拖动滚屏
+                if (NextShowBigPicture && mouse.Down)
+                {
+                    Point Current = MousePosition;
+                    int xMove = -(Current.X - mouse.Previous.X) / 10;
+                    int yMove = -(Current.Y - mouse.Previous.Y) / 10;
+
+                    //if (xMove > yMove) { yMove = 0; }
+                    //if (yMove > xMove) { xMove = 0; }
+
+                    int xScroll = this.HorizontalScroll.Value;
+                    int yScroll = this.VerticalScroll.Value;
+                    xScroll += xMove;
+                    yScroll += yMove;
+                    if (xScroll < this.HorizontalScroll.Minimum) { xScroll = this.HorizontalScroll.Minimum; }
+                    if (xScroll > this.HorizontalScroll.Maximum) { xScroll = this.HorizontalScroll.Maximum; }
+                    if (yScroll < this.VerticalScroll.Minimum) { yScroll = this.VerticalScroll.Minimum; }
+                    if (yScroll > this.VerticalScroll.Maximum) { yScroll = this.VerticalScroll.Maximum; }
+
+                    if (this.HorizontalScroll.Visible) { this.HorizontalScroll.Value = xScroll; }
+                    if (this.VerticalScroll.Visible) { this.VerticalScroll.Value = yScroll; }
+                    //mouse.Previous = Current;
+                }
+
+                // 按键滚屏
                 if (!key.Down || (!this.HorizontalScroll.Visible && !this.VerticalScroll.Visible)) { return; }
                 if (this.lockToolStripMenuItem.Checked) { return; }
 
@@ -1345,14 +1377,12 @@ namespace PictureViewer
             if (load) { config.SourPicture = (Bitmap)Image.FromFile(path + "\\" + name); }
             if (UseShapeWindow) { ShapeWindow(); }
 
-            this.toolTip1.ToolTipTitle = path;
-            string tip = "[" + (config.FileIndex + 1).ToString() + "/" + FileOperate.RootFiles[config.FolderIndex].Name.Count.ToString() + "] [" + (config.SubIndex + 1).ToString() + "/" + config.SubFiles.Count.ToString() + "] ";
-            if (tip == "err.tip") { tip += "Error"; }
-            else if (tip == "unk.tip") { tip += "Unknow"; }
-            else if (tip == "unp.tip") { tip += "Unsupport"; }
-            else { tip += name; }
-            this.toolTip1.SetToolTip(this.pictureBox1, tip);
-
+            if (config.FolderIndex < 0 || config.FolderIndex >= FileOperate.RootFiles.Count)
+            { this.toolTip1.ToolTipTitle = "Not Exist"; }
+            else
+            { this.toolTip1.ToolTipTitle = FileOperate.RootFiles[config.FolderIndex].Path; }
+            if (!UseBoard) { this.toolTip1.SetToolTip(this.pictureBox1, this.Text); }
+            
             int sourX = config.SourPicture.Width;
             int sourY = config.SourPicture.Height;
             int destX = sourX;
@@ -1388,8 +1418,7 @@ namespace PictureViewer
             if (UseShapeWindow) { ShapeWindow(); }
 
             this.toolTip1.ToolTipTitle = path;
-            string tip = "[" + (config.FileIndex + 1).ToString() + "/" + FileOperate.RootFiles[config.FolderIndex].Name.Count.ToString() + "] [" + (config.SubIndex + 1).ToString() + "/" + config.SubFiles.Count.ToString() + "] ";
-            this.toolTip1.SetToolTip(this.pictureBox1, tip + name);
+            if (!UseBoard) { this.toolTip1.SetToolTip(this.pictureBox1, this.Text); }
 
             int H = config.SourPicture.Height;
             int W = config.SourPicture.Width;
@@ -1409,9 +1438,8 @@ namespace PictureViewer
         }
         private void ShowVideo(string path, string name)
         {
-            this.toolTip1.ToolTipTitle = path;
-            string tip = "[" + (config.FileIndex + 1).ToString() + "/" + FileOperate.RootFiles[config.FolderIndex].Name.Count.ToString() + "] [" + (config.SubIndex + 1).ToString() + "/" + config.SubFiles.Count.ToString() + "] ";
-            this.toolTip1.SetToolTip(this.axWindowsMediaPlayer1, tip + name);
+            //this.toolTip1.ToolTipTitle = path;
+            //if (!UseBoard) { this.toolTip1.SetToolTip(this.axWindowsMediaPlayer1, this.Text); }
 
             this.axWindowsMediaPlayer1.Height = UseBoard ? this.Height - 41 : this.Height - 2;
             this.axWindowsMediaPlayer1.Width = UseBoard ? this.Width - 18 : this.Width - 2;
@@ -1563,6 +1591,8 @@ namespace PictureViewer
             if (show) { this.FormBorderStyle = FormBorderStyle.Sizable; } else { this.FormBorderStyle = FormBorderStyle.None; }
             this.Height = ch; this.Width = cw;
             UseBoard = show;// ShowCurrent();
+
+            if (show) { this.toolTip1.Dispose(); } else { this.toolTip1 = new ToolTip(); }
         }
         private void ShapeWindow()
         {
