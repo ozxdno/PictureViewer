@@ -107,6 +107,7 @@ namespace PictureViewer
             if (!Class.Load.settings.Form_Main_UseBoard) { this.FormBorderStyle = FormBorderStyle.None; }
             UseBoard = Class.Load.settings.Form_Main_UseBoard;
             UseShapeWindow = Class.Load.settings.Form_Main_ShapeWindow;
+            ShapeWindowRate = Class.Load.settings.Form_Main_ShapeWindowRate;
             this.shapeToolStripMenuItem.Checked = UseShapeWindow;
 
             this.UseSmallWindowOpen = Class.Load.settings.Form_Main_UseSmallWindowOpen;
@@ -158,7 +159,8 @@ namespace PictureViewer
 
             Class.Save.settings.Form_Main_UseBoard = UseBoard;
             Class.Save.settings.Form_Main_ShapeWindow = UseShapeWindow;
-            
+            Class.Save.settings.Form_Main_ShapeWindowRate = ShapeWindowRate;
+
             Timer.Close(); Class.Save.Save_CFG();
         }
         private void Form_KeyDown(object sender, KeyEventArgs e)
@@ -640,7 +642,10 @@ namespace PictureViewer
         {
             if (e.nButton == 1)
             {
-                Form_MouseUp(null, null);
+                this.Cursor = Cursors.Default;
+                mouse.Down = false;
+                mouse.Up = true;
+                mouse.pUp = MousePosition;
             }
 
             // 必须是右键按下
@@ -657,7 +662,11 @@ namespace PictureViewer
         {
             if (e.nButton == 1)
             {
-                Form_MouseDown(null, null);
+                this.Cursor = Cursors.Default;
+                mouse.Down = true;
+                mouse.Up = false;
+                mouse.pDown = MousePosition;
+                mouse.Previous = MousePosition;
             }
         }
 
@@ -1320,6 +1329,10 @@ namespace PictureViewer
             if (type == 4)
             {
                 if (!File.Exists(full)) { this.Text = "[" + Index + "/" + Total + "] [Not Exist] " + name; ShowOff("err"); return; }
+
+                string ext = FileOperate.getExtension(name);
+                if (!UseBoard && (ext == ".mp3" || ext == FileOperate.getHideExtension(".mp3"))) { ShapeWindowForMusic(); }
+
                 ShowVideo(path,name); return;
             }
 
@@ -1440,6 +1453,8 @@ namespace PictureViewer
         {
             //this.toolTip1.ToolTipTitle = path;
             //if (!UseBoard) { this.toolTip1.SetToolTip(this.axWindowsMediaPlayer1, this.Text); }
+
+            this.axWindowsMediaPlayer1.Visible = true;
 
             this.axWindowsMediaPlayer1.Height = UseBoard ? this.Height - 41 : this.Height - 2;
             this.axWindowsMediaPlayer1.Width = UseBoard ? this.Width - 18 : this.Width - 2;
@@ -1631,6 +1646,31 @@ namespace PictureViewer
             int shapeh = recth; int shapew = (int)(shapeh / h2w);
             if (shapew >= sw) { shapew = rectw; shapeh = (int)(h2w * shapew); }
 
+            xloc -= (shapew - initw) / 2; yloc -= (shapeh - inith) / 2;
+            this.Location = new Point(xloc, yloc);
+
+            if (UseBoard) { this.Height = shapeh + 39; this.Width = shapew + 16; return; }
+            this.Height = shapeh; this.Width = shapew;
+        }
+        private void ShapeWindowForMusic()
+        {
+            int recth = this.Height; int rectw = this.Width;
+            if (UseBoard) { recth -= 39; rectw -= 16; }
+            int rate = 40;
+
+            int inith = recth;
+            int initw = rectw;
+
+            int sh = Screen.PrimaryScreen.Bounds.Height;
+            int sw = Screen.PrimaryScreen.Bounds.Width;
+
+            int shapew = Math.Min(sh, sw);
+            int shapeh = shapew;
+            shapew = shapew / 4 * rate / 100;
+            shapeh = shapew;
+
+            int xloc = this.Location.X;
+            int yloc = this.Location.Y;
             xloc -= (shapew - initw) / 2; yloc -= (shapeh - inith) / 2;
             this.Location = new Point(xloc, yloc);
 
@@ -2202,6 +2242,80 @@ namespace PictureViewer
         {
             UseShapeWindow = !this.shapeToolStripMenuItem.Checked;
             this.shapeToolStripMenuItem.Checked = UseShapeWindow;
+        }
+        private void RightMenu_Previous(object sender, EventArgs e)
+        {
+            if (config.FolderIndex < 0 || config.FolderIndex >= FileOperate.RootFiles.Count) { return; }
+            if (config.FileIndex < 0 || config.FileIndex >= FileOperate.RootFiles[config.FolderIndex].Name.Count) { return; }
+            if (this.bigPicToolStripMenuItem.Checked) { NextShowBigPicture = true; }
+
+            int tFolder = config.FolderIndex;
+            int tFile = config.FileIndex;
+            int tSub = config.SubIndex;
+
+            if (config.SubFiles != null && config.SubFiles.Count != 0) { config.SubIndex--; if (config.SubIndex < 0) { config.FileIndex--; config.SubIndex = -1; } }
+            else { config.FileIndex--; config.SubIndex = -1; }
+            if (config.FileIndex < 0) { config.FolderIndex--; }
+            if (config.FolderIndex < 0)
+            {
+                //MessageBox.Show("已经是第一个文件了！", "提示");
+                //config.FolderIndex = 0;
+                //config.FileIndex = 0;
+                //config.SubIndex = 0; return;
+
+                config.FolderIndex = tFolder; config.FileIndex = tFile; config.SubIndex = tSub;
+                if (DialogResult.Cancel == MessageBox.Show("已经是第一个文件了，是否转到上一个？", "确认转到", MessageBoxButtons.OKCancel))
+                { return; }
+                config.FolderIndex = FileOperate.RootFiles.Count - 1;
+                config.FileIndex = FileOperate.RootFiles[config.FolderIndex].Name.Count - 1;
+            }
+
+            if (config.FileIndex < 0) { config.FileIndex = FileOperate.RootFiles[config.FolderIndex].Name.Count - 1; }
+            string name = FileOperate.RootFiles[config.FolderIndex].Name[config.FileIndex];
+            int type = FileOperate.getFileType(FileOperate.getExtension(name));
+
+            if (type == 1)
+            {
+                string path = FileOperate.RootFiles[config.FolderIndex].Path;
+                List<string> files = FileOperate.getSubFiles(path + "\\" + name);
+                if (config.SubIndex == -1) { config.SubIndex = files.Count - 1; }
+            }
+            ShowCurrent(); key.E = false;
+        }
+        private void RightMenu_Next(object sender, EventArgs e)
+        {
+            if (config.FolderIndex < 0 || config.FolderIndex >= FileOperate.RootFiles.Count) { return; }
+            if (config.FileIndex < 0 || config.FileIndex >= FileOperate.RootFiles[config.FolderIndex].Name.Count) { return; }
+            if (this.bigPicToolStripMenuItem.Checked) { NextShowBigPicture = true; }
+
+            int tFolder = config.FolderIndex;
+            int tFile = config.FileIndex;
+            int tSub = config.SubIndex;
+
+            if (config.SubFiles != null && config.SubIndex < config.SubFiles.Count - 1) { config.SubIndex++; if (config.SubIndex >= config.SubFiles.Count) { config.FileIndex++; config.SubIndex = -1; } }
+            else { config.FileIndex++; config.SubIndex = -1; }
+            if (config.FileIndex >= FileOperate.RootFiles[config.FolderIndex].Name.Count) { config.FolderIndex++; config.FileIndex = 0; }
+            if (config.FolderIndex >= FileOperate.RootFiles.Count)
+            {
+                //MessageBox.Show("已经是最后一个文件了！", "提示");
+                //config.FolderIndex = FileOperate.RootFiles.Count - 1;
+                //config.FileIndex = FileOperate.RootFiles[config.FolderIndex].Name.Count - 1;
+                //config.SubIndex = config.SubFiles == null ? 0 : config.SubFiles.Count - 1;
+                //return;
+
+                config.FolderIndex = tFolder; config.FileIndex = tFile; config.SubIndex = tSub;
+                if (DialogResult.Cancel == MessageBox.Show("已经是最后一个文件了，是否转到下一个？", "确认转到", MessageBoxButtons.OKCancel))
+                { return; }
+                config.FolderIndex = 0;
+                config.FileIndex = 0;
+            }
+
+            string name = FileOperate.RootFiles[config.FolderIndex].Name[config.FileIndex];
+            int type = FileOperate.getFileType(FileOperate.getExtension(name));
+            if (type != 1) { config.SubIndex = 0; }
+            if (type == 1 && config.SubIndex == -1) { config.SubIndex = 0; }
+
+            ShowCurrent(); key.E = false; return;
         }
 
         private void Form_DragEntre(object sender, DragEventArgs e)
