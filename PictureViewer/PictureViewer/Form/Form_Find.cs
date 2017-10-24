@@ -222,7 +222,7 @@ namespace PictureViewer
                 
                 if (IsFinish && prevState != IsFinish)
                 {
-                    this.startToolStripMenuItem.Text = "Start";
+                    if (findfiles == Names.Count) { this.startToolStripMenuItem.Text = "Start"; }
                     if (this.listBox1.SelectedIndex == -1)
                     {
                         if (config.Current.Count == 0) { ShowDestPic(); }
@@ -286,6 +286,7 @@ namespace PictureViewer
         private void RightMenu_Start(object sender, EventArgs e)
         {
             if (this.startToolStripMenuItem.Text == "Start") { Start(); return; }
+            if (this.startToolStripMenuItem.Text == "Continue") { Continue(); return; }
             if (this.startToolStripMenuItem.Text == "Stop") { Stop(); return; }
             this.startToolStripMenuItem.Text = "Start";
         }
@@ -459,7 +460,8 @@ namespace PictureViewer
         }
         private void RightMenu_Restart(object sender, EventArgs e)
         {
-
+            Stop();
+            Start();
         }
 
         private void ShowSourPic()
@@ -632,7 +634,7 @@ namespace PictureViewer
             Threads[2].thread.Start();
             Threads[3].thread.Start();
 
-            this.startToolStripMenuItem.Text = "Stop"; return;
+            this.startToolStripMenuItem.Text = "Stop";
         }
         private void Stop()
         {
@@ -643,11 +645,23 @@ namespace PictureViewer
             while (Threads[2].thread != null && Threads[2].thread.ThreadState == ThreadState.Running) ;
             while (Threads[3].thread != null && Threads[3].thread.ThreadState == ThreadState.Running) ;
 
-            this.startToolStripMenuItem.Text = "Start"; return;
+            this.startToolStripMenuItem.Text = "Continue";
         }
         private void Continue()
         {
+            for (int i = 0; i < Threads.Length; i++) { Threads[i].abort = false; Threads[i].finish = false; }
 
+            Threads[0].thread = new Thread(TH_CMP1);
+            Threads[1].thread = new Thread(TH_CMP2);
+            Threads[2].thread = new Thread(TH_CMP3);
+            Threads[3].thread = new Thread(TH_CMP4);
+
+            Threads[0].thread.Start();
+            Threads[1].thread.Start();
+            Threads[2].thread.Start();
+            Threads[3].thread.Start();
+
+            this.startToolStripMenuItem.Text = "Stop";
         }
 
         private void InitializeForm()
@@ -924,7 +938,7 @@ namespace PictureViewer
             int desth = 0, destw = 0;
             bool found = false;
 
-            for (int i = Threads[0].begin - 1; i < Threads[0].end && !Threads[0].abort; ++i)
+            for (int i = Threads[0].begin - 1; i < Threads[0].end && !Threads[0].abort; ++i, ++Threads[0].begin)
             {
                 #region 初始化变量
 
@@ -2048,7 +2062,7 @@ namespace PictureViewer
             int desth = 0, destw = 0;
             bool found = false;
 
-            for (int i = Threads[1].begin - 1; i < Threads[1].end && !Threads[1].abort; ++i)
+            for (int i = Threads[1].begin - 1; i < Threads[1].end && !Threads[1].abort; ++i, ++Threads[1].begin)
             {
                 #region 初始化变量
 
@@ -3167,7 +3181,7 @@ namespace PictureViewer
             int desth = 0, destw = 0;
             bool found = false;
 
-            for (int i = Threads[2].begin - 1; i < Threads[2].end && !Threads[2].abort; ++i)
+            for (int i = Threads[2].begin - 1; i < Threads[2].end && !Threads[2].abort; ++i, ++Threads[2].begin)
             {
                 #region 初始化变量
 
@@ -4286,7 +4300,7 @@ namespace PictureViewer
             int desth = 0, destw = 0;
             bool found = false;
 
-            for (int i = Threads[3].begin - 1; i < Threads[3].end && !Threads[3].abort; ++i)
+            for (int i = Threads[3].begin - 1; i < Threads[3].end && !Threads[3].abort; ++i, ++Threads[3].begin)
             {
                 #region 初始化变量
 
