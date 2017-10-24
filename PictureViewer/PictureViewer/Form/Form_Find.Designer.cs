@@ -31,8 +31,8 @@
             this.components = new System.ComponentModel.Container();
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.contextMenuStrip1 = new System.Windows.Forms.ContextMenuStrip(this.components);
-            this.export2ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.exportToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.export2ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.startToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.degreeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.pixesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -47,6 +47,7 @@
             this.textBox1 = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
+            this.restartToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.contextMenuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox2)).BeginInit();
@@ -69,19 +70,13 @@
             this.exportToolStripMenuItem,
             this.export2ToolStripMenuItem,
             this.startToolStripMenuItem,
+            this.restartToolStripMenuItem,
             this.degreeToolStripMenuItem,
             this.pixesToolStripMenuItem,
             this.switchToolStripMenuItem,
             this.openToolStripMenuItem});
             this.contextMenuStrip1.Name = "contextMenuStrip1";
-            this.contextMenuStrip1.Size = new System.Drawing.Size(153, 180);
-            // 
-            // export2ToolStripMenuItem
-            // 
-            this.export2ToolStripMenuItem.Name = "export2ToolStripMenuItem";
-            this.export2ToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
-            this.export2ToolStripMenuItem.Text = "Export2";
-            this.export2ToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Export2);
+            this.contextMenuStrip1.Size = new System.Drawing.Size(153, 202);
             // 
             // exportToolStripMenuItem
             // 
@@ -89,6 +84,13 @@
             this.exportToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
             this.exportToolStripMenuItem.Text = "Export";
             this.exportToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Export);
+            // 
+            // export2ToolStripMenuItem
+            // 
+            this.export2ToolStripMenuItem.Name = "export2ToolStripMenuItem";
+            this.export2ToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.export2ToolStripMenuItem.Text = "Export2";
+            this.export2ToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Export2);
             // 
             // startToolStripMenuItem
             // 
@@ -213,6 +215,13 @@
             this.label2.Visible = false;
             this.label2.Click += new System.EventHandler(this.RightMenu_Export);
             // 
+            // restartToolStripMenuItem
+            // 
+            this.restartToolStripMenuItem.Name = "restartToolStripMenuItem";
+            this.restartToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.restartToolStripMenuItem.Text = "Restart";
+            this.restartToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Restart);
+            // 
             // Form_Find
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -262,5 +271,6 @@
         private System.Windows.Forms.ToolStripMenuItem openToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem degreeToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem switchToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem restartToolStripMenuItem;
     }
 }

@@ -472,6 +472,25 @@ namespace PictureViewer.Class
             file.MoveTo(path + "\\" + name.Substring(0, name.Length - extension.Length) + getShowExtension(extension));
         }
 
+        /// <summary>
+        /// 判断该后缀是否为音频文件后缀
+        /// </summary>
+        /// <param name="extension">后缀</param>
+        /// <returns></returns>
+        public static bool IsMusic(string extension)
+        {
+            return FileSupport.IsMusic(extension);
+        }
+        /// <summary>
+        /// 判断该后缀是否为视频文件后缀
+        /// </summary>
+        /// <param name="extension">后缀</param>
+        /// <returns></returns>
+        public static bool IsVideo(string extension)
+        {
+            return FileSupport.IsVideo(extension);
+        }
+
         ///////////////////////////////////////////////////// private method ///////////////////////////////////////////////
     }
 }

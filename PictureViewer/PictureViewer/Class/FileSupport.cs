@@ -20,6 +20,9 @@ namespace PictureViewer.Class
         private static List<string> HideExtensions = new List<string>();
         private static List<int> Types = new List<int>();
 
+        private static List<string> MusicExtensions = new List<string>();
+        private static List<string> VideoExtensions = new List<string>();
+
         ///////////////////////////////////////////////////// public method ///////////////////////////////////////////////
         
         /// <summary>
@@ -40,11 +43,11 @@ namespace PictureViewer.Class
             ShowExtensions.Add(".png"); HideExtensions.Add(".pv3"); Types.Add(2);
             ShowExtensions.Add(".bmp"); HideExtensions.Add(".pv4"); Types.Add(2);
             ShowExtensions.Add(".gif"); HideExtensions.Add(".pv5"); Types.Add(3);
-            ShowExtensions.Add(".avi"); HideExtensions.Add(".pv6"); Types.Add(4);
-            ShowExtensions.Add(".mp4"); HideExtensions.Add(".pv7"); Types.Add(4);
-            ShowExtensions.Add(".webm"); HideExtensions.Add(".pv8"); Types.Add(0);
+            ShowExtensions.Add(".avi"); HideExtensions.Add(".pv6"); Types.Add(4); VideoExtensions.Add(".avi");
+            ShowExtensions.Add(".mp4"); HideExtensions.Add(".pv7"); Types.Add(4); VideoExtensions.Add(".mp4");
+            ShowExtensions.Add(".webm"); HideExtensions.Add(".pv8"); Types.Add(0); VideoExtensions.Add(".webm");
             ShowExtensions.Add(".zip"); HideExtensions.Add(".pv9"); Types.Add(5);
-            ShowExtensions.Add(".mp3"); HideExtensions.Add(".pv10"); Types.Add(4);
+            ShowExtensions.Add(".mp3"); HideExtensions.Add(".pv10"); Types.Add(4); MusicExtensions.Add(".mp3");
         }
         
         /// <summary>
@@ -129,6 +132,33 @@ namespace PictureViewer.Class
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// 判断该后缀是否为音频文件后缀
+        /// </summary>
+        /// <param name="extension">后缀</param>
+        /// <returns></returns>
+        public static bool IsMusic(string extension)
+        {
+            foreach (string i in MusicExtensions)
+            {
+                if (extension == i || extension == getHideExtension(i)) { return true; }
+            }
+            return false;
+        }
+        /// <summary>
+        /// 判断该后缀是否为视频文件后缀
+        /// </summary>
+        /// <param name="extension">后缀</param>
+        /// <returns></returns>
+        public static bool IsVideo(string extension)
+        {
+            foreach (string i in VideoExtensions)
+            {
+                if (extension == i || extension == getHideExtension(i)) { return true; }
+            }
+            return false;
         }
 
         ///////////////////////////////////////////////////// private method ///////////////////////////////////////////////

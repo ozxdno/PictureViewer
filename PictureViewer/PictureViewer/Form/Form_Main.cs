@@ -20,23 +20,113 @@ namespace PictureViewer
     {
         ///////////////////////////////////////////////////// public attribute ///////////////////////////////////////////////
 
+        /// <summary>
+        /// 显示隐藏文件
+        /// </summary>
         public static bool NoHide = false;
 
         public static CONFIG config;
         public struct CONFIG
         {
+            /// <summary>
+            /// 配置文件所在路径
+            /// </summary>
             public string ConfigPath;
+            /// <summary>
+            /// 配置文件文件名
+            /// </summary>
             public string ConfigName;
-            
+            /// <summary>
+            /// 输出的目标文件夹
+            /// </summary>
             public string ExportFolder;
+            /// <summary>
+            /// 某一文件夹下的文件名（支持文件）
+            /// </summary>
             public List<string> SubFiles;
 
+            /// <summary>
+            /// 当前文件的所属文件夹序号
+            /// </summary>
             public int FolderIndex;
+            /// <summary>
+            /// 当前文件在所属文件夹下的序号
+            /// </summary>
             public int FileIndex;
+            /// <summary>
+            /// 当前文件的类型为文件或者ZIP压缩文件才存在该项，指示该文件夹下的子项目序号
+            /// </summary>
             public int SubIndex;
 
+            /// <summary>
+            /// 文件夹是否存在
+            /// </summary>
+            public bool ExistFolder;
+            /// <summary>
+            /// 文件是否存在
+            /// </summary>
+            public bool ExistFile;
+            /// <summary>
+            /// 子文件是否存在
+            /// </summary>
+            public bool ExistSub;
+
+            /// <summary>
+            /// 当前文件的文件路径（所属文件夹）
+            /// </summary>
+            public string Path;
+            /// <summary>
+            /// 当前文件的文件名
+            /// </summary>
+            public string Name;
+            /// <summary>
+            /// 当前文件的后缀
+            /// </summary>
+            public string Extension;
+            /// <summary>
+            /// 当前文件的类型
+            /// </summary>
+            public int Type;
+            /// <summary>
+            /// 当前文件的是否具有隐藏属性（后缀为隐藏后缀）
+            /// </summary>
+            public bool Hide;
+            /// <summary>
+            /// 是否为文件夹类型文件
+            /// </summary>
+            public bool IsSub;
+            /// <summary>
+            /// 子文件文件名
+            /// </summary>
+            public string SubName;
+            /// <summary>
+            /// 子文件文件类型
+            /// </summary>
+            public int SubType;
+            /// <summary>
+            /// 子文件文件后缀
+            /// </summary>
+            public string SubExtension;
+            /// <summary>
+            /// 子文件是否具有隐藏属性（后缀为隐藏后缀）
+            /// </summary>
+            public bool SubHide;
+
+            /// <summary>
+            /// 源图（大图，不经过等比例改变大小）
+            /// </summary>
             public Image SourPicture;
+            /// <summary>
+            /// 适应图（小图，改变了大小去匹配窗体的大小）
+            /// </summary>
             public Image DestPicture;
+
+            /// <summary>
+            /// 错误类型：
+            /// 0 - 无错误；
+            /// 1 - 读取 ZIP 文件时密码错误；
+            /// </summary>
+            public int Error;
         }
 
         ///////////////////////////////////////////////////// private attribute ///////////////////////////////////////////////
@@ -306,228 +396,7 @@ namespace PictureViewer
 
             if (e.KeyValue == 13)
             {
-                if (config.FolderIndex < 0 || config.FolderIndex >= FileOperate.RootFiles.Count) { return; }
-                if (config.FileIndex < 0 || config.FileIndex >= FileOperate.RootFiles[config.FolderIndex].Name.Count) { return; }
-
-                string name = FileOperate.RootFiles[config.FolderIndex].Name[config.FileIndex];
-                int type = FileOperate.getFileType(FileOperate.getExtension(name));
-
-                bool lastE = key.E; key.E = false;
-
-                #region 1
-
-                if (type == 1)
-                {
-                    if (config.SubIndex < 0 || config.SubIndex >= config.SubFiles.Count) { return; }
-                    name = config.SubFiles[config.SubIndex];
-                    type = FileOperate.getFileType(FileOperate.getExtension(name));
-                    if (type != 2) { ShowCurrent(); return; }
-
-                    if (config.SourPicture == null) { return; }
-                    NextShowBigPicture = !NextShowBigPicture;
-                    if (!NextShowBigPicture) { ShowCurrent(); return; }
-                    ShowBig(); return;
-
-                    // 聚焦点
-                    //int xF = MousePosition.X - this.Location.X - this.pictureBox1.Location.X;
-                    //int yF = MousePosition.Y - this.Location.Y - this.pictureBox1.Location.Y;
-
-                    this.HorizontalScroll.Value = 0;
-                    this.VerticalScroll.Value = 0;
-                    //ShowedBigPicture = true;
-
-                    int X = (this.Width - 18 - config.SourPicture.Width) / 2;
-                    int Y = (this.Height - 42 - config.SourPicture.Height) / 2;
-                    key.E = X < 0 || Y < 0;
-                    if (X < 1) { X = 1; }
-                    if (Y < 1) { Y = 1; }
-
-                    this.pictureBox1.Image = config.SourPicture;
-                    this.pictureBox1.Location = new Point(X, Y);
-                    this.pictureBox1.Height = config.SourPicture.Height;
-                    this.pictureBox1.Width = config.SourPicture.Width; return;
-
-                    // 把聚焦点放到屏幕中央
-                    //int max = this.HorizontalScroll.Maximum;
-                    //int min = this.HorizontalScroll.Minimum;
-                    //double xRate = (double)xF / config.DestPicture.Width;
-                    //if (xRate < 0) { xRate = 0; }
-                    //if (xRate > 1) { xRate = 1; }
-                    //int xS = (int)(min + xRate * (max - min)) - this.Width / 2;
-                    //if (xS < 0) { xS = 0; }
-                    //max = this.VerticalScroll.Maximum;
-                    //min = this.VerticalScroll.Minimum;
-                    //double yRate = (double)yF / config.DestPicture.Height;
-                    //if (yRate < 0) { yRate = 0; }
-                    //if (yRate > 1) { yRate = 1; }
-                    //int yS = (int)(min + yRate * (max - min)) - this.Height / 2;
-                    //if (yS < 0) { yS = 0; }
-                    //if (X == 1) { this.HorizontalScroll.Value = xS; }
-                    //if (Y == 1) { this.VerticalScroll.Value = yS; }
-                    //if (X == 1) { this.HorizontalScroll.Value = xS; }
-                    //if (Y == 1) { this.VerticalScroll.Value = yS; }
-                }
-
-                #endregion
-
-                #region 2
-
-                if (type == 2)
-                {
-                    if (config.SourPicture == null) { return; }
-                    NextShowBigPicture = !NextShowBigPicture;
-                    if (!NextShowBigPicture) { ShowCurrent(); return; }
-                    ShowBig(); return;
-
-                    this.HorizontalScroll.Value = 0;
-                    this.VerticalScroll.Value = 0;
-                    //ShowedBigPicture = true;
-
-                    // 聚焦点
-                    //int xF = MousePosition.X - this.Location.X - this.pictureBox1.Location.X;
-                    //int yF = MousePosition.Y - this.Location.Y - this.pictureBox1.Location.Y;
-
-                    int X = (this.Width - 18 - config.SourPicture.Width) / 2;
-                    int Y = (this.Height - 42 - config.SourPicture.Height) / 2;
-                    key.E = X < 0 || Y < 0;
-                    if (X < 1) { X = 1; }
-                    if (Y < 1) { Y = 1; }
-                    
-                    this.pictureBox1.Image = config.SourPicture;
-                    this.pictureBox1.Location = new Point(X, Y);
-                    this.pictureBox1.Height = config.SourPicture.Height;
-                    this.pictureBox1.Width = config.SourPicture.Width; return;
-
-                    // 把聚焦点放到屏幕中央
-                    //int max = this.HorizontalScroll.Maximum;
-                    //int min = this.HorizontalScroll.Minimum;
-                    //double xRate = (double)xF / config.DestPicture.Width;
-                    //if (xRate < 0) { xRate = 0; }
-                    //if (xRate > 1) { xRate = 1; }
-                    //int xS = (int)(min + xRate * (max - min)) - this.Width / 2;
-                    //if (xS < 0) { xS = 0; }
-                    //max = this.VerticalScroll.Maximum;
-                    //min = this.VerticalScroll.Minimum;
-                    //double yRate = (double)yF / config.DestPicture.Height;
-                    //if (yRate < 0) { yRate = 0; }
-                    //if (yRate > 1) { yRate = 1; }
-                    //int yS = (int)(min + yRate * (max - min)) - this.Height / 2;
-                    //if (yS < 0) { yS = 0; }
-                    //if (X == 1) { this.HorizontalScroll.Value = xS; }
-                    //if (Y == 1) { this.VerticalScroll.Value = yS; }
-                    //if (X == 1) { this.HorizontalScroll.Value = xS; }
-                    //if (Y == 1) { this.VerticalScroll.Value = yS; }
-                }
-
-                #endregion
-
-                #region 3
-
-                if (type == 3) { ShowCurrent(); return; }
-
-                #endregion
-
-                #region 4
-
-                if (type == 4)
-                {
-                    ShowCurrent(); return;
-                    //this.axWindowsMediaPlayer1.Height = this.Height - 41;
-                    //this.axWindowsMediaPlayer1.Width = this.Width - 18;
-                    //this.axWindowsMediaPlayer1.Ctlcontrols.play(); return;
-                }
-
-                #endregion
-
-                #region 5
-
-                if (type == 5)
-                {
-                    if (config.SubIndex < 0 || config.SubIndex >= config.SubFiles.Count) { return; }
-                    name = config.SubFiles[config.SubIndex];
-                    type = FileOperate.getFileType(FileOperate.getExtension(name));
-                    if (type != 2) { ShowCurrent(); return; }
-
-                    if (config.SourPicture == null) { return; }
-                    NextShowBigPicture = !NextShowBigPicture;
-                    if (!NextShowBigPicture) { ShowCurrent(); return; }
-                    ShowBig(); return;
-
-                    // 聚焦点
-                    //int xF = MousePosition.X - this.Location.X - this.pictureBox1.Location.X;
-                    //int yF = MousePosition.Y - this.Location.Y - this.pictureBox1.Location.Y;
-
-                    this.HorizontalScroll.Value = 0;
-                    this.VerticalScroll.Value = 0;
-                    //ShowedBigPicture = true;
-
-                    int X = (this.Width - 18 - config.SourPicture.Width) / 2;
-                    int Y = (this.Height - 42 - config.SourPicture.Height) / 2;
-                    key.E = X < 0 || Y < 0;
-                    if (X < 1) { X = 1; }
-                    if (Y < 1) { Y = 1; }
-
-                    this.pictureBox1.Image = config.SourPicture;
-                    this.pictureBox1.Location = new Point(X, Y);
-                    this.pictureBox1.Height = config.SourPicture.Height;
-                    this.pictureBox1.Width = config.SourPicture.Width; return;
-
-                    // 把聚焦点放到屏幕中央
-                    //int max = this.HorizontalScroll.Maximum;
-                    //int min = this.HorizontalScroll.Minimum;
-                    //double xRate = (double)xF / config.DestPicture.Width;
-                    //if (xRate < 0) { xRate = 0; }
-                    //if (xRate > 1) { xRate = 1; }
-                    //int xS = (int)(min + xRate * (max - min));
-                    //xRate = (double)this.Width / 2 / (double)config.SourPicture.Width;
-                    //xS -= (int)(xRate * (max - min));
-                    //if (xS < 0) { xS = 0; }
-                    //if (xS > max) { xS = max; }
-                    //max = this.VerticalScroll.Maximum;
-                    //min = this.VerticalScroll.Minimum;
-                    //double yRate = (double)yF / config.DestPicture.Height;
-                    //if (yRate < 0) { yRate = 0; }
-                    //if (yRate > 1) { yRate = 1; }
-                    //int yS = (int)(min + yRate * (max - min));
-                    //yRate = (double)this.Height / 2 / (double)config.SourPicture.Width;
-                    //yS -= (int)(yRate * (max - min));
-                    //if (yS < 0) { yS = 0; }
-                    //if (yS > max) { yS = max; }
-
-                    // 调整滑动量，使其可以被接受
-                    //if (X == 1)
-                    //{
-                    //    int adjust = xS - this.HorizontalScroll.Value;
-                    //    int maxChange = this.HorizontalScroll.LargeChange;
-                    //    while (true)
-                    //    {
-                    //        if (adjust > maxChange) { this.HorizontalScroll.Value += maxChange; adjust = xS - this.HorizontalScroll.Value; continue; }
-                    //        if (adjust < -maxChange) { this.HorizontalScroll.Value -= maxChange; adjust = xS - this.HorizontalScroll.Value; continue; }
-                    //        this.HorizontalScroll.Value = xS; break;
-                    //    }
-                    //}
-                    //if (Y == 1)
-                    //{
-                    //    int adjust = yS - this.VerticalScroll.Value;
-                    //    int maxChange = this.VerticalScroll.LargeChange;
-                    //    while (true)
-                    //    {
-                    //        if (adjust > maxChange) { this.VerticalScroll.Value += maxChange; adjust = yS - this.VerticalScroll.Value; continue; }
-                    //        if (adjust < -maxChange) { this.VerticalScroll.Value -= maxChange; adjust = yS - this.VerticalScroll.Value; continue; }
-                    //        this.VerticalScroll.Value = yS; break;
-                    //    }
-                    //}
-                    //this.HorizontalScroll.Value = xS;
-                    //this.VerticalScroll.Value = yS; return;
-                }
-
-                #endregion
-
-                #region 其他
-
-                ShowCurrent();
-
-                #endregion
+                Form_Main_DoubleClick(null, null);
             }
 
             #endregion
@@ -672,17 +541,9 @@ namespace PictureViewer
 
         private void Form_Main_DoubleClick(object sender, EventArgs e)
         {
-            if (config.FolderIndex < 0 || config.FolderIndex >= FileOperate.RootFiles.Count) { ShowCurrent(); return; }
-            if (config.FileIndex < 0 || config.FileIndex >= FileOperate.RootFiles[config.FolderIndex].Name.Count) { ShowCurrent(); return; }
-
-            string name = FileOperate.RootFiles[config.FolderIndex].Name[config.FileIndex];
-            int type = FileOperate.getFileType(FileOperate.getExtension(name));
-
-            bool lastE = key.E; key.E = false;
-
             #region 0 型文件双击操作
 
-            if (type == 0)
+            if (config.Type == 0)
             {
                 ShowCurrent(); return;
             }
@@ -691,160 +552,30 @@ namespace PictureViewer
 
             #region 1 型文件的双击操作
 
-            if (type == 1)
+            if (config.Type == 1)
             {
-                if (config.SubIndex < 0 || config.SubIndex >= config.SubFiles.Count) { ShowCurrent(); return; }
-                name = config.SubFiles[config.SubIndex];
-                type = FileOperate.getFileType(FileOperate.getExtension(name));
-                if (type != 2) { ShowCurrent(); return; }
+                if (config.SubType == 2) { NextShowBigPicture = !NextShowBigPicture; if (NextShowBigPicture) { ShowBig(true); } else { ShowSmall(); } return; }
+                if (config.SubType == 3) { ShowCurrent(); return; }
+                if (config.SubType == 4) { ShapeVideoWindow(true); return; }
 
-                if (config.SourPicture == null) { return; }
-                NextShowBigPicture = !NextShowBigPicture;
-                if (!NextShowBigPicture) { ShowCurrent(); return; }
-                ShowBig(true); return;
-
-                // 聚焦点
-                int xF = MousePosition.X - this.Location.X - this.pictureBox1.Location.X - 10;
-                int yF = MousePosition.Y - this.Location.Y - this.pictureBox1.Location.Y - 30;
-                double xR = (double)xF / config.DestPicture.Width;
-                if (xR < 0) { xR = 0; }
-                if (xR > 1) { xR = 1; }
-                double yR = (double)yF / config.DestPicture.Height;
-                if (yR < 0) { yR = 0; }
-                if (yR > 1) { yR = 1; }
-
-                //this.HorizontalScroll.Value = 0;
-                //this.VerticalScroll.Value = 0;
-                //ShowedBigPicture = true;
-
-                int X = (this.Width - 18 - config.SourPicture.Width) / 2;
-                int Y = (this.Height - 42 - config.SourPicture.Height) / 2;
-                key.E = X < 0 || Y < 0;
-                if (X < 1) { X = 1; }
-                if (Y < 1) { Y = 1; }
-
-                this.pictureBox1.Image = config.SourPicture;
-                this.pictureBox1.Location = new Point(X, Y);
-                this.pictureBox1.Height = config.SourPicture.Height;
-                this.pictureBox1.Width = config.SourPicture.Width;
-
-                // 把聚焦点放到屏幕中央
-                int xS = (int)(config.SourPicture.Width * xR - this.Width / 2 + 40);
-                if (xS < this.HorizontalScroll.Minimum) { xS = this.HorizontalScroll.Minimum; }
-                if (xS > this.HorizontalScroll.Maximum) { xS = this.HorizontalScroll.Maximum; }
-
-                int yS = (int)(config.SourPicture.Height * yR - this.Height / 2 + 20);
-                if (yS < this.VerticalScroll.Minimum) { yS = this.VerticalScroll.Minimum; }
-                if (yS > this.VerticalScroll.Maximum) { yS = this.VerticalScroll.Maximum; }
-
-                // 调整滑动量，使其可以被接受
-                if (X == 1)
-                {
-                    int adjust = xS - this.HorizontalScroll.Value;
-                    int maxChange = this.HorizontalScroll.LargeChange;
-                    while (true)
-                    {
-                        if (adjust > maxChange) { this.HorizontalScroll.Value += maxChange; adjust = xS - this.HorizontalScroll.Value; continue; }
-                        if (adjust < -maxChange) { this.HorizontalScroll.Value -= maxChange; adjust = xS - this.HorizontalScroll.Value; continue; }
-                        this.HorizontalScroll.Value = xS; break;
-                    }
-                }
-                if (Y == 1)
-                {
-                    int adjust = yS - this.VerticalScroll.Value;
-                    int maxChange = this.VerticalScroll.LargeChange;
-                    while (true)
-                    {
-                        if (adjust > maxChange) { this.VerticalScroll.Value += maxChange; adjust = yS - this.VerticalScroll.Value; continue; }
-                        if (adjust < -maxChange) { this.VerticalScroll.Value -= maxChange; adjust = yS - this.VerticalScroll.Value; continue; }
-                        this.VerticalScroll.Value = yS; break;
-                    }
-                }
-                this.HorizontalScroll.Value = xS;
-                this.VerticalScroll.Value = yS; return;
+                ShowCurrent(); return;
             }
 
             #endregion
 
             #region 2 型文件的双击操作
 
-            if (type == 2)
+            if (config.Type == 2)
             {
-                if (config.SourPicture == null) { return; }
                 NextShowBigPicture = !NextShowBigPicture;
-                if (!NextShowBigPicture) { ShowCurrent(); return; }
-                ShowBig(true); return;
-
-                // 聚焦点
-                int xF = MousePosition.X - this.Location.X - this.pictureBox1.Location.X - 10;
-                int yF = MousePosition.Y - this.Location.Y - this.pictureBox1.Location.Y - 30;
-                double xR = (double)xF / config.DestPicture.Width;
-                if (xR < 0) { xR = 0; }
-                if (xR > 1) { xR = 1; }
-                double yR = (double)yF / config.DestPicture.Height;
-                if (yR < 0) { yR = 0; }
-                if (yR > 1) { yR = 1; }
-
-                //this.HorizontalScroll.Value = 0;
-                //this.VerticalScroll.Value = 0;
-                //ShowedBigPicture = true;
-
-                int X = (this.Width - 18 - config.SourPicture.Width) / 2;
-                int Y = (this.Height - 42 - config.SourPicture.Height) / 2;
-                key.E = X < 0 || Y < 0;
-                if (X < 1) { X = 1; }
-                if (Y < 1) { Y = 1; }
-                
-                this.pictureBox1.Height = config.SourPicture.Height;
-                this.pictureBox1.Width = config.SourPicture.Width;
-                this.pictureBox1.Location = new Point(X, Y);
-                this.pictureBox1.Image = config.SourPicture;
-
-                // 把聚焦点放到屏幕中央
-                int xS = (int)(config.SourPicture.Width * xR - this.Width / 2 + 40);
-                if (xS < this.HorizontalScroll.Minimum) { xS = this.HorizontalScroll.Minimum; }
-                if (xS > this.HorizontalScroll.Maximum) { xS = this.HorizontalScroll.Maximum; }
-
-                int yS = (int)(config.SourPicture.Height * yR - this.Height / 2 + 20);
-                if (yS < this.VerticalScroll.Minimum) { yS = this.VerticalScroll.Minimum; }
-                if (yS > this.VerticalScroll.Maximum) { yS = this.VerticalScroll.Maximum; }
-
-
-                #region 调整滑动量，使其可以被接受
-
-                if (X == 1)
-                {
-                    int adjust = xS - this.HorizontalScroll.Value;
-                    int maxChange = this.HorizontalScroll.LargeChange;
-                    while (true)
-                    {
-                        if (adjust > maxChange) { this.HorizontalScroll.Value += maxChange; adjust = xS - this.HorizontalScroll.Value; continue; }
-                        if (adjust < -maxChange) { this.HorizontalScroll.Value -= maxChange; adjust = xS - this.HorizontalScroll.Value; continue; }
-                        this.HorizontalScroll.Value = xS; break;
-                    }
-                }
-                if (Y == 1)
-                {
-                    int adjust = yS - this.VerticalScroll.Value;
-                    int maxChange = this.VerticalScroll.LargeChange;
-                    while (true)
-                    {
-                        if (adjust > maxChange) { this.VerticalScroll.Value += maxChange; adjust = yS - this.VerticalScroll.Value; continue; }
-                        if (adjust < -maxChange) { this.VerticalScroll.Value -= maxChange; adjust = yS - this.VerticalScroll.Value; continue; }
-                        this.VerticalScroll.Value = yS; break;
-                    }
-                }
-                this.HorizontalScroll.Value = xS;
-                this.VerticalScroll.Value = yS; return;
-
-                #endregion
+                if (NextShowBigPicture) { ShowBig(true); } else { ShowSmall(); }
             }
 
             #endregion
 
             #region 3 型文件的双击操作
 
-            if (type == 3)
+            if (config.Type == 3)
             {
                 ShowCurrent(); return;
             }
@@ -853,90 +584,22 @@ namespace PictureViewer
 
             #region 4 型文件的双击操作
 
-            if (type == 4)
+            if (config.Type == 4)
             {
-                ShowCurrent(); return;
-
-                //this.axWindowsMediaPlayer1.Height = this.Height - 41;
-                //this.axWindowsMediaPlayer1.Width = this.Width - 18;
-                //this.axWindowsMediaPlayer1.Ctlcontrols.play(); return;
+                ShapeVideoWindow(true);
             }
 
             #endregion
 
             #region 5 型文件的双击操作
 
-            if (type == 5)
+            if (config.Type == 5)
             {
-                if (config.SubIndex < 0 || config.SubIndex >= config.SubFiles.Count) { ShowCurrent(); return; }
-                name = config.SubFiles[config.SubIndex];
-                type = FileOperate.getFileType(FileOperate.getExtension(name));
-                if (type != 2) { ShowCurrent(); return; }
+                if (config.SubType == 2) { NextShowBigPicture = !NextShowBigPicture; if (NextShowBigPicture) { ShowBig(true); } else { ShowSmall(); } return; }
+                if (config.SubType == 3) { ShowCurrent(); return; }
+                //if (config.SubType == 4) { ShapeVideoWindow(true); return; }
 
-                if (config.SourPicture == null) { return; }
-                NextShowBigPicture = !NextShowBigPicture;
-                if (!NextShowBigPicture) { ShowCurrent(); return; }
-                ShowBig(true); return;
-
-                // 聚焦点
-                int xF = MousePosition.X - this.Location.X - this.pictureBox1.Location.X - 10;
-                int yF = MousePosition.Y - this.Location.Y - this.pictureBox1.Location.Y - 30;
-                double xR = (double)xF / config.DestPicture.Width;
-                if (xR < 0) { xR = 0; }
-                if (xR > 1) { xR = 1; }
-                double yR = (double)yF / config.DestPicture.Height;
-                if (yR < 0) { yR = 0; }
-                if (yR > 1) { yR = 1; }
-
-                //this.HorizontalScroll.Value = 0;
-                //this.VerticalScroll.Value = 0;
-                //ShowedBigPicture = true;
-
-                int X = (this.Width - 18 - config.SourPicture.Width) / 2;
-                int Y = (this.Height - 42 - config.SourPicture.Height) / 2;
-                key.E = X < 0 || Y < 0;
-                if (X < 1) { X = 1; }
-                if (Y < 1) { Y = 1; }
-
-                this.pictureBox1.Image = config.SourPicture;
-                this.pictureBox1.Location = new Point(X, Y);
-                this.pictureBox1.Height = config.SourPicture.Height;
-                this.pictureBox1.Width = config.SourPicture.Width;
-
-                // 把聚焦点放到屏幕中央
-                int xS = (int)(config.SourPicture.Width * xR - this.Width / 2 + 40);
-                if (xS < this.HorizontalScroll.Minimum) { xS = this.HorizontalScroll.Minimum; }
-                if (xS > this.HorizontalScroll.Maximum) { xS = this.HorizontalScroll.Maximum; }
-
-                int yS = (int)(config.SourPicture.Height * yR - this.Height / 2 + 20);
-                if (yS < this.VerticalScroll.Minimum) { yS = this.VerticalScroll.Minimum; }
-                if (yS > this.VerticalScroll.Maximum) { yS = this.VerticalScroll.Maximum; }
-
-                // 调整滑动量，使其可以被接受
-                if (X == 1)
-                {
-                    int adjust = xS - this.HorizontalScroll.Value;
-                    int maxChange = this.HorizontalScroll.LargeChange;
-                    while (true)
-                    {
-                        if (adjust > maxChange) { this.HorizontalScroll.Value += maxChange; adjust = xS - this.HorizontalScroll.Value; continue; }
-                        if (adjust < -maxChange) { this.HorizontalScroll.Value -= maxChange; adjust = xS - this.HorizontalScroll.Value; continue; }
-                        this.HorizontalScroll.Value = xS; break;
-                    }
-                }
-                if (Y == 1)
-                {
-                    int adjust = yS - this.VerticalScroll.Value;
-                    int maxChange = this.VerticalScroll.LargeChange;
-                    while (true)
-                    {
-                        if (adjust > maxChange) { this.VerticalScroll.Value += maxChange; adjust = yS - this.VerticalScroll.Value; continue; }
-                        if (adjust < -maxChange) { this.VerticalScroll.Value -= maxChange; adjust = yS - this.VerticalScroll.Value; continue; }
-                        this.VerticalScroll.Value = yS; break;
-                    }
-                }
-                this.HorizontalScroll.Value = xS;
-                this.VerticalScroll.Value = yS; return;
+                ShowCurrent(); return;
             }
 
             #endregion
@@ -1022,6 +685,10 @@ namespace PictureViewer
                 if (ShapeWindowRate > 100) { ShapeWindowRate = 100; }
                 ShowCurrent();
             }
+        }
+        private void Form_MouseEnter(object sender, EventArgs e)
+        {
+
         }
 
         private void Updata(object source, System.Timers.ElapsedEventArgs e)
@@ -1214,7 +881,69 @@ namespace PictureViewer
 
         private void ShowCurrent()
         {
-            // 关闭播放以前的文件
+            #region 初始化当前文件的各种属性
+
+            config.SubFiles.Clear();
+            config.ExistFolder = false;
+            config.ExistFile = false;
+            config.ExistSub = false;
+            config.Path = "";
+            config.Name = "";
+            config.Extension = "";
+            config.Type = -1;
+            config.Hide = false;
+            config.IsSub = false;
+            config.SubName = "";
+            config.SubType = -1;
+            config.SubExtension = "";
+            config.SubHide = false;
+
+            if (config.FolderIndex >= 0 && config.FolderIndex < FileOperate.RootFiles.Count)
+            { config.Path = FileOperate.RootFiles[config.FolderIndex].Path; }
+            if (config.FileIndex >= 0 && config.FileIndex < FileOperate.RootFiles[config.FolderIndex].Name.Count)
+            { config.Name = FileOperate.RootFiles[config.FolderIndex].Name[config.FileIndex]; }
+
+            config.ExistFolder = Directory.Exists(config.Path);
+            config.Extension = FileOperate.getExtension(config.Name);
+            config.Hide = FileOperate.IsSupportHide(config.Extension);
+            config.Type = FileOperate.getFileType(config.Extension);
+            config.IsSub = config.Type == 1 || config.Type == 5;
+            if (config.Type == 1) { config.ExistFile = Directory.Exists(config.Path + "\\" + config.Name); }
+            else { config.ExistFile = File.Exists(config.Path + "\\" + config.Name); }
+
+            if (config.ExistFile && config.Type == 1)
+            {
+                config.SubFiles = FileOperate.getSubFiles(config.Path + "\\" + config.Name);
+                if (config.SubIndex < 0) { config.SubIndex = 0; }
+                if (config.SubIndex >= config.SubFiles.Count) { config.SubIndex = config.SubFiles.Count - 1; }
+                if (config.SubFiles.Count != 0)
+                {
+                    config.SubName = config.SubFiles[config.SubIndex];
+                    config.SubExtension = FileOperate.getExtension(config.SubName);
+                    config.SubType = FileOperate.getFileType(config.SubExtension);
+                    config.SubHide = FileOperate.IsSupportHide(config.SubExtension);
+                    config.ExistSub = true;
+                }
+            }
+            if (config.ExistFile && config.Type == 5)
+            {
+                config.Error = ZipOperate.ReadZipEX(config.Path + "\\" + config.Name);
+                if (config.SubIndex < 0) { config.SubIndex = 0; }
+                if (config.SubIndex >= config.SubFiles.Count) { config.SubIndex = config.SubFiles.Count - 1; }
+                if (config.SubFiles.Count != 0)
+                {
+                    config.SubName = config.SubFiles[config.SubIndex];
+                    config.SubExtension = FileOperate.getExtension(config.SubName);
+                    config.SubType = FileOperate.getFileType(config.SubExtension);
+                    config.SubHide = FileOperate.IsSupportHide(config.SubExtension);
+                    config.ExistSub = true;
+                }
+            }
+
+            #endregion
+
+            #region 关闭播放以前的文件
+
             if (config.SourPicture != null) { config.SourPicture.Dispose(); }
             if (config.DestPicture != null) { config.DestPicture.Dispose(); }
             if (!this.axWindowsMediaPlayer1.IsDisposed)
@@ -1222,166 +951,128 @@ namespace PictureViewer
 
             this.HorizontalScroll.Value = 0;
             this.VerticalScroll.Value = 0;
-            config.SubFiles.Clear();
-            
-            // 切到当前文件夹
+
+            #endregion
+
+            #region 切到当前文件夹，无效文件信息
+
             for (int i = 0; i < this.filePathToolStripMenuItem.DropDownItems.Count; i++)
             {
                 ToolStripMenuItem imenu = (ToolStripMenuItem)this.filePathToolStripMenuItem.DropDownItems[i];
                 imenu.Checked = i == config.FolderIndex;
             }
 
-            // 获取下一个文件
-            bool Exist = true;
-            if (config.FolderIndex < 0 || config.FileIndex < 0) { Exist = false; }
-            if (Exist && config.FolderIndex >= FileOperate.RootFiles.Count) { Exist = false; }
-            if (Exist && config.FileIndex >= FileOperate.RootFiles[config.FolderIndex].Name.Count) { Exist = false; }
+            this.titleToolStripMenuItem1.Text = "Not Exist";
+            this.textToolStripMenuItem.Text = "Unknow";
 
-            // 给出提示
-            string Name = Exist ? FileOperate.RootFiles[config.FolderIndex].Name[config.FileIndex] : "[Not Exist]";
-            string Index = (config.FileIndex + 1).ToString();
-            string Total = FileOperate.RootFiles.Count == 0 || config.FolderIndex >= FileOperate.RootFiles.Count ?
-                "0" : FileOperate.RootFiles[config.FolderIndex].Name.Count.ToString();
-            this.Text = "[" + Index + "/" + Total + "] " + Name;
-            if (!Exist) { ShowOff("err"); return; }
+            #endregion
 
-            // 读取文件
-            string path = FileOperate.RootFiles[config.FolderIndex].Path;
-            string name = FileOperate.RootFiles[config.FolderIndex].Name[config.FileIndex];
-            string full = path + "\\" + name;
-            int type = FileOperate.getFileType(FileOperate.getExtension(name));
+            #region 提取显示文本，处理错误信息，若文件不存在，标题给出提示信息后直接返回
 
-            bool isHide = FileOperate.IsSupportHide(FileOperate.getExtension(name));
-            if(isHide && !NoHide) { this.Text = "[" + Index + "/" + Total + "] [Unknow] " + Name; ShowOff("unk"); return; }
+            string index = config.ExistFolder ?
+                "[" + (config.FileIndex + 1).ToString() + "/" + FileOperate.RootFiles[config.FolderIndex].Name.Count.ToString() + "]" :
+                "";
+            string subindex = config.ExistFile && config.IsSub ?
+                "[" + (config.SubIndex + 1).ToString() + "/" + config.SubFiles.Count.ToString() + "]" :
+                "";
 
-            // 处理不同文件
-            #region 0 型文件（暂不支持类型）
-            if (type == 0)
+            if (config.Error == 1) { config.Error = 0; this.Text = index + " [Wrong Password] " + config.Name; ShowUnp(); return; }
+
+            if (!config.ExistFolder) { this.Text = "[Not Exist] " + config.Path; ShowNot(); return; }
+            if (!config.ExistFile) { this.Text = index + " [Not Exist] " + config.Name; ShowNot(); return; }
+            if (config.IsSub && config.SubFiles.Count == 0) { this.Text = index + " " + subindex + " [Empty] " + config.Name; ShowNot(); return; }
+            
+            #endregion
+
+            #region 隐藏文件不予显示
+
+            if (!NoHide && (config.Hide || config.SubHide))
             {
-                if (!File.Exists(full)) { this.Text = "[" + Index + "/" + Total + "] [Not Exist]"; ShowOff("err"); }
-                this.Text = "[" + Index + "/" + Total + "] [Unsupport] " + Name; ShowOff("unp"); return;
+                this.Text = config.IsSub ?
+                    index + " " + subindex + " [Unknow] " + config.Name + " : " + config.SubName :
+                    index + " [Unknow] " + config.Name;
+                ShowUnk(); return;
             }
+
+            #endregion
+            
+            #region 0 型文件（暂不支持类型）
+
+            if (config.Type == 0)
+            {
+                this.Text = config.IsSub ?
+                    index + " " + subindex + " [Unsupport] " + config.Name + " : " + config.SubName :
+                    index + " [Unsupport] " + config.Name;
+                ShowUnp(); return;
+            }
+
             #endregion
 
             #region 1 型文件（文件夹）
 
-            if (type == 1)
+            if (config.Type == 1)
             {
-                if (!Directory.Exists(full)) { this.Text = "[" + Index + "/" + Total + "] [Not Exist] " + full; ShowOff("err"); return; }
+                this.Text = index + " " + subindex + " " + config.Name + " : " + config.SubName;
                 
-                config.SubFiles = FileOperate.getSubFiles(full);
-                if (config.SubFiles.Count == 0)
-                {
-                    this.Text = "[" + Index + "/" + Total + "] [ 0/0 ] [Empty Folder] " + name;
-                    ShowOff("unk");
-                    //MessageBox.Show("在文件夹 " + full + " 中未能找到任何此程序支持的文件！", "提示");
-                    return;
-                }
+                if (config.SubType == 2) { ShowPicture(config.Path + "\\" + config.Name, config.SubName); return; }
+                if (config.SubType == 3) { ShowGif(config.Path + "\\" + config.Name, config.SubName); return; }
+                if (config.SubType == 4) { ShowVideo(config.Path + "\\" + config.Name, config.SubName); return; }
 
-                if (config.SubIndex < 0) { config.SubIndex = 0; }
-                if (config.SubIndex >= config.SubFiles.Count) { config.SubIndex = config.SubFiles.Count - 1; }
-                //if (config.SubIndex < 0 || config.SubIndex >= config.SubFiles.Count)
-                //{
-                //    this.Text = "[" + Index + "/" + Total + "] [" + (config.SubIndex + 1).ToString() + "/" + config.SubFiles.Count + "] [Not Exist]";
-                //    ShowOff("err"); return;
-                //}
-
-                isHide = FileOperate.IsSupportHide(FileOperate.getExtension(config.SubFiles[config.SubIndex]));
-                if (isHide && !NoHide)
-                { this.Text = "[" + Index + "/" + Total + "] [" + (config.SubIndex + 1).ToString() + "/" + config.SubFiles.Count + "] [Unknow] " + name + "：" + config.SubFiles[config.SubIndex]; ShowOff("unk"); return; }
-
-                this.Text = "[" + Index + "/" + Total + "] [" + (config.SubIndex + 1).ToString() + "/" + config.SubFiles.Count + "] " + name + "：" + config.SubFiles[config.SubIndex];
-
-                name = config.SubFiles[config.SubIndex];
-                type = FileOperate.getFileType(FileOperate.getExtension(name));
-
-                if (type == 2) { ShowPicture(full, name); return; }
-                if (type == 3) { ShowGif(full, name); return; }
-                if (type == 4) { ShowVideo(full, name); return; }
-                this.Text = "[" + Index + "/" + Total + "] [" + (config.SubIndex + 1).ToString() + "/" + config.SubFiles.Count + "] [Unsupport] " + Name + "：" + config.SubFiles[config.SubIndex];
-                ShowOff("unp"); return;
+                this.Text = index + " " + subindex + " [Unsupport] " + config.Name + " : " + config.SubName;
+                ShowUnp(); return;
             }
 
             #endregion
 
             #region 2 型文件（图片）
 
-            if (type == 2)
+            if (config.Type == 2)
             {
-                if (!File.Exists(full)) { this.Text = "[" + Index + "/" + Total + "] [Not Exist] " + name; ShowOff("err"); return; }
-                ShowPicture(path, name); return;
+                this.Text = index + " " + config.Name;
+                ShowPicture(config.Path, config.Name); return;
             }
 
             #endregion
 
             #region 3 型文件（GIF）
 
-            if (type == 3)
+            if (config.Type == 3)
             {
-                if (!File.Exists(full)) { this.Text = "[" + Index + "/" + Total + "] [Not Exist] " + name; ShowOff("err"); return; }
-                ShowGif(path,name); return;
+                this.Text = index + " " + config.Name;
+                ShowGif(config.Path, config.Name); return;
             }
 
             #endregion
 
             #region 4 型文件（视频）
 
-            if (type == 4)
+            if (config.Type == 4)
             {
-                if (!File.Exists(full)) { this.Text = "[" + Index + "/" + Total + "] [Not Exist] " + name; ShowOff("err"); return; }
-
-                string ext = FileOperate.getExtension(name);
-                if (!UseBoard && (ext == ".mp3" || ext == FileOperate.getHideExtension(".mp3"))) { ShapeWindowForMusic(); }
-
-                ShowVideo(path,name); return;
+                this.Text = index + " " + config.Name;
+                ShowVideo(config.Path, config.Name); return;
             }
 
             #endregion
 
             #region 5 型文件（ZIP）
 
-            if (type == 5)
+            if (config.Type == 5)
             {
-                if (!File.Exists(full)) { this.Text = "[" + Index + "/" + Total + "] [Not Exist] " + name; ShowOff("err"); return; }
-
-                int err = ZipOperate.ReadZipEX(full);
-                if (!isHide && err == 1) { this.Text = "[" + Index + "/" + Total + "] [Wrong PassWord] " + name; ShowOff("err"); return; }
-
-                if (config.SubFiles.Count == 0)
-                {
-                    this.Text = "[" + Index + "/" + Total + "] [ 0/0 ] [Empty Zip File] " + name;
-                    ShowOff(); return;
-                }
-
-                if (config.SubIndex < 0) { config.SubIndex = 0; }
-                if (config.SubIndex >= config.SubFiles.Count) { config.SubIndex = config.SubFiles.Count - 1; }
-                //if (config.SubIndex < 0 || config.SubIndex >= config.SubFiles.Count)
-                //{
-                //    this.Text = "[" + Index + "/" + Total + "] [" + (config.SubIndex + 1).ToString() + "/" + config.SubFiles.Count + "] [Not Exist]";
-                //    ShowOff("err"); return;
-                //}
-
-                isHide = FileOperate.IsSupportHide(FileOperate.getExtension(config.SubFiles[config.SubIndex]));
-                if (isHide && !NoHide)
-                { this.Text = "[" + Index + "/" + Total + "] [" + (config.SubIndex + 1).ToString() + "/" + config.SubFiles.Count + "] [Unknow] " + name + "：" + config.SubFiles[config.SubIndex]; ShowOff("unk"); return; }
+                this.Text = index + " " + subindex + " " + config.Name + " : " + config.SubName;
                 
-                this.Text = "[" + Index + "/" + Total + "] [" + (config.SubIndex + 1).ToString() + "/" + config.SubFiles.Count + "] " + name + "：" + config.SubFiles[config.SubIndex];
+                if (config.SubType == 2 && ZipOperate.LoadPictureEX()) { ShowPicture(null, null, false); return; }
+                if (config.SubType == 3 && ZipOperate.LoadGifEX()) { ShowGif(null, null, false); return; }
 
-                name = config.SubFiles[config.SubIndex];
-                type = FileOperate.getFileType(FileOperate.getExtension(name));
-
-                if (type == 2 && ZipOperate.LoadPictureEX()) { ShowPicture(full, name, false); return; }
-                if (type == 3 && ZipOperate.LoadGifEX()) { ShowGif(full, name, false); return; }
-
-                this.Text = "[" + Index + "/" + Total + "] [" + (config.SubIndex + 1).ToString() + "/" + config.SubFiles.Count + "] [Unsupport] " + Name + "：" + config.SubFiles[config.SubIndex];
-                ShowOff("unp"); return;
+                this.Text = index + " " + subindex + " [Unsupport] " + config.Name + " : " + config.SubName;
+                ShowUnp(); return;
             }
 
             #endregion
 
             #region 其他文件（不支持）
 
-            this.Text = "[" + Index + "/" + Total + "] [Unknow] " + name; ShowOff("unk");
+            this.Text = index + " [Unsupport] " + config.Name;
+            ShowUnp();
 
             #endregion
         }
@@ -1390,37 +1081,16 @@ namespace PictureViewer
             if (load) { config.SourPicture = (Bitmap)Image.FromFile(path + "\\" + name); }
             if (UseShapeWindow) { ShapeWindow(); }
 
-            if (config.FolderIndex < 0 || config.FolderIndex >= FileOperate.RootFiles.Count)
-            { this.toolTip1.ToolTipTitle = "Not Exist"; }
-            else
-            { this.toolTip1.ToolTipTitle = FileOperate.RootFiles[config.FolderIndex].Path; }
-            if (!UseBoard) { this.toolTip1.SetToolTip(this.pictureBox1, this.Text); }
-            
-            int sourX = config.SourPicture.Width;
-            int sourY = config.SourPicture.Height;
-            int destX = sourX;
-            int destY = sourY;
-            int limitX = this.Width - 18; if (!UseBoard) { limitX = this.Width; }
-            int limitY = this.Height - 41; if (!UseBoard) { limitY = this.Height; }
+            //if (config.ExistFolder) { this.toolTip1.ToolTipTitle = config.Path; }
+            //else { this.toolTip1.ToolTipTitle = "Not Exist"; }
+            //if (!UseBoard) { this.toolTip1.SetToolTip(this.pictureBox1, this.Text); }
+            this.titleToolStripMenuItem1.Text = config.ExistFolder ?
+                this.toolTip1.ToolTipTitle = config.Path :
+                "Not Exist";
+            this.textToolStripMenuItem.Text = this.Text;
+            //this.infoToolStripMenuItem.ToolTipText = this.Text;
 
-            double rate = Math.Max((double)sourX / limitX, (double)sourY / limitY);
-            if (rate > 1) { destX = (int)(config.SourPicture.Width / rate); }
-            if (rate > 1) { destY = (int)(config.SourPicture.Height / rate); }
-
-            config.DestPicture = (Image)new Bitmap(destX, destY);
-            Graphics g = Graphics.FromImage(config.DestPicture);
-            g.DrawImage(config.SourPicture, new Rectangle(0, 0, destX, destY), new Rectangle(0, 0, sourX, sourY), GraphicsUnit.Pixel);
-            g.Dispose();
-
-            if (NextShowBigPicture) {  ShowBig(); }
-            else
-            {
-                this.pictureBox1.Width = destX;
-                this.pictureBox1.Height = destY;
-                Point location = UseBoard ? new Point((this.Width - 18 - destX) / 2, (this.Height - 42 - destY) / 2) : new Point((this.Width - destX) / 2, (this.Height - destY) / 2);
-                this.pictureBox1.Location = location;
-                this.pictureBox1.Image = config.DestPicture;
-            }
+            if (NextShowBigPicture) { ShowBig(); } else { ShowSmall(); }
             
             this.axWindowsMediaPlayer1.Visible = false;
             this.pictureBox1.Visible = true;
@@ -1430,8 +1100,12 @@ namespace PictureViewer
             if (load) { config.SourPicture = (Bitmap)Image.FromFile(path + "\\" + name); }
             if (UseShapeWindow) { ShapeWindow(); }
 
-            this.toolTip1.ToolTipTitle = path;
-            if (!UseBoard) { this.toolTip1.SetToolTip(this.pictureBox1, this.Text); }
+            //this.toolTip1.ToolTipTitle = path;
+            //if (!UseBoard) { this.toolTip1.SetToolTip(this.pictureBox1, this.Text); }
+            this.titleToolStripMenuItem1.Text = config.ExistFolder ?
+                this.toolTip1.ToolTipTitle = config.Path :
+                "Not Exist";
+            this.textToolStripMenuItem.Text = this.Text;
 
             int H = config.SourPicture.Height;
             int W = config.SourPicture.Width;
@@ -1451,27 +1125,30 @@ namespace PictureViewer
         }
         private void ShowVideo(string path, string name)
         {
-            //this.toolTip1.ToolTipTitle = path;
-            //if (!UseBoard) { this.toolTip1.SetToolTip(this.axWindowsMediaPlayer1, this.Text); }
+            //if (config.ExistFolder) { this.toolTip1.ToolTipTitle = config.Path; }
+            //else { this.toolTip1.ToolTipTitle = "Not Exist"; }
+            //if (!UseBoard) { this.toolTip1.SetToolTip(this, this.Text); }
+            this.titleToolStripMenuItem1.Text = config.ExistFolder ?
+                this.toolTip1.ToolTipTitle = config.Path :
+                "Not Exist";
+            this.textToolStripMenuItem.Text = this.Text;
 
             this.axWindowsMediaPlayer1.Visible = true;
-
+            this.pictureBox1.Visible = false;
+            if (!UseBoard && FileOperate.IsMusic(FileOperate.getExtension(name))) { ShapeWindowForMusic(); }
+            
             this.axWindowsMediaPlayer1.Height = UseBoard ? this.Height - 41 : this.Height - 2;
             this.axWindowsMediaPlayer1.Width = UseBoard ? this.Width - 18 : this.Width - 2;
             this.axWindowsMediaPlayer1.Location = new Point(1, 1);
 
-            axWindowsMediaPlayer1.URL = path + "\\" + name;
+            if (axWindowsMediaPlayer1.URL != path + "\\" + name) { axWindowsMediaPlayer1.URL = path + "\\" + name; }
             axWindowsMediaPlayer1.Ctlcontrols.play();
 
             this.axWindowsMediaPlayer1.Visible = true;
             this.pictureBox1.Visible = false;
         }
-        private void ShowOff(string type = null)
+        private void ShowOff()
         {
-            if (type == "unk") { ShowUnk(); return; }
-            if (type == "unp") { ShowUnp(); return; }
-            if (type == "err") { ShowErr(); return; }
-
             this.pictureBox1.Height = this.Height - 41;
             this.pictureBox1.Width = this.Width - 18;
             this.pictureBox1.Location = new Point(1, 1);
@@ -1509,6 +1186,13 @@ namespace PictureViewer
             }
             ShowPicture(unppath, unpname);
         }
+        private void ShowNot()
+        {
+            string notpath = FileOperate.getExePath();
+            string notname = "not.tip";
+            if (File.Exists(notpath + "\\" + notname)) { ShowPicture(notpath, notname); }
+            else { ShowOff(); }
+        }
         private void ShowErr()
         {
             string errpath = FileOperate.getExePath();
@@ -1527,21 +1211,18 @@ namespace PictureViewer
         private void ShowBig(bool focus = false)
         {
             if (config.SourPicture == null) { return; }
-
-            //this.HorizontalScroll.Value = 0;
-            //this.VerticalScroll.Value = 0;
-            //ShowedBigPicture = true;
+            if (focus && config.DestPicture == null) { return; }
+            if (!focus) { this.HorizontalScroll.Value = 0; this.VerticalScroll.Value = 0; }
             
             // 聚焦点
             int xF = MousePosition.X - this.Location.X - this.pictureBox1.Location.X - 10; if (!UseBoard) { xF += 10; }
             int yF = MousePosition.Y - this.Location.Y - this.pictureBox1.Location.Y - 30; if (!UseBoard) { yF += 30; }
-            double xR = (double)xF / config.DestPicture.Width;
+            double xR = focus ? (double)xF / config.DestPicture.Width : 0;
             if (xR < 0) { xR = 0; }
             if (xR > 1) { xR = 1; }
-            double yR = (double)yF / config.DestPicture.Height;
+            double yR = focus ? (double)yF / config.DestPicture.Height : 0;
             if (yR < 0) { yR = 0; }
             if (yR > 1) { yR = 1; }
-            if (!focus) { xR = 0.0; yR = 0.0; }
 
             // 显示图片
             int X = (this.Width - 18 - config.SourPicture.Width) / 2; if (!UseBoard) { X += 9; }
@@ -1594,6 +1275,33 @@ namespace PictureViewer
             this.VerticalScroll.Value = yS; return;
 
             #endregion
+        }
+        private void ShowSmall()
+        {
+            this.HorizontalScroll.Value = 0;
+            this.VerticalScroll.Value = 0;
+
+            int sourX = config.SourPicture.Width;
+            int sourY = config.SourPicture.Height;
+            int destX = sourX;
+            int destY = sourY;
+            int limitX = this.Width - 18; if (!UseBoard) { limitX = this.Width; }
+            int limitY = this.Height - 41; if (!UseBoard) { limitY = this.Height; }
+
+            double rate = Math.Max((double)sourX / limitX, (double)sourY / limitY);
+            if (rate > 1) { destX = (int)(config.SourPicture.Width / rate); }
+            if (rate > 1) { destY = (int)(config.SourPicture.Height / rate); }
+
+            config.DestPicture = (Image)new Bitmap(destX, destY);
+            Graphics g = Graphics.FromImage(config.DestPicture);
+            g.DrawImage(config.SourPicture, new Rectangle(0, 0, destX, destY), new Rectangle(0, 0, sourX, sourY), GraphicsUnit.Pixel);
+            g.Dispose();
+
+            this.pictureBox1.Width = destX;
+            this.pictureBox1.Height = destY;
+            Point location = UseBoard ? new Point((this.Width - 18 - destX) / 2, (this.Height - 42 - destY) / 2) : new Point((this.Width - destX) / 2, (this.Height - destY) / 2);
+            this.pictureBox1.Location = location;
+            this.pictureBox1.Image = config.DestPicture;
         }
         private void ShowBoard(bool show)
         {
@@ -1676,6 +1384,20 @@ namespace PictureViewer
 
             if (UseBoard) { this.Height = shapeh + 39; this.Width = shapew + 16; return; }
             this.Height = shapeh; this.Width = shapew;
+        }
+        private void ShapeVideoWindow(bool change = false)
+        {
+            if (!this.axWindowsMediaPlayer1.Visible) { return; }
+
+            this.axWindowsMediaPlayer1.Height = UseBoard ? this.Height - 41 : this.Height - 2;
+            this.axWindowsMediaPlayer1.Width = UseBoard ? this.Width - 18 : this.Width - 2;
+            this.axWindowsMediaPlayer1.Location = new Point(1, 1);
+
+            WMPLib.WMPPlayState curState = this.axWindowsMediaPlayer1.playState;
+
+            if (change && curState == WMPLib.WMPPlayState.wmppsPaused) { this.axWindowsMediaPlayer1.Ctlcontrols.play(); }
+            if (change && curState == WMPLib.WMPPlayState.wmppsPlaying) { this.axWindowsMediaPlayer1.Ctlcontrols.pause(); }
+            if (change && curState == WMPLib.WMPPlayState.wmppsStopped) { this.axWindowsMediaPlayer1.Ctlcontrols.play(); }
         }
 
         private void HideFiles()
@@ -1774,6 +1496,7 @@ namespace PictureViewer
 
         private void RightMenu_Refresh(object sender, EventArgs e)
         {
+            if (config.Type == 4 || (config.IsSub && config.SubType == 4)) { ShapeVideoWindow(); return; }
             ShowCurrent();
         }
         private void RightMenu_Input(object sender, EventArgs e)

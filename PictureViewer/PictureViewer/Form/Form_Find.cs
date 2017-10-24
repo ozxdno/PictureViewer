@@ -39,19 +39,19 @@ namespace PictureViewer
             /// </summary>
             DEFAULT = 0x0000,
             /// <summary>
-            /// 大小必须相同
+            /// 大小必须相同（没有经过缩放）
             /// </summary>
             FULL = 0x0001,
             /// <summary>
-            /// 大小可以不同
+            /// 大小可以不同（经过缩放）
             /// </summary>
             PART = 0x0002,
             /// <summary>
-            /// 完全相同
+            /// 完全相同（两幅图内容完全一样）
             /// </summary>
             SAME = 0x0004,
             /// <summary>
-            /// 部分相似
+            /// 部分相似（源图为要寻找图的一部分）
             /// </summary>
             LIKE = 0x0008,
             /// <summary>
@@ -373,7 +373,7 @@ namespace PictureViewer
         }
         private void RightMenu_Pixes(object sender, EventArgs e)
         {
-            if (!IsFinish) { MessageBox.Show("正在搜索，请勿操作！", "提示"); return; }
+            //if (!IsFinish) { MessageBox.Show("正在搜索，请勿操作！", "提示"); return; }
 
             Form_Input input = new Form_Input(config.MinCmpPix.ToString());
             input.Location = MousePosition;
@@ -383,15 +383,18 @@ namespace PictureViewer
             try { MinCmpPixes = int.Parse(input.Input); } catch { MessageBox.Show("必须输入正整数！", "提示"); return; }
             if (MinCmpPixes < 0) { MessageBox.Show("必须输入正整数！", "提示"); return; }
 
+            if (!IsFinish) { MessageBox.Show("正在搜索，请勿操作！", "提示"); return; }
             config.MinCmpPix = MinCmpPixes;
         }
         private void RightMenu_Switch(object sender, EventArgs e)
         {
-            if (!IsFinish) { MessageBox.Show("正在搜索，请勿操作！", "提示"); return; }
+            //if (!IsFinish) { MessageBox.Show("正在搜索，请勿操作！", "提示"); return; }
 
             if (config.Current.Count == 0) { MessageBox.Show("文件不存在，无法转到！", "提示"); return; }
             int index = config.Index;
             if (index < 0 || index >= config.Current.Count) { MessageBox.Show("文件不存在，无法转到！", "提示"); return; }
+
+            Stop();
 
             string path = Paths[config.Current[index]];
             string name = Names[config.Current[index]];
@@ -440,7 +443,7 @@ namespace PictureViewer
         }
         private void RightMenu_Degree(object sender, EventArgs e)
         {
-            if (!IsFinish) { MessageBox.Show("正在搜索，请勿操作！", "提示"); return; }
+            //if (!IsFinish) { MessageBox.Show("正在搜索，请勿操作！", "提示"); return; }
 
             Form_Input input = new Form_Input(config.Degree.ToString());
             input.Location = MousePosition;
@@ -451,7 +454,12 @@ namespace PictureViewer
             if (Degree < 0) { MessageBox.Show("必须输入 0-100 之间的数！", "提示"); return; }
             if (Degree > 100) { MessageBox.Show("必须输入 0-100 之间的数！", "提示"); return; }
 
+            if (!IsFinish) { MessageBox.Show("正在搜索，请勿操作！", "提示"); return; }
             config.Degree = (int)Degree;
+        }
+        private void RightMenu_Restart(object sender, EventArgs e)
+        {
+
         }
 
         private void ShowSourPic()
@@ -636,6 +644,10 @@ namespace PictureViewer
             while (Threads[3].thread != null && Threads[3].thread.ThreadState == ThreadState.Running) ;
 
             this.startToolStripMenuItem.Text = "Start"; return;
+        }
+        private void Continue()
+        {
+
         }
 
         private void InitializeForm()
@@ -915,8 +927,8 @@ namespace PictureViewer
             for (int i = Threads[0].begin - 1; i < Threads[0].end && !Threads[0].abort; ++i)
             {
                 #region 初始化变量
-                
-                dest  = (Bitmap)Image.FromFile(Paths[i] + "\\" + Names[i]);
+
+                dest = (Bitmap)Image.FromFile(Paths[i] + "\\" + Names[i]);
                 desth = dest.Height;
                 destw = dest.Width;
                 found = false;
@@ -1099,7 +1111,7 @@ namespace PictureViewer
 
                     if (config.Mode == MODE.FULL_LIKE_NOTURN)
                     {
-
+                        
                     }
 
                     #endregion

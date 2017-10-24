@@ -128,7 +128,7 @@ namespace PictureViewer.Class
 
 
         /// <summary>
-        /// 读取 ZIP 文件中的所有支持文件（有密码），返回错误类型：1-密码错误
+        /// 读取 ZIP 文件中的所有支持文件（有密码），返回错误类型：0-无错误，1-密码错误。
         /// </summary>
         /// <param name="fullpath">ZIP 文件绝对路径</param>
         public static int ReadZipEX(string fullpath)
