@@ -809,6 +809,23 @@ namespace PictureViewer
                     //mouse.Previous = Current;
                 }
 
+                // 显示播放时间
+                if (config.Type == 4 || (config.IsSub && config.SubType == 4))
+                {
+                    string index = "[" + (config.FileIndex+1).ToString() + "/" + FileOperate.RootFiles[config.FolderIndex].Name.Count.ToString() + "]";
+                    string subindex = "[" + (config.SubIndex + 1).ToString() + "/" + config.SubFiles.Count.ToString() + "]";
+                    string curpos = "";
+                    string total = "";
+                    try { curpos = this.axWindowsMediaPlayer1.Ctlcontrols.currentPositionString; } catch { }
+                    try { total = this.axWindowsMediaPlayer1.currentMedia.durationString; } catch { }
+
+                    string title = config.IsSub ?
+                        index + " " + subindex + " [" + curpos + "/" + total + "] " + config.Name + " : " + config.SubName :
+                        index + " [" + curpos + "/" + total + "] " + config.Name;
+
+                    if (curpos.Length != 0 && total.Length != 0) { this.Text = title; }
+                }
+
                 // 按键滚屏
                 if (!key.Down || (!this.HorizontalScroll.Visible && !this.VerticalScroll.Visible)) { return; }
                 if (this.lockToolStripMenuItem.Checked) { return; }
@@ -1012,7 +1029,9 @@ namespace PictureViewer
 
             if (config.Type == 1)
             {
-                this.Text = index + " " + subindex + " " + config.Name + " : " + config.SubName;
+                this.Text = config.SubType == 4 ?
+                    index + " " + subindex + " " + config.Name + " : " + config.SubName :
+                    index + " " + subindex + " " + config.Name + " : " + config.SubName;
                 
                 if (config.SubType == 2) { ShowPicture(config.Path + "\\" + config.Name, config.SubName); return; }
                 if (config.SubType == 3) { ShowGif(config.Path + "\\" + config.Name, config.SubName); return; }
@@ -1389,9 +1408,15 @@ namespace PictureViewer
         {
             if (!this.axWindowsMediaPlayer1.Visible) { return; }
 
+            int inith = this.axWindowsMediaPlayer1.Height;
+            int initw = this.axWindowsMediaPlayer1.Width;
+
             this.axWindowsMediaPlayer1.Height = UseBoard ? this.Height - 41 : this.Height - 2;
             this.axWindowsMediaPlayer1.Width = UseBoard ? this.Width - 18 : this.Width - 2;
             this.axWindowsMediaPlayer1.Location = new Point(1, 1);
+
+            if (inith != this.axWindowsMediaPlayer1.Height || initw != this.axWindowsMediaPlayer1.Width)
+            { return; }
 
             WMPLib.WMPPlayState curState = this.axWindowsMediaPlayer1.playState;
 
