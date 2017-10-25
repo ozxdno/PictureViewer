@@ -160,6 +160,12 @@ namespace PictureViewer
 
         /////////////////////////////////////////////////////////// public method //////////////////////////////////////////////////
 
+        /// <summary>
+        /// 查找图片
+        /// </summary>
+        /// <param name="pic">源图</param>
+        /// <param name="fullpath">源图所在路径</param>
+        /// <param name="mode">查找模式</param>
         public Form_Find(Image pic, string fullpath, MODE mode = MODE.DEFAULT)
         {
             InitializeComponent();
@@ -167,7 +173,7 @@ namespace PictureViewer
             double rate = 1000.0 / Math.Min(pic.Height, pic.Width);
             if (rate > 1) { rate = 1; }
             SourPic = CopyPicture((Bitmap)pic, rate);
-            config.Sour = fullpath;
+            config.Sour = fullpath == null ? "" : fullpath;
             config.Mode = mode;
         }
         
@@ -187,6 +193,11 @@ namespace PictureViewer
         }
         private void Form_Close(object sender, FormClosedEventArgs e)
         {
+            Class.Save.settings.Form_Main_Find_Full = this.fullToolStripMenuItem.Checked;
+            Class.Save.settings.Form_Main_Find_Part = this.partToolStripMenuItem.Checked;
+            Class.Save.settings.Form_Main_Find_Same = this.sameToolStripMenuItem.Checked;
+            Class.Save.settings.Form_Main_Find_Like = this.likeToolStripMenuItem.Checked;
+            Class.Save.settings.Form_Main_Find_Turn = this.turnToolStripMenuItem.Checked;
             Class.Save.settings.Form_Find_Degree = config.Degree;
             Class.Save.settings.Form_Find_Pixes = config.MinCmpPix;
 
@@ -199,11 +210,11 @@ namespace PictureViewer
         private void Form_Updata(object source, System.Timers.ElapsedEventArgs e)
         {
             this.BeginInvoke((EventHandler)delegate{
-
-                config.CountTime++;
-
+                
                 bool prevState = IsFinish;
                 IsFinish = Threads[0].finish && Threads[1].finish && Threads[2].finish && Threads[3].finish;
+
+                if (!IsFinish) { config.CountTime++; }
 
                 if (!IsFinish) { config.TimeED = config.CountTime; }
                 double usedTime = (double)(config.TimeED - config.TimeBG) / 10;
@@ -281,6 +292,67 @@ namespace PictureViewer
             //if (index == -1) { return; }
             config.Index = index;
             ShowDestPic();
+        }
+        private void DoubleClickedToSwitch(object sender, EventArgs e)
+        {
+            this.toolTip1.Hide(this.listBox1);
+
+            if (config.Current.Count == 0) { MessageBox.Show("文件不存在，无法转到！", "提示"); return; }
+            int index = config.Index;
+            if (index < 0 || index >= config.Current.Count) { MessageBox.Show("文件不存在，无法转到！", "提示"); return; }
+
+            Stop();
+
+            string path = Paths[config.Current[index]];
+            string name = Names[config.Current[index]];
+
+            for (int i = 0; i < FileOperate.RootFiles.Count; i++)
+            {
+                string ipath = FileOperate.RootFiles[i].Path;
+                for (int j = 0; j < FileOperate.RootFiles[i].Name.Count; j++)
+                {
+                    string jname = FileOperate.RootFiles[i].Name[j];
+                    int type = FileOperate.getFileType(FileOperate.getExtension(jname));
+
+                    if (type == 1)
+                    {
+                        string newpath = ipath + "\\" + jname;
+                        List<string> subnames = FileOperate.getSubFiles(newpath);
+
+                        for (int k = 0; k < subnames.Count; k++)
+                        {
+                            jname = subnames[k];
+                            if (newpath == path && jname == name)
+                            {
+                                if (DialogResult.Cancel == MessageBox.Show("转到当前选中图片？", "确认", MessageBoxButtons.OKCancel))
+                                { return; }
+
+                                Form_Main.config.FolderIndex = i;
+                                Form_Main.config.FileIndex = j;
+                                Form_Main.config.SubIndex = k;
+
+                                this.Close(); return;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (ipath == path && jname == name)
+                        {
+                            if (DialogResult.Cancel == MessageBox.Show("转到当前选中图片？", "确认", MessageBoxButtons.OKCancel))
+                            { return; }
+
+                            Form_Main.config.FolderIndex = i;
+                            Form_Main.config.FileIndex = j;
+                            Form_Main.config.SubIndex = 0;
+
+                            this.Close(); return;
+                        }
+                    }
+                }
+            }
+
+            MessageBox.Show("未找到该文件！", "提示");
         }
 
         private void RightMenu_Start(object sender, EventArgs e)
@@ -384,8 +456,13 @@ namespace PictureViewer
             try { MinCmpPixes = int.Parse(input.Input); } catch { MessageBox.Show("必须输入正整数！", "提示"); return; }
             if (MinCmpPixes < 0) { MessageBox.Show("必须输入正整数！", "提示"); return; }
 
-            if (!IsFinish) { MessageBox.Show("正在搜索，请勿操作！", "提示"); return; }
+            //if (!IsFinish) { MessageBox.Show("正在搜索，请勿操作！", "提示"); return; }
+            if (config.MinCmpPix == MinCmpPixes) { return; }
+            if (IsFinish) { config.MinCmpPix = MinCmpPixes; return; }
+
+            Stop();
             config.MinCmpPix = MinCmpPixes;
+            Continue();
         }
         private void RightMenu_Switch(object sender, EventArgs e)
         {
@@ -456,12 +533,55 @@ namespace PictureViewer
             if (Degree > 100) { MessageBox.Show("必须输入 0-100 之间的数！", "提示"); return; }
 
             if (!IsFinish) { MessageBox.Show("正在搜索，请勿操作！", "提示"); return; }
+            if (config.Degree == (int)Degree) { return; }
+            if (IsFinish) { config.Degree = (int)Degree; return; }
+
+            Stop();
             config.Degree = (int)Degree;
+            Continue();
         }
         private void RightMenu_Restart(object sender, EventArgs e)
         {
             Stop();
             Start();
+        }
+        private void RightMenu_Mode(object sender, EventArgs e)
+        {
+
+        }
+        private void RightMenu_Mode_Full(object sender, EventArgs e)
+        {
+            this.fullToolStripMenuItem.Checked = !this.fullToolStripMenuItem.Checked;
+            this.partToolStripMenuItem.Checked = !this.fullToolStripMenuItem.Checked;
+
+            SetMode();
+        }
+        private void RightMenu_Mode_Part(object sender, EventArgs e)
+        {
+            this.partToolStripMenuItem.Checked = !this.partToolStripMenuItem.Checked;
+            this.fullToolStripMenuItem.Checked = !this.partToolStripMenuItem.Checked;
+
+            SetMode();
+        }
+        private void RightMenu_Mode_Same(object sender, EventArgs e)
+        {
+            this.sameToolStripMenuItem.Checked = !this.sameToolStripMenuItem.Checked;
+            this.likeToolStripMenuItem.Checked = !this.sameToolStripMenuItem.Checked;
+
+            SetMode();
+        }
+        private void RightMenu_Mode_Like(object sender, EventArgs e)
+        {
+            this.likeToolStripMenuItem.Checked = !this.likeToolStripMenuItem.Checked;
+            this.sameToolStripMenuItem.Checked = !this.likeToolStripMenuItem.Checked;
+
+            SetMode();
+        }
+        private void RightMenu_Mode_Turn(object sender, EventArgs e)
+        {
+            this.turnToolStripMenuItem.Checked = !this.turnToolStripMenuItem.Checked;
+
+            SetMode();
         }
 
         private void ShowSourPic()
@@ -558,7 +678,7 @@ namespace PictureViewer
                 this.listBox1.Items.Add(sequence + name);
             }
         }
-
+        
         private void Start()
         {
             this.listBox1.Items.Clear();
@@ -699,9 +819,18 @@ namespace PictureViewer
 
             #region 比较方式
             
-            //if (SourPic.Height > SourPic.Width) { GetBestCol(); } else { GetBestRow(); }
             GetBestRow();
             GetBestCol();
+
+            #endregion
+
+            #region 初始化模式
+
+            if (((ushort)config.Mode & (ushort)MODE.FULL) > 0) { this.fullToolStripMenuItem.Checked = true; }
+            if (((ushort)config.Mode & (ushort)MODE.PART) > 0) { this.partToolStripMenuItem.Checked = true; }
+            if (((ushort)config.Mode & (ushort)MODE.SAME) > 0) { this.sameToolStripMenuItem.Checked = true; }
+            if (((ushort)config.Mode & (ushort)MODE.LIKE) > 0) { this.likeToolStripMenuItem.Checked = true; }
+            if (((ushort)config.Mode & (ushort)MODE.TURN) > 0) { this.turnToolStripMenuItem.Checked = true; }
 
             #endregion
         }
@@ -740,6 +869,15 @@ namespace PictureViewer
 
             #endregion
 
+            #region 去除自己
+
+            for (int i = Names.Count - 1; i >= 0; i--)
+            {
+                if (Paths[i] + "\\" + Names[i] == config.Sour) { Paths.RemoveAt(i); Names.RemoveAt(i); }
+            }
+
+            #endregion
+
             #region 去除重复的文件
 
             for (int i = Names.Count - 1; i >= 0; i--)
@@ -772,6 +910,28 @@ namespace PictureViewer
                 this.listBox1.Items.Add(sequence + name);
             }
             this.listBox1.SelectedIndex = next;
+        }
+        private void SetMode()
+        {
+            if (this.likeToolStripMenuItem.Checked)
+            {
+                MessageBox.Show("不支持 LIKE 模式的查找", "提示");
+                this.sameToolStripMenuItem.Checked = true;
+                this.likeToolStripMenuItem.Checked = false;
+            }
+
+            ushort mode = 0;
+            if (this.fullToolStripMenuItem.Checked) { mode |= (ushort)MODE.FULL; }
+            if (this.partToolStripMenuItem.Checked) { mode |= (ushort)MODE.PART; }
+            if (this.sameToolStripMenuItem.Checked) { mode |= (ushort)MODE.SAME; }
+            if (this.likeToolStripMenuItem.Checked) { mode |= (ushort)MODE.LIKE; }
+            if (this.turnToolStripMenuItem.Checked) { mode |= (ushort)MODE.TURN; }
+            
+            if (IsFinish) { config.Mode = (MODE)mode; return; }
+
+            Stop();
+            config.Mode = (MODE)mode;
+            Continue();
         }
         private Bitmap CopyPicture(Bitmap sour, double rate)
         {
