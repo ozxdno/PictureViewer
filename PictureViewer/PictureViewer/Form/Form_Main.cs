@@ -801,8 +801,8 @@ namespace PictureViewer
                 int edH = bgH + setH;
                 if (showPageMark && !hideL && bgW <= ptX && ptX <= edW && bgH <= ptY && ptY <= edH)
                 {
-                    int xvalue = this.HorizontalScroll.Value;
-                    int yvalue = this.VerticalScroll.Value;
+                    //int xvalue = this.HorizontalScroll.Value;
+                    //int yvalue = this.VerticalScroll.Value;
 
                     this.label1.Location = new Point(bgW - 10, bgH - 30);
                     this.label1.Width = setW;
@@ -810,8 +810,8 @@ namespace PictureViewer
                     this.label1.Visible = true;
                     this.label1.Font = new Font("宋体", font);
 
-                    this.HorizontalScroll.Value = xvalue;
-                    this.VerticalScroll.Value = yvalue;
+                    //this.HorizontalScroll.Value = xvalue;
+                    //this.VerticalScroll.Value = yvalue;
                 }
                 else { this.label1.Visible = false; }
 
@@ -828,8 +828,8 @@ namespace PictureViewer
                 edH = bgH + setH;
                 if (showPageMark && !hideR && bgW <= ptX && ptX <= edW && bgH <= ptY && ptY <= edH)
                 {
-                    int xvalue = this.HorizontalScroll.Value;
-                    int yvalue = this.VerticalScroll.Value;
+                    //int xvalue = this.HorizontalScroll.Value;
+                    //int yvalue = this.VerticalScroll.Value;
 
                     this.label2.Location = new Point(bgW - 10, bgH - 30);
                     this.label2.Width = setW;
@@ -837,8 +837,8 @@ namespace PictureViewer
                     this.label2.Visible = true;
                     this.label2.Font = new Font("宋体", font);
 
-                    this.HorizontalScroll.Value = xvalue;
-                    this.VerticalScroll.Value = yvalue;
+                    //this.HorizontalScroll.Value = xvalue;
+                    //this.VerticalScroll.Value = yvalue;
                 }
                 else { this.label2.Visible = false; }
 
@@ -854,8 +854,8 @@ namespace PictureViewer
                 edH = bgH + setH;
                 if (showPageMark && !hideU && bgW <= ptX && ptX <= edW && bgH <= ptY && ptY <= edH && config.SubFiles.Count > 1)
                 {
-                    int xvalue = this.HorizontalScroll.Value;
-                    int yvalue = this.VerticalScroll.Value;
+                    //int xvalue = this.HorizontalScroll.Value;
+                    //int yvalue = this.VerticalScroll.Value;
 
                     this.label3.Location = new Point(bgW - 10, bgH - 30);
                     this.label3.Width = setW;
@@ -863,8 +863,8 @@ namespace PictureViewer
                     this.label3.Visible = true;
                     this.label3.Font = new Font("宋体", font);
 
-                    this.HorizontalScroll.Value = xvalue;
-                    this.VerticalScroll.Value = yvalue;
+                    //this.HorizontalScroll.Value = xvalue;
+                    //this.VerticalScroll.Value = yvalue;
                 }
                 else { this.label3.Visible = false; }
 
@@ -881,8 +881,8 @@ namespace PictureViewer
                 edH = bgH + setH;
                 if (showPageMark && !hideD && bgW <= ptX && ptX <= edW && bgH <= ptY && ptY <= edH && config.SubFiles.Count > 1)
                 {
-                    int xvalue = this.HorizontalScroll.Value;
-                    int yvalue = this.VerticalScroll.Value;
+                    //int xvalue = this.HorizontalScroll.Value;
+                    //int yvalue = this.VerticalScroll.Value;
 
                     this.label4.Location = new Point(bgW - 10, bgH - 30);
                     this.label4.Width = setW;
@@ -890,8 +890,8 @@ namespace PictureViewer
                     this.label4.Visible = true;
                     this.label4.Font = new Font("宋体", font);
 
-                    this.HorizontalScroll.Value = xvalue;
-                    this.VerticalScroll.Value = yvalue;
+                    //this.HorizontalScroll.Value = xvalue;
+                    //this.VerticalScroll.Value = yvalue;
                 }
                 else { this.label4.Visible = false; }
 
