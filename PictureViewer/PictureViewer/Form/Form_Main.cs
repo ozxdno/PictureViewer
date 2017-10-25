@@ -541,6 +541,35 @@ namespace PictureViewer
 
         private void Form_Main_DoubleClick(object sender, EventArgs e)
         {
+            #region 判断位置是否摆正
+
+            bool PicWindowIsOK = true;
+            int picx = this.pictureBox1.Location.X;
+            int picy = this.pictureBox1.Location.Y;
+            int pich = this.pictureBox1.Height;
+            int picw = this.pictureBox1.Width;
+            int rech = UseBoard ? this.Height - 42: this.Height;
+            int recw = UseBoard ? this.Width - 18 : this.Width;
+            if (PicWindowIsOK && pich >= rech) { PicWindowIsOK = picy <= 1; }
+            if (PicWindowIsOK && picw >= recw) { PicWindowIsOK = picx <= 1; }
+            if (PicWindowIsOK && pich < rech)
+            {
+                int stdy = UseBoard ? (this.Height - 42 - pich) / 2 : (this.Height - pich) / 2;
+                PicWindowIsOK = Math.Abs(stdy - picy) <= 1;
+            }
+            if (PicWindowIsOK && picw < recw)
+            {
+                int stdx = UseBoard ? (this.Width - 18 - picw) / 2 : (this.Width - picw) / 2;
+                PicWindowIsOK = Math.Abs(stdx - picx) <= 1;
+            }
+
+            bool VidWindowIsOK = true;
+            VidWindowIsOK = UseBoard ?
+                this.Height - 41 == this.axWindowsMediaPlayer1.Height && this.Width - 18 == this.axWindowsMediaPlayer1.Width :
+                this.Height - 2 == this.axWindowsMediaPlayer1.Height && this.Width - 2 == this.axWindowsMediaPlayer1.Width;
+
+            #endregion
+
             #region 0 型文件双击操作
 
             if (config.Type == 0)
@@ -554,9 +583,23 @@ namespace PictureViewer
 
             if (config.Type == 1)
             {
-                if (config.SubType == 2) { NextShowBigPicture = !NextShowBigPicture; if (NextShowBigPicture) { ShowBig(true); } else { ShowSmall(); } return; }
-                if (config.SubType == 3) { ShowCurrent(); return; }
-                if (config.SubType == 4) { ShapeVideoWindow(true); return; }
+                if (config.SubType == 2)
+                {
+                    if (!PicWindowIsOK) { ShowSmall(); return; }
+                    NextShowBigPicture = !NextShowBigPicture;
+                    if (NextShowBigPicture) { ShowBig(true); } else { ShowSmall(); }
+                    return;
+                }
+                if (config.SubType == 3)
+                {
+                    ShowCurrent();
+                    return;
+                }
+                if (config.SubType == 4)
+                {
+                    ShapeVideoWindow(VidWindowIsOK);
+                    return;
+                }
 
                 ShowCurrent(); return;
             }
@@ -567,8 +610,10 @@ namespace PictureViewer
 
             if (config.Type == 2)
             {
+                if (!PicWindowIsOK) { ShowSmall(); return; }
                 NextShowBigPicture = !NextShowBigPicture;
                 if (NextShowBigPicture) { ShowBig(true); } else { ShowSmall(); }
+                return;
             }
 
             #endregion
@@ -586,7 +631,8 @@ namespace PictureViewer
 
             if (config.Type == 4)
             {
-                ShapeVideoWindow(true);
+                ShapeVideoWindow(VidWindowIsOK);
+                return;
             }
 
             #endregion
@@ -595,9 +641,17 @@ namespace PictureViewer
 
             if (config.Type == 5)
             {
-                if (config.SubType == 2) { NextShowBigPicture = !NextShowBigPicture; if (NextShowBigPicture) { ShowBig(true); } else { ShowSmall(); } return; }
-                if (config.SubType == 3) { ShowCurrent(); return; }
-                //if (config.SubType == 4) { ShapeVideoWindow(true); return; }
+                if (config.SubType == 2)
+                {
+                    if (!PicWindowIsOK) { ShowSmall(); return; }
+                    NextShowBigPicture = !NextShowBigPicture;
+                    if (NextShowBigPicture) { ShowBig(true); } else { ShowSmall(); }
+                    return;
+                }
+                if (config.SubType == 3)
+                {
+                    ShowCurrent(); return;
+                }
 
                 ShowCurrent(); return;
             }
@@ -993,12 +1047,14 @@ namespace PictureViewer
                 "[" + (config.SubIndex + 1).ToString() + "/" + config.SubFiles.Count.ToString() + "]" :
                 "";
 
-            if (config.Error == 1) { config.Error = 0; this.Text = index + " [Wrong Password] " + config.Name; ShowUnp(); return; }
+            if (config.Error == 1) { config.Error = 0; this.Text = index + " [Wrong Password] " + config.Name; ShowErr(); return; }
 
             if (!config.ExistFolder) { this.Text = "[Not Exist] " + config.Path; ShowNot(); return; }
+            if (FileOperate.RootFiles[config.FolderIndex].Name.Count == 0) { this.Text = "[0/0] [Empty Folder] Current Root Folder Is Empty !"; ShowNot(); return; }
             if (!config.ExistFile) { this.Text = index + " [Not Exist] " + config.Name; ShowNot(); return; }
-            if (config.IsSub && config.SubFiles.Count == 0) { this.Text = index + " " + subindex + " [Empty] " + config.Name; ShowNot(); return; }
-            
+            if (config.Type == 1 && config.SubFiles.Count == 0) { this.Text = index + " " + subindex + " [Empty Folder] " + config.Name; ShowNot(); return; }
+            if (config.Type == 5 && config.SubFiles.Count == 0) { this.Text = index + " " + subindex + " [Empty File] " + config.Name; ShowNot(); return; }
+
             #endregion
 
             #region 隐藏文件不予显示
@@ -1305,7 +1361,7 @@ namespace PictureViewer
             int destX = sourX;
             int destY = sourY;
             int limitX = this.Width - 18; if (!UseBoard) { limitX = this.Width; }
-            int limitY = this.Height - 41; if (!UseBoard) { limitY = this.Height; }
+            int limitY = this.Height - 42; if (!UseBoard) { limitY = this.Height; }
 
             double rate = Math.Max((double)sourX / limitX, (double)sourY / limitY);
             if (rate > 1) { destX = (int)(config.SourPicture.Width / rate); }
@@ -1870,29 +1926,21 @@ namespace PictureViewer
         {
             this.contextMenuStrip1.Hide();
 
-            if (config.FolderIndex < 0 || config.FolderIndex >= FileOperate.RootFiles.Count) { MessageBox.Show("文件不存在！", "提示"); return; }
-            if (config.FileIndex < 0 || config.FileIndex >= FileOperate.RootFiles[config.FolderIndex].Name.Count) { MessageBox.Show("文件不存在！", "提示"); return; }
-
-            string path = FileOperate.RootFiles[config.FolderIndex].Path;
-            string name = FileOperate.RootFiles[config.FolderIndex].Name[config.FileIndex];
-            int type = FileOperate.getFileType(FileOperate.getExtension(name));
-
-            if (type == 1)
-            {
-                path += "\\" + name;
-                if (config.SubIndex < 0 || config.SubIndex >= config.SubFiles.Count) { MessageBox.Show("文件不存在！", "提示"); return; }
-                name = config.SubFiles[config.SubIndex];
-                type = FileOperate.getFileType(FileOperate.getExtension(name));
-            }
-
-            if (type != 2) { MessageBox.Show("不能匹配图片之外的文件", "提示"); return; }
-
             // 文件不存在
-            if (config.SourPicture == null) { MessageBox.Show("图片不存在！", "提示"); return; }
+            if (!config.ExistFolder || !config.ExistFile || (config.IsSub && !config.ExistSub))
+            { MessageBox.Show("文件不存在！", "提示"); return; }
 
-            // 不能匹配隐藏文件
-            if (!NoHide && FileOperate.IsSupportHide(FileOperate.getExtension(name)))
+            // 只能匹配图片文件（包括GIF）
+            string fullpath = config.Path + "\\" + config.Name;
+            if (config.IsSub) { fullpath += "\\" + config.SubName; }
+            int type = config.IsSub ? config.SubType : config.Type;
+            if (type != 2 && type != 3)
             { MessageBox.Show("不能匹配图片之外的文件", "提示"); return; }
+            
+            // 不能匹配隐藏文件
+            bool hide = config.IsSub ? config.SubHide : config.Hide;
+            hide = !NoHide && hide;
+            if (hide) { MessageBox.Show("不能匹配图片之外的文件", "提示"); return; }
 
             // 不支持的模式
             if (this.likeToolStripMenuItem.Checked)
@@ -1903,26 +1951,6 @@ namespace PictureViewer
                 this.sameToolStripMenuItem.Checked = true;
             }
 
-
-            // 确保没有重复路径
-            for (int i = 0; i < FileOperate.RootFiles.Count; i++)
-            {
-                for (int j = i + 1; j < FileOperate.RootFiles.Count; j++)
-                {
-                    string iroot = FileOperate.RootFiles[i].Path;
-                    string jroot = FileOperate.RootFiles[j].Path;
-
-                    if (iroot.Length >= jroot.Length)
-                    {
-                        if (iroot.Substring(0, jroot.Length) == jroot) { MessageBox.Show("存在重复路径，不允许搜索！\n" + iroot + "\n" + jroot, "提示"); return; }
-                    }
-                    else
-                    {
-                        if (jroot.Substring(0, iroot.Length) == iroot) { MessageBox.Show("存在重复路径，不允许搜索！\n" + iroot + "\n" + jroot, "提示"); return; }
-                    }
-                }
-            }
-
             // 开始寻找
             ushort mode = 0;
             if (this.fullToolStripMenuItem.Checked) { mode += (ushort)Form_Find.MODE.FULL; }
@@ -1931,7 +1959,7 @@ namespace PictureViewer
             if (this.likeToolStripMenuItem.Checked) { mode += (ushort)Form_Find.MODE.LIKE; }
             if (this.turnToolStripMenuItem.Checked) { mode += (ushort)Form_Find.MODE.TURN; }
 
-            Form_Find find = new Form_Find(config.SourPicture, path + "\\" + name, (Form_Find.MODE)mode);
+            Form_Find find = new Form_Find(config.SourPicture, fullpath, (Form_Find.MODE)mode);
             find.ShowDialog();
             ShowCurrent();
         }

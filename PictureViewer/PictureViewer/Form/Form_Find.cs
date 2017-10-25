@@ -479,11 +479,11 @@ namespace PictureViewer
             string path = config.Sour.Substring(0, cut);
             string name = config.Sour.Substring(cut + 1);
 
-            FileInfo file = new FileInfo(config.Sour);
-            long size = file.Length / 1000;
-
+            string size = "?";
+            try { FileInfo file = new FileInfo(config.Sour); size = (file.Length / 1000).ToString(); } catch { }
+            
             this.toolTip2.ToolTipTitle = path;
-            this.toolTip2.SetToolTip(this.pictureBox2, "[" + size.ToString() + " KB] " + name);
+            this.toolTip2.SetToolTip(this.pictureBox2, "[" + size + " KB] " + name);
         }
         private void ShowDestPic()
         {
@@ -707,53 +707,48 @@ namespace PictureViewer
         }
         private void FillPathsNames()
         {
-            #region 填充 Paths 和 Names
+            Paths.Clear(); Names.Clear();
 
-            string path;
-            string name;
-            string ex;
-            bool NoHide = Form_Main.NoHide;
-            Paths.Clear();
-            Names.Clear();
+            #region 挑选出符合要求的类型
 
-            for (int p = 0; p < FileOperate.RootFiles.Count; p++)
+            for (int i = 0; i < FileOperate.RootFiles.Count; i++)
             {
-                path = FileOperate.RootFiles[p].Path;
-
-                for (int n = 0; n < FileOperate.RootFiles[p].Name.Count; n++)
+                string root = FileOperate.RootFiles[i].Path;
+                for (int j = 0; j < FileOperate.RootFiles[i].Name.Count; j++)
                 {
-                    name = FileOperate.RootFiles[p].Name[n];
-                    ex = FileOperate.getExtension(name);
-                    int type = FileOperate.getFileType(ex);
+                    string name = FileOperate.RootFiles[i].Name[j];
+                    string extension = FileOperate.getExtension(name);
+                    if (FileOperate.IsSupportHide(extension) && !Form_Main.NoHide) { continue; }
+                    int type = FileOperate.getFileType(extension);
 
-                    if (type == 1)
+                    if (type == 2) { Paths.Add(root); Names.Add(name); continue; }
+                    if (type == 3) { Paths.Add(root); Names.Add(name); continue; }
+                    if (type != 1) { continue; }
+
+                    List<string> subnames = FileOperate.getSubFiles(root + "\\" + name);
+                    for (int k = 0; k < subnames.Count; k++)
                     {
-                        string newpath = path + "\\" + name;
-                        List<string> files = FileOperate.getSubFiles(newpath);
-                        foreach (string f in files)
-                        {
-                            name = f;
-                            ex = FileOperate.getExtension(name);
-                            type = FileOperate.getFileType(ex);
+                        string subextension = FileOperate.getExtension(subnames[k]);
+                        int subtype = FileOperate.getFileType(subextension);
+                        if (FileOperate.IsSupportHide(subextension) && !Form_Main.NoHide) { continue; }
 
-                            if (type == 2)
-                            {
-                                if (!NoHide && FileOperate.IsSupportHide(ex)) { continue; }
-                                if (config.Sour == newpath + "\\" + name) { continue; }
-                                Paths.Add(newpath); Names.Add(name);
-                            }
-                        }
+                        if (subtype == 2) { Paths.Add(root + "\\" + name); Names.Add(subnames[k]); continue; }
+                        if (subtype == 3) { Paths.Add(root + "\\" + name); Names.Add(subnames[k]); continue; }
+                    }
+                }
+            }
 
-                        continue;
-                    }
-                    if (type == 2)
-                    {
-                        if (!NoHide && FileOperate.IsSupportHide(ex)) { continue; }
-                        if (config.Sour == path + "\\" + name) { continue; }
-                        if (!File.Exists(path + "\\" + name)) { continue; }
-                        Paths.Add(path); Names.Add(name);
-                        continue;
-                    }
+            #endregion
+
+            #region 去除重复的文件
+
+            for (int i = Names.Count - 1; i >= 0; i--)
+            {
+                for (int j = 0; j < i; j++)
+                {
+                    if (Names[i] != Names[j] || Paths[i] != Paths[j]) { continue; }
+                    Paths.RemoveAt(i);
+                    Names.RemoveAt(i); break;
                 }
             }
 

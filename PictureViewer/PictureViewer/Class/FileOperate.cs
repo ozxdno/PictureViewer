@@ -126,6 +126,7 @@ namespace PictureViewer.Class
         /// <returns></returns>
         public static string getExtension(string name)
         {
+            if (name == null || name.Length == 0) { return "unknow"; }
             int dot = name.LastIndexOf('.'); if (dot == -1) { return ""; }
             return name.Substring(dot).ToLower();
         }
@@ -313,9 +314,11 @@ namespace PictureViewer.Class
 
             foreach (FileInfo file in files)
             {
-                if (getFileType(file.Extension) == 2) { Files.Add(file.Name); }
-                if (getFileType(file.Extension) == 3) { Files.Add(file.Name); }
-                if (getFileType(file.Extension) == 4) { Files.Add(file.Name); }
+                int type = getFileType(file.Extension);
+                if (type == -1) { continue; }
+                if (type == 1) { continue; }
+
+                Files.Add(file.Name);
             }
 
             return Files;
