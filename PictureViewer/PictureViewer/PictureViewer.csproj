@@ -56,6 +56,7 @@
     <Compile Include="Class\FileOperate.cs" />
     <Compile Include="Class\FileSupport.cs" />
     <Compile Include="Class\Load.cs" />
+    <Compile Include="Class\PicMatch.cs" />
     <Compile Include="Class\Save.cs" />
     <Compile Include="Class\ZipOperate.cs" />
     <Compile Include="Form\Form_Main.cs">

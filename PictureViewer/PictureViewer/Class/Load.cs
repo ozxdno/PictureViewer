@@ -84,15 +84,20 @@ namespace PictureViewer.Class
         /// <returns></returns>
         public static bool Load_CFG()
         {
-            // 初始化变量
+            #region 初始化变量
+
             Form_Main.config.ExportFolder = "";
             Form_Main.config.FolderIndex = -1;
             Form_Main.config.FileIndex = -1;
             Form_Main.config.SubIndex = -1;
 
             FileOperate.RootFiles = new List<FileOperate.ROOT>();
+            FileSupport.Initialize();
 
-            // 找到配置文件
+            #endregion
+
+            #region 读取配置文件
+
             string fullpath = Form_Main.config.ConfigPath + "\\" + Form_Main.config.ConfigName;
             if (!File.Exists(fullpath)) { SetDefault(); return false; }
             
@@ -168,7 +173,14 @@ namespace PictureViewer.Class
                 return false;
             }
 
-            SetDefault(); srCFG.Close(); return true;
+            #endregion
+
+            #region 设置默认值，关闭文件流
+
+            SetDefault(); srCFG.Close();
+            return true;
+
+            #endregion
         }
 
         ///////////////////////////////////////////////////// private method ///////////////////////////////////////////////

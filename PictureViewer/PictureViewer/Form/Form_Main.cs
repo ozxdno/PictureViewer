@@ -25,6 +25,9 @@ namespace PictureViewer
         /// </summary>
         public static bool NoHide = false;
 
+        /// <summary>
+        /// 配置项
+        /// </summary>
         public static CONFIG config;
         public struct CONFIG
         {
@@ -135,41 +138,101 @@ namespace PictureViewer
         }
 
         ///////////////////////////////////////////////////// private attribute ///////////////////////////////////////////////
-
-        // H 39 W 16
-
+        
+        /// <summary>
+        /// 刷新界面的定时器
+        /// </summary>
         private System.Timers.Timer Timer = new System.Timers.Timer(10);
-        private bool MenuShowed_OnWMP = false;
-        //private bool ShowedBigPicture = false;
+        /// <summary>
+        /// 下一张图片的显示状态（源图/缩放图）
+        /// </summary>
         private bool NextShowBigPicture = false;
-        private int LastKeyValue = 35;
+        /// <summary>
+        /// 是否用小窗口打开
+        /// </summary>
         private bool UseSmallWindowOpen = false;
+        /// <summary>
+        /// 是否使用边框
+        /// </summary>
         private bool UseBoard = true;
+        /// <summary>
+        /// 是否自动调整窗体大小
+        /// </summary>
         private bool UseShapeWindow = false;
+        /// <summary>
+        /// 窗体缩放率
+        /// </summary>
         private int ShapeWindowRate = 80;
+        /// <summary>
+        /// 窗体最大大小
+        /// </summary>
+        private Size MaxWindowSize;
+        /// <summary>
+        /// 窗体最小大小
+        /// </summary>
+        private Size MinWindowSize;
+        /// <summary>
+        /// 边框尺寸
+        /// </summary>
+        private Size BoardSize;
+        /// <summary>
+        /// 开启无文件提示（仅一次）
+        /// </summary>
         private bool TipForInput = false;
+        /// <summary>
+        /// 鼠标左键信息
+        /// </summary>
         private MOUSE mouse;
+        /// <summary>
+        /// 方向键信息
+        /// </summary>
         private KEY key;
+
+        /// <summary>
+        /// 鼠标信息
+        /// </summary>
         private struct MOUSE
         {
             public bool Down;
             public bool Up;
             public Point pDown;
             public Point pUp;
-            public Point Previous;
             public ulong tDown;
             public ulong tUp;
             public uint nDown;
             public uint nUp;
+
+            /// <summary>
+            /// 上一次鼠标所在位置
+            /// </summary>
+            public Point Previous;
         }
+        /// <summary>
+        /// 方向键信息
+        /// </summary>
         private struct KEY
         {
+            /// <summary>
+            /// 是否有键按下
+            /// </summary>
             public bool Down;
+
+            /// <summary>
+            /// 上键已按下
+            /// </summary>
             public bool U;
+            /// <summary>
+            /// 下键已按下
+            /// </summary>
             public bool D;
+            /// <summary>
+            /// 左键已按下
+            /// </summary>
             public bool L;
+            /// <summary>
+            /// 右键已按下
+            /// </summary>
             public bool R;
-            public bool E;
         }
         
         ///////////////////////////////////////////////////// public method ///////////////////////////////////////////////
@@ -185,12 +248,16 @@ namespace PictureViewer
 
         private void Form_Loaded(object sender, EventArgs e)
         {
-            FileSupport.Initialize();
-            
+            #region 配置文件
+
             config.ConfigPath = FileOperate.getExePath();
             config.ConfigName = "pv.pvini";
             //if (!Class.Load.Load_CFG()) { MessageBox.Show("配置文件（pv.pvini）不存在或已损坏"); }
             Class.Load.Load_CFG();
+
+            #endregion
+
+            #region 隐藏上下左右
 
             this.hideToolStripMenuItem.Checked = Class.Load.settings.Form_Main_Hide;
             this.hideUToolStripMenuItem.Checked = Class.Load.settings.Form_Main_Hide_U;
@@ -198,11 +265,21 @@ namespace PictureViewer
             this.hideLToolStripMenuItem.Checked = Class.Load.settings.Form_Main_Hide_L;
             this.hideRToolStripMenuItem.Checked = Class.Load.settings.Form_Main_Hide_R;
 
+            #endregion
+
+            #region 寻找图片的模式
+
             this.fullToolStripMenuItem.Checked = Class.Load.settings.Form_Main_Find_Full;
             this.partToolStripMenuItem.Checked = Class.Load.settings.Form_Main_Find_Part;
             this.sameToolStripMenuItem.Checked = Class.Load.settings.Form_Main_Find_Same;
             this.likeToolStripMenuItem.Checked = Class.Load.settings.Form_Main_Find_Like;
             this.turnToolStripMenuItem.Checked = Class.Load.settings.Form_Main_Find_Turn;
+
+            #endregion
+
+            #region 边框，缩放
+
+            BoardSize = this.Size - this.ClientSize;
 
             if (!Class.Load.settings.Form_Main_UseBoard) { this.FormBorderStyle = FormBorderStyle.None; }
             UseBoard = Class.Load.settings.Form_Main_UseBoard;
@@ -210,17 +287,35 @@ namespace PictureViewer
             ShapeWindowRate = Class.Load.settings.Form_Main_ShapeWindowRate;
             this.shapeToolStripMenuItem.Checked = UseShapeWindow;
 
+            int sh = Screen.PrimaryScreen.Bounds.Height;
+            int sw = Screen.PrimaryScreen.Bounds.Width;
+
+            MaxWindowSize = new Size(sw, sh);
+            MinWindowSize = new Size(sw / 10, sh / 10);
+
+            #endregion
+
+            #region 起始窗体大小，位置
+
             this.UseSmallWindowOpen = Class.Load.settings.Form_Main_UseSmallWindowOpen;
             this.Height = Class.Load.settings.Form_Main_Height;
             this.Width = Class.Load.settings.Form_Main_Width;
             this.Location = new Point(Class.Load.settings.Form_Main_Location_X, Class.Load.settings.Form_Main_Location_Y);
-            
+
+            #endregion
+
+            #region 判断索引号是否有效，调整索引号，显示初始文件
+
             config.SubFiles = new List<string>();
             if (config.FolderIndex < 0 || config.FolderIndex >= FileOperate.RootFiles.Count) { config.FolderIndex = 0; }
             if (config.FileIndex < 0 || FileOperate.RootFiles.Count == 0 || config.FileIndex >= FileOperate.RootFiles[config.FolderIndex].Name.Count)
             { config.FileIndex = 0; }
 
             ShowCurrent();
+
+            #endregion
+
+            #region 根目录列表
 
             for (int i = FileOperate.RootFiles.Count - 1; i >= 0; i--)
             {
@@ -231,17 +326,31 @@ namespace PictureViewer
             if (config.FolderIndex >= 0 && config.FolderIndex < FileOperate.RootFiles.Count)
             { ((ToolStripMenuItem)this.filePathToolStripMenuItem.DropDownItems[config.FolderIndex]).Checked = true; }
 
+            #endregion
+
+            #region 输出目录
+
             this.pathToolStripMenuItem.Text = Directory.Exists(config.ExportFolder) ? config.ExportFolder : config.ConfigPath;
+
+            #endregion
+
+            #region 鼠标参数
 
             mouse.nDown = 0;
             mouse.nUp = 0;
             mouse.tDown = 0;
             mouse.tUp = 0;
 
+            #endregion
+
+            #region 计时器
+
             config.Time = 0;
             Timer.Elapsed += new System.Timers.ElapsedEventHandler(Updata);
             Timer.AutoReset = true;
             Timer.Start();
+
+            #endregion
         }
         private void Form_Closed(object sender, FormClosedEventArgs e)
         {
@@ -277,71 +386,26 @@ namespace PictureViewer
             if (e.KeyValue == 38) { key.U = true; }
             if (e.KeyValue == 39) { key.R = true; }
             if (e.KeyValue == 40) { key.D = true; }
-            LastKeyValue = e.KeyValue;
             key.Down = key.L || key.R || key.U || key.D;
-            if (e.KeyValue < 41 && e.KeyValue > 36 && !this.lockToolStripMenuItem.Checked && (this.HorizontalScroll.Visible || this.VerticalScroll.Visible)) { return; }
+            if (e.KeyValue < 41 && e.KeyValue > 36 && !this.lockToolStripMenuItem.Checked && (this.HorizontalScroll.Visible || this.VerticalScroll.Visible))
+            { return; }
 
             #endregion
 
-            #region 强制上一页
+            #region 上一项
 
             if (e.KeyValue == 17)
             {
-                if (config.FolderIndex < 0 || config.FolderIndex >= FileOperate.RootFiles.Count) { return; }
-                if (config.FileIndex < 0 || config.FileIndex >= FileOperate.RootFiles[config.FolderIndex].Name.Count) { return; }
-                if (this.bigPicToolStripMenuItem.Checked) { NextShowBigPicture = true; }
-
-                if (config.SubFiles != null && config.SubFiles.Count != 0) { config.SubIndex--; if (config.SubIndex < 0) { config.FileIndex--; config.SubIndex = -1; } }
-                else { config.FileIndex--; config.SubIndex = -1; }
-                if (config.FileIndex < 0) { config.FolderIndex--; }
-                if (config.FolderIndex < 0)
-                {
-                    MessageBox.Show("已经是第一个文件了！", "提示");
-                    config.FolderIndex = 0;
-                    config.FileIndex = 0;
-                    config.SubIndex = 0; return;
-                }
-
-                if (config.FileIndex < 0) { config.FileIndex = FileOperate.RootFiles[config.FolderIndex].Name.Count - 1; }
-                string name = FileOperate.RootFiles[config.FolderIndex].Name[config.FileIndex];
-                int type = FileOperate.getFileType(FileOperate.getExtension(name));
-
-                if (type == 1)
-                {
-                    string path = FileOperate.RootFiles[config.FolderIndex].Path;
-                    List<string> files = FileOperate.getSubFiles(path + "\\" + name);
-                    if (config.SubIndex == -1) { config.SubIndex = files.Count - 1; }
-                }
-                ShowCurrent(); key.E = false;
+                RightMenu_Previous(null, null); return;
             }
 
             #endregion
 
-            #region 强制下一页
+            #region 下一项
+
             if (e.KeyValue == 35)
             {
-                if (config.FolderIndex < 0 || config.FolderIndex >= FileOperate.RootFiles.Count) { return; }
-                if (config.FileIndex < 0 || config.FileIndex >= FileOperate.RootFiles[config.FolderIndex].Name.Count) { return; }
-                if (this.bigPicToolStripMenuItem.Checked) { NextShowBigPicture = true; }
-
-                if (config.SubFiles != null && config.SubIndex < config.SubFiles.Count - 1) { config.SubIndex++; if (config.SubIndex >= config.SubFiles.Count) { config.FileIndex++; config.SubIndex = -1; } }
-                else { config.FileIndex++; config.SubIndex = -1; }
-                if (config.FileIndex >= FileOperate.RootFiles[config.FolderIndex].Name.Count) { config.FolderIndex++; config.FileIndex = 0; }
-                if (config.FolderIndex >= FileOperate.RootFiles.Count)
-                {
-                    MessageBox.Show("已经是最后一个文件了！", "提示");
-                    config.FolderIndex = FileOperate.RootFiles.Count - 1;
-                    config.FileIndex = FileOperate.RootFiles[config.FolderIndex].Name.Count - 1;
-                    config.SubIndex = config.SubFiles == null ? 0 : config.SubFiles.Count - 1;
-                    return;
-                }
-                
-                string name = FileOperate.RootFiles[config.FolderIndex].Name[config.FileIndex];
-                int type = FileOperate.getFileType(FileOperate.getExtension(name));
-                if (LastKeyValue != e.KeyValue && type != 1) { config.SubIndex = 0; }
-                if (type == 1 && config.SubIndex == -1) { config.SubIndex = 0; }
-                
-                ShowCurrent(); key.E = false; return;
+                RightMenu_Next(null, null); return;
             }
 
             #endregion
@@ -350,32 +414,16 @@ namespace PictureViewer
 
             if (e.KeyValue == 37)
             {
-                if (FileOperate.RootFiles.Count == 0) { return; }
-                if (this.bigPicToolStripMenuItem.Checked) { NextShowBigPicture = true; }
-
-                config.FileIndex--; if (config.FileIndex < 0) { config.FolderIndex--; }
-                if (config.FolderIndex < 0)
-                { config.FolderIndex = FileOperate.RootFiles.Count - 1; }
-                if (config.FileIndex < 0)
-                { config.FileIndex = FileOperate.RootFiles[config.FolderIndex].Name.Count - 1; }
-
-                config.SubFiles = new List<string>(); config.SubIndex = 0; ShowCurrent();
+                Page_L(null, null); return;
             }
 
             #endregion
 
             #region 后一个
+
             if (e.KeyValue == 39)
             {
-                if (FileOperate.RootFiles.Count == 0) { return; }
-                if (this.bigPicToolStripMenuItem.Checked) { NextShowBigPicture = true; }
-
-                config.FileIndex++;
-                if (config.FileIndex >= FileOperate.RootFiles[config.FolderIndex].Name.Count)
-                { config.FileIndex = 0; config.FolderIndex++; }
-                if (config.FolderIndex >= FileOperate.RootFiles.Count) { config.FolderIndex = 0; }
-
-                config.SubFiles = new List<string>(); config.SubIndex = 0; ShowCurrent();
+                Page_R(null, null); return;
             }
 
             #endregion
@@ -384,12 +432,7 @@ namespace PictureViewer
 
             if (e.KeyValue == 38)
             {
-                if (config.SubFiles == null || config.SubFiles.Count == 0) { return; }
-                if (this.bigPicToolStripMenuItem.Checked) { NextShowBigPicture = true; }
-                config.SubIndex--;
-                if (config.SubIndex < 0) { config.SubIndex = config.SubFiles.Count - 1; }
-
-                ShowCurrent();
+                Page_U(null, null); return;
             }
 
             #endregion
@@ -398,12 +441,7 @@ namespace PictureViewer
 
             if (e.KeyValue == 40)
             {
-                if (config.SubFiles == null || config.SubFiles.Count == 0) { return; }
-                if (this.bigPicToolStripMenuItem.Checked) { NextShowBigPicture = true; }
-                config.SubIndex++;
-                if (config.SubIndex >= config.SubFiles.Count) { config.SubIndex = 0; }
-
-                ShowCurrent();
+                Page_D(null, null); return;
             }
 
             #endregion
@@ -482,12 +520,14 @@ namespace PictureViewer
                 if (input.Input == "#hide2") { HideFiles(); return; }
                 if (input.Input == "#show hide") { NoHide = true; ShowCurrent(); return; }
                 if (input.Input == "#hide hide") { NoHide = false; ShowCurrent();  return; }
-                if (input.Input == "#small window") { UseSmallWindowOpen = true; return; }
-                if (input.Input == "#big window") { UseSmallWindowOpen = false; return; }
+                if (input.Input == "#small") { UseSmallWindowOpen = true; return; }
+                if (input.Input == "#big") { UseSmallWindowOpen = false; return; }
                 if (input.Input.Length != 0 && input.Input[0] != '-')
                 { ZipOperate.A_PassWord(input.Input); ShowCurrent(); }
                 if (input.Input.Length != 0 && input.Input[0] == '-')
                 { ZipOperate.D_PassWord(input.Input); }
+
+                return;
             }
 
             #endregion
@@ -609,12 +649,16 @@ namespace PictureViewer
                 }
                 if (config.SubType == 3)
                 {
-                    ShowCurrent();
-                    return;
+                    ShowBig(); return;
                 }
                 if (config.SubType == 4)
                 {
-                    ShapeVideoWindow(VidWindowIsOK);
+                    if (!VidWindowIsOK) { ShapeControl(4); return; }
+
+                    WMPLib.WMPPlayState state = this.axWindowsMediaPlayer1.playState;
+                    if (state == WMPLib.WMPPlayState.wmppsPaused) { this.axWindowsMediaPlayer1.Ctlcontrols.play(); }
+                    if (state == WMPLib.WMPPlayState.wmppsStopped) { this.axWindowsMediaPlayer1.Ctlcontrols.play(); }
+                    if (state == WMPLib.WMPPlayState.wmppsPlaying) { this.axWindowsMediaPlayer1.Ctlcontrols.pause(); }
                     return;
                 }
 
@@ -639,7 +683,7 @@ namespace PictureViewer
 
             if (config.Type == 3)
             {
-                ShowCurrent(); return;
+                ShowBig(); return;
             }
 
             #endregion
@@ -648,7 +692,12 @@ namespace PictureViewer
 
             if (config.Type == 4)
             {
-                ShapeVideoWindow(VidWindowIsOK);
+                if (!VidWindowIsOK) { ShapeControl(4); return; }
+
+                WMPLib.WMPPlayState state = this.axWindowsMediaPlayer1.playState;
+                if (state == WMPLib.WMPPlayState.wmppsPaused) { this.axWindowsMediaPlayer1.Ctlcontrols.play(); }
+                if (state == WMPLib.WMPPlayState.wmppsStopped) { this.axWindowsMediaPlayer1.Ctlcontrols.play(); }
+                if (state == WMPLib.WMPPlayState.wmppsPlaying) { this.axWindowsMediaPlayer1.Ctlcontrols.pause(); }
                 return;
             }
 
@@ -667,7 +716,7 @@ namespace PictureViewer
                 }
                 if (config.SubType == 3)
                 {
-                    ShowCurrent(); return;
+                    ShowBig(); return;
                 }
 
                 ShowCurrent(); return;
@@ -684,7 +733,6 @@ namespace PictureViewer
         private void Page_U(object sender, EventArgs e)
         {
             if (config.SubFiles == null || config.SubFiles.Count == 0) { return; }
-            if (this.bigPicToolStripMenuItem.Checked) { NextShowBigPicture = true; }
             config.SubIndex--;
             if (config.SubIndex < 0) { config.SubIndex = config.SubFiles.Count - 1; }
 
@@ -693,7 +741,6 @@ namespace PictureViewer
         private void Page_D(object sender, EventArgs e)
         {
             if (config.SubFiles == null || config.SubFiles.Count == 0) { return; }
-            if (this.bigPicToolStripMenuItem.Checked) { NextShowBigPicture = true; }
             config.SubIndex++;
             if (config.SubIndex >= config.SubFiles.Count) { config.SubIndex = 0; }
 
@@ -702,7 +749,6 @@ namespace PictureViewer
         private void Page_L(object sender, EventArgs e)
         {
             if (FileOperate.RootFiles.Count == 0) { return; }
-            if (this.bigPicToolStripMenuItem.Checked) { NextShowBigPicture = true; }
 
             config.FileIndex--; if (config.FileIndex < 0) { config.FolderIndex--; }
             if (config.FolderIndex < 0)
@@ -715,7 +761,6 @@ namespace PictureViewer
         private void Page_R(object sender, EventArgs e)
         {
             if (FileOperate.RootFiles.Count == 0) { return; }
-            if (this.bigPicToolStripMenuItem.Checked) { NextShowBigPicture = true; }
 
             config.FileIndex++;
             if (config.FileIndex >= FileOperate.RootFiles[config.FolderIndex].Name.Count)
@@ -750,10 +795,13 @@ namespace PictureViewer
         {
             if (!UseBoard && !NextShowBigPicture)
             {
+                int ch = UseBoard ? this.Height - BoardSize.Height : this.Height;
+                int cw = UseBoard ? this.Width - BoardSize.Width : this.Width;
+                if (e.Delta > 0) { if (ch >= MaxWindowSize.Height || ch >= MaxWindowSize.Width) { return; } }
+                if (e.Delta < 0) { if (cw <= MinWindowSize.Height || cw <= MinWindowSize.Width) { return; } }
+
                 if (e.Delta > 0) { ShapeWindowRate += 5; }
                 if (e.Delta < 0) { ShapeWindowRate -= 5; }
-                if (ShapeWindowRate < 10) { ShapeWindowRate = 10; }
-                if (ShapeWindowRate > 100) { ShapeWindowRate = 100; }
                 ShowCurrent();
             }
         }
@@ -779,6 +827,18 @@ namespace PictureViewer
                 bool hideL = this.hideLToolStripMenuItem.Checked;
                 bool hideR = this.hideRToolStripMenuItem.Checked;
                 this.hideToolStripMenuItem.Checked = hideL && hideR && hideU && hideD;
+
+                #endregion
+
+                #region 是否使用大图（源图）
+
+                //this.bigPicToolStripMenuItem.Checked = NextShowBigPicture;
+
+                #endregion
+
+                #region 是否显示详细信息
+
+                this.infoToolStripMenuItem.Visible = !UseBoard;
 
                 #endregion
 
@@ -816,6 +876,7 @@ namespace PictureViewer
                 else { this.label1.Visible = false; }
 
                 #endregion
+
                 #region 右翻页
 
                 setW = this.Width / 20;
@@ -843,6 +904,7 @@ namespace PictureViewer
                 else { this.label2.Visible = false; }
 
                 #endregion
+
                 #region 上翻页
 
                 setW = this.Width / 8;
@@ -869,6 +931,7 @@ namespace PictureViewer
                 else { this.label3.Visible = false; }
 
                 #endregion
+
                 #region 下翻页
 
                 setW = this.Width / 8;
@@ -899,7 +962,7 @@ namespace PictureViewer
 
                 #region 拖拽窗体
 
-                if (!NextShowBigPicture && mouse.Down)
+                if (!this.HorizontalScroll.Visible && !this.VerticalScroll.Visible && mouse.Down)
                 {
                     int xMove = MousePosition.X - mouse.Previous.X;
                     int yMove = MousePosition.Y - mouse.Previous.Y;
@@ -938,7 +1001,7 @@ namespace PictureViewer
 
                 #region 刷新播放时间
 
-                if (config.Type == 4 || (config.IsSub && config.SubType == 4))
+                if (this.infoToolStripMenuItem.Visible && (config.Type == 4 || (config.IsSub && config.SubType == 4)))
                 {
                     string index = "[" + (config.FileIndex+1).ToString() + "/" + FileOperate.RootFiles[config.FolderIndex].Name.Count.ToString() + "]";
                     string subindex = "[" + (config.SubIndex + 1).ToString() + "/" + config.SubFiles.Count.ToString() + "]";
@@ -1106,7 +1169,7 @@ namespace PictureViewer
 
             if (config.SourPicture != null) { try { config.SourPicture.Dispose(); } catch { } }
             if (config.DestPicture != null) { try { config.DestPicture.Dispose(); } catch { } }
-            if (!this.axWindowsMediaPlayer1.IsDisposed)
+            if (this.axWindowsMediaPlayer1.playState == WMPLib.WMPPlayState.wmppsPlaying)
             { try { this.axWindowsMediaPlayer1.Ctlcontrols.stop(); } catch { } }
 
             this.pictureBox1.Image = null;
@@ -1245,13 +1308,13 @@ namespace PictureViewer
         private void ShowPicture(string path, string name, bool load = true)
         {
             if (load) { config.SourPicture = (Bitmap)Image.FromFile(path + "\\" + name); }
-            if (UseShapeWindow) { ShapeWindow(); }
-            
-            this.titleToolStripMenuItem1.Text = config.ExistFolder ?
-                this.toolTip1.ToolTipTitle = config.Path :
-                "Not Exist";
-            this.textToolStripMenuItem.Text = this.Text;
 
+            //this.titleToolStripMenuItem1.Text = config.ExistFolder ?
+            //    this.toolTip1.ToolTipTitle = config.Path :
+            //    "Not Exist";
+            //this.textToolStripMenuItem.Text = this.Text;
+
+            ShapeWindow(2);
             if (NextShowBigPicture) { ShowBig(); } else { ShowSmall(); }
             
             this.axWindowsMediaPlayer1.Visible = false;
@@ -1260,43 +1323,27 @@ namespace PictureViewer
         private void ShowGif(string path, string name, bool load = true)
         {
             if (load) { config.SourPicture = (Bitmap)Image.FromFile(path + "\\" + name); }
-            if (UseShapeWindow) { ShapeWindow(); }
-            
-            this.titleToolStripMenuItem1.Text = config.ExistFolder ?
-                this.toolTip1.ToolTipTitle = config.Path :
-                "Not Exist";
-            this.textToolStripMenuItem.Text = this.Text;
 
-            int H = config.SourPicture.Height;
-            int W = config.SourPicture.Width;
-            int X = (this.Width - W - 18) / 2; if (!UseBoard) { X = (this.Width - W) / 2; }
-            int Y = (this.Height - H - 42) / 2; if (!UseBoard) { Y = (this.Height - H) / 2; }
-            key.E = X < 0 || Y < 0;
-            if (X < 1) { X = 1; }
-            if (Y < 1) { Y = 1; }
+            //this.titleToolStripMenuItem1.Text = config.ExistFolder ?
+            //    this.toolTip1.ToolTipTitle = config.Path :
+            //    "Not Exist";
+            //this.textToolStripMenuItem.Text = this.Text;
 
-            this.pictureBox1.Height = config.SourPicture.Height;
-            this.pictureBox1.Width = config.SourPicture.Width;
-            this.pictureBox1.Image = config.SourPicture;
-            this.pictureBox1.Location = new Point(X, Y);
+            ShapeWindow(3);
+            ShowBig();
             
             this.axWindowsMediaPlayer1.Visible = false;
             this.pictureBox1.Visible = true;
         }
         private void ShowVideo(string path, string name)
         {
-            this.titleToolStripMenuItem1.Text = config.ExistFolder ?
-                this.toolTip1.ToolTipTitle = config.Path :
-                "Not Exist";
-            this.textToolStripMenuItem.Text = this.Text;
+            //this.titleToolStripMenuItem1.Text = config.ExistFolder ?
+            //    this.toolTip1.ToolTipTitle = config.Path :
+            //    "Not Exist";
+            //this.textToolStripMenuItem.Text = this.Text;
 
-            this.axWindowsMediaPlayer1.Visible = true;
-            this.pictureBox1.Visible = false;
-            if (!UseBoard && FileOperate.IsMusic(FileOperate.getExtension(name))) { ShapeWindowForMusic(); }
-            
-            this.axWindowsMediaPlayer1.Height = UseBoard ? this.Height - 41 : this.Height - 2;
-            this.axWindowsMediaPlayer1.Width = UseBoard ? this.Width - 18 : this.Width - 2;
-            this.axWindowsMediaPlayer1.Location = new Point(1, 1);
+            ShapeWindow(4, FileOperate.IsMusic(FileOperate.getExtension(name)));
+            ShapeControl(4);
 
             if (axWindowsMediaPlayer1.URL != path + "\\" + name) { axWindowsMediaPlayer1.URL = path + "\\" + name; }
             axWindowsMediaPlayer1.Ctlcontrols.play();
@@ -1344,13 +1391,14 @@ namespace PictureViewer
         }
         private void ShowBig(bool focus = false)
         {
-            if (config.SourPicture == null) { return; }
-            if (focus && config.DestPicture == null) { return; }
-            if (!focus) { this.HorizontalScroll.Value = 0; this.VerticalScroll.Value = 0; }
+            if (config.SourPicture == null || (focus && config.DestPicture == null)) { return; }
+            if (!focus) { SetScrollH(0); SetScrollW(0); }
             
             // 聚焦点
-            int xF = MousePosition.X - this.Location.X - this.pictureBox1.Location.X - 10; if (!UseBoard) { xF += 10; }
-            int yF = MousePosition.Y - this.Location.Y - this.pictureBox1.Location.Y - 30; if (!UseBoard) { yF += 30; }
+            int xF = MousePosition.X - this.Location.X - this.pictureBox1.Location.X;
+            if (UseBoard) { xF -= BoardSize.Width; }
+            int yF = MousePosition.Y - this.Location.Y - this.pictureBox1.Location.Y;
+            if (UseBoard) { yF -= BoardSize.Height; }
             double xR = focus ? (double)xF / config.DestPicture.Width : 0;
             if (xR < 0) { xR = 0; }
             if (xR > 1) { xR = 1; }
@@ -1359,185 +1407,209 @@ namespace PictureViewer
             if (yR > 1) { yR = 1; }
 
             // 显示图片
-            int X = (this.Width - 18 - config.SourPicture.Width) / 2; if (!UseBoard) { X += 9; }
-            int Y = (this.Height - 42 - config.SourPicture.Height) / 2; if (!UseBoard) { Y += 21; }
-            key.E = X < 0 || Y < 0;
-            if (X < 1) { X = 1; }
-            if (Y < 1) { Y = 1; }
-
             this.pictureBox1.Image = config.SourPicture;
-            this.pictureBox1.Location = new Point(X, Y);
-            this.pictureBox1.Height = config.SourPicture.Height;
-            this.pictureBox1.Width = config.SourPicture.Width;
-
+            int ch = UseBoard ? this.Height - BoardSize.Height : this.Height;
+            int cw = UseBoard ? this.Width - BoardSize.Width : this.Width;
+            if (ch > config.SourPicture.Height || cw > config.SourPicture.Width)
+            { ShapeWindow(config.SourPicture.Width, config.SourPicture.Height); }
+            ShapeControl(2);
+            
             // 把聚焦点放到屏幕中央
-            int xS = (int)(config.SourPicture.Width * xR - this.Width / 2 + 40);
-            if (!UseBoard) { xS -= 40; }
+            int xS = (int)(config.SourPicture.Width * xR - this.Width / 2);
             if (xS < this.HorizontalScroll.Minimum) { xS = this.HorizontalScroll.Minimum; }
             if (xS > this.HorizontalScroll.Maximum) { xS = this.HorizontalScroll.Maximum; }
 
-            int yS = (int)(config.SourPicture.Height * yR - this.Height / 2 + 20);
-            if (!UseBoard) { yS -= 20; }
+            int yS = (int)(config.SourPicture.Height * yR - this.Height / 2);
             if (yS < this.VerticalScroll.Minimum) { yS = this.VerticalScroll.Minimum; }
             if (yS > this.VerticalScroll.Maximum) { yS = this.VerticalScroll.Maximum; }
-            
-            #region 调整滑动量，使其可以被接受
 
-            if (X == 1)
-            {
-                int adjust = xS - this.HorizontalScroll.Value;
-                int maxChange = this.HorizontalScroll.LargeChange;
-                while (true)
-                {
-                    if (adjust > maxChange) { this.HorizontalScroll.Value += maxChange; adjust = xS - this.HorizontalScroll.Value; continue; }
-                    if (adjust < -maxChange) { this.HorizontalScroll.Value -= maxChange; adjust = xS - this.HorizontalScroll.Value; continue; }
-                    this.HorizontalScroll.Value = xS; break;
-                }
-            }
-            if (Y == 1)
-            {
-                int adjust = yS - this.VerticalScroll.Value;
-                int maxChange = this.VerticalScroll.LargeChange;
-                while (true)
-                {
-                    if (adjust > maxChange) { this.VerticalScroll.Value += maxChange; adjust = yS - this.VerticalScroll.Value; continue; }
-                    if (adjust < -maxChange) { this.VerticalScroll.Value -= maxChange; adjust = yS - this.VerticalScroll.Value; continue; }
-                    this.VerticalScroll.Value = yS; break;
-                }
-            }
-            this.HorizontalScroll.Value = xS;
-            this.VerticalScroll.Value = yS; return;
-
-            #endregion
+            SetScrollW(xS); SetScrollH(yS);
         }
         private void ShowSmall()
         {
-            this.HorizontalScroll.Value = 0;
-            this.VerticalScroll.Value = 0;
+            if (config.SourPicture == null) { return; }
+            SetScrollW(0); SetScrollH(0);
 
             int sourX = config.SourPicture.Width;
             int sourY = config.SourPicture.Height;
-            int destX = sourX;
-            int destY = sourY;
-            int limitX = this.Width - 18; if (!UseBoard) { limitX = this.Width; }
-            int limitY = this.Height - 42; if (!UseBoard) { limitY = this.Height; }
-
-            double rate = Math.Max((double)sourX / limitX, (double)sourY / limitY);
-            if (rate > 1) { destX = (int)(config.SourPicture.Width / rate); }
-            if (rate > 1) { destY = (int)(config.SourPicture.Height / rate); }
+            int destX = UseBoard ? this.Width - BoardSize.Width : this.Width;
+            int destY = UseBoard ? this.Height - BoardSize.Height : this.Height;
 
             config.DestPicture = (Image)new Bitmap(destX, destY);
             Graphics g = Graphics.FromImage(config.DestPicture);
             g.DrawImage(config.SourPicture, new Rectangle(0, 0, destX, destY), new Rectangle(0, 0, sourX, sourY), GraphicsUnit.Pixel);
             g.Dispose();
-
-            this.pictureBox1.Width = destX;
-            this.pictureBox1.Height = destY;
-            Point location = UseBoard ? new Point((this.Width - 18 - destX) / 2, (this.Height - 42 - destY) / 2) : new Point((this.Width - destX) / 2, (this.Height - destY) / 2);
-            this.pictureBox1.Location = location;
+            
             this.pictureBox1.Image = config.DestPicture;
+            ShapeControl(2);
         }
         private void ShowBoard(bool show)
         {
             if (UseBoard == show) { return; }
+            UseBoard = show;
             
-            int ch = this.Height;
-            int cw = this.Width;
-            if (UseBoard) { ch -= 39; cw -= 16; }
-            if (show) { ch += 39; cw += 16; }
-            if (show) { this.FormBorderStyle = FormBorderStyle.Sizable; } else { this.FormBorderStyle = FormBorderStyle.None; }
-            this.Height = ch; this.Width = cw;
-            UseBoard = show;// ShowCurrent();
+            if (show) { this.Location = new Point(this.Location.X - BoardSize.Width, this.Location.Y - BoardSize.Height); }
+            else { this.Location = new Point(this.Location.X + BoardSize.Width, this.Location.Y + BoardSize.Height); }
+
+            if (show) { this.FormBorderStyle = FormBorderStyle.Sizable; }
+            else { this.FormBorderStyle = FormBorderStyle.None; }
 
             if (show) { this.toolTip1.Dispose(); } else { this.toolTip1 = new ToolTip(); }
         }
-        private void ShapeWindow()
+        private void ShapeWindow(int type, bool isMusic = false)
         {
-            if (config.SourPicture == null) { return; }
-            int recth = this.Height; int rectw = this.Width;
-            if (UseBoard) { recth -= 39; rectw -= 16; }
-
-            int inith = recth;
-            int initw = rectw;
-
+            if (!UseShapeWindow) { return; }
             int sh = Screen.PrimaryScreen.Bounds.Height;
             int sw = Screen.PrimaryScreen.Bounds.Width;
-            int ph = config.SourPicture.Height;
-            int pw = config.SourPicture.Width;
+            int shapeh = sh / 2, shapew = sw / 2;
 
-            int xloc = this.Location.X;
-            int yloc = this.Location.Y;
+            int inith = this.Height;
+            int initw = this.Width;
 
-            int maxh = sh * ShapeWindowRate / 100, minh = sh * ShapeWindowRate / 100;
-            int maxw = sw * ShapeWindowRate / 100, minw = sw * ShapeWindowRate / 100;
-            if (recth > maxh) { recth = maxh; }
-            if (recth < minh) { recth = minh; }
-            if (rectw > maxw) { rectw = maxw; }
-            if (rectw < minw) { rectw = minw; }
+            #region 图片文件自适应窗体大小
 
-            if (ph <= maxh && pw <= maxw && sh > ph && sw > pw)
+            if (type == 2 && config.SourPicture != null)
             {
-                xloc -= (pw - initw) / 2; yloc -= (ph - inith) / 2;
-                this.Location = new Point(xloc, yloc);
+                int maxh = sh * ShapeWindowRate / 100;
+                int maxw = sw * ShapeWindowRate / 100;
+                int pich = config.SourPicture.Height;
+                int picw = config.SourPicture.Width;
 
-                if (UseBoard) { this.Height = ph + 39; this.Width = pw + 16; return; }
-                this.Height = ph; this.Width = pw; return;
+                double h2w = (double)pich / picw;
+
+                if (pich >= picw) { shapeh = maxh; shapew = (int)(shapeh / h2w); }
+                else { shapew = maxw; shapeh = (int)(shapew * h2w); }
             }
 
-            double h2w = (double)config.SourPicture.Height / config.SourPicture.Width;
-            int shapeh = recth; int shapew = (int)(shapeh / h2w);
-            if (shapew >= sw) { shapew = rectw; shapeh = (int)(h2w * shapew); }
+            #endregion
 
-            xloc -= (shapew - initw) / 2; yloc -= (shapeh - inith) / 2;
-            this.Location = new Point(xloc, yloc);
+            #region GIF 文件自适应窗体大小
 
-            if (UseBoard) { this.Height = shapeh + 39; this.Width = shapew + 16; return; }
-            this.Height = shapeh; this.Width = shapew;
+            if (type == 3)
+            {
+                int maxh = sh * ShapeWindowRate / 100;
+                int maxw = sw * ShapeWindowRate / 100;
+                int pich = config.SourPicture.Height;
+                int picw = config.SourPicture.Width;
+
+                double h2w = (double)pich / picw;
+
+                if (pich >= picw) { shapeh = maxh; shapew = (int)(shapeh / h2w); }
+                else { shapew = maxw; shapeh = (int)(shapew * h2w); }
+            }
+
+            #endregion
+
+            #region 音频文件自适应窗体大小
+
+            if (type == 4 && isMusic)
+            {
+                shapeh = sh / 10;
+                shapew = sw / 10;
+            }
+
+            #endregion
+
+            #region 视频文件自适应窗体大小
+
+            if (type == 4 && !isMusic)
+            {
+                shapeh = sh / 2;
+                shapew = sw / 2;
+            }
+
+            #endregion
+            
+            this.Height = UseBoard ? shapeh + BoardSize.Height : shapeh;
+            this.Width = UseBoard ? shapew + BoardSize.Width : shapew;
+            int x = this.Location.X - (this.Width - initw) / 2;
+            int y = this.Location.Y - (this.Height - inith) / 2;
+            this.Location = new Point(x, y);
         }
-        private void ShapeWindowForMusic()
+        private void ShapeWindow(int shapew, int shapeh)
         {
-            int recth = this.Height; int rectw = this.Width;
-            if (UseBoard) { recth -= 39; rectw -= 16; }
-            int rate = 40;
+            if (!UseShapeWindow) { return; }
 
-            int inith = recth;
-            int initw = rectw;
+            int inith = this.Height;
+            int initw = this.Width;
 
-            int sh = Screen.PrimaryScreen.Bounds.Height;
-            int sw = Screen.PrimaryScreen.Bounds.Width;
-
-            int shapew = Math.Min(sh, sw);
-            int shapeh = shapew;
-            shapew = shapew / 4 * rate / 100;
-            shapeh = shapew;
-
-            int xloc = this.Location.X;
-            int yloc = this.Location.Y;
-            xloc -= (shapew - initw) / 2; yloc -= (shapeh - inith) / 2;
-            this.Location = new Point(xloc, yloc);
-
-            if (UseBoard) { this.Height = shapeh + 39; this.Width = shapew + 16; return; }
-            this.Height = shapeh; this.Width = shapew;
+            this.Height = UseBoard ? shapeh + BoardSize.Height : shapeh;
+            this.Width = UseBoard ? shapew + BoardSize.Width : shapew;
+            int x = this.Location.X - (this.Width - initw) / 2;
+            int y = this.Location.Y - (this.Height - inith) / 2;
+            this.Location = new Point(x, y);
         }
-        private void ShapeVideoWindow(bool change = false)
+        private void ShapeControl(int type)
         {
-            if (!this.axWindowsMediaPlayer1.Visible) { return; }
+            #region picture box
 
-            int inith = this.axWindowsMediaPlayer1.Height;
-            int initw = this.axWindowsMediaPlayer1.Width;
+            if (type == 2 || type == 3)
+            {
+                if (config.SourPicture == null || (!NextShowBigPicture && config.DestPicture == null)) { return; }
 
-            this.axWindowsMediaPlayer1.Height = UseBoard ? this.Height - 41 : this.Height - 2;
-            this.axWindowsMediaPlayer1.Width = UseBoard ? this.Width - 18 : this.Width - 2;
-            this.axWindowsMediaPlayer1.Location = new Point(1, 1);
+                int shapeh = 0, shapew = 0;
+                if (NextShowBigPicture) { shapeh = config.SourPicture.Height; shapew = config.SourPicture.Width; }
+                else { shapeh = config.DestPicture.Height; shapew = config.DestPicture.Width; }
 
-            if (inith != this.axWindowsMediaPlayer1.Height || initw != this.axWindowsMediaPlayer1.Width)
-            { return; }
+                this.pictureBox1.Height = shapeh;
+                this.pictureBox1.Width = shapew;
 
-            WMPLib.WMPPlayState curState = this.axWindowsMediaPlayer1.playState;
+                int recth = UseBoard ? this.Height - BoardSize.Height : this.Height; ;
+                int rectw = UseBoard ? this.Width - BoardSize.Width : this.Width; ;
+                int x = shapew > rectw ? 0 : (rectw - shapew) / 2;
+                int y = shapeh > recth ? 0 : (recth - shapeh) / 2;
 
-            if (change && curState == WMPLib.WMPPlayState.wmppsPaused) { this.axWindowsMediaPlayer1.Ctlcontrols.play(); }
-            if (change && curState == WMPLib.WMPPlayState.wmppsPlaying) { this.axWindowsMediaPlayer1.Ctlcontrols.pause(); }
-            if (change && curState == WMPLib.WMPPlayState.wmppsStopped) { this.axWindowsMediaPlayer1.Ctlcontrols.play(); }
+                this.pictureBox1.Location = new Point(x, y);
+            }
+
+            #endregion
+
+            #region wmp
+
+            if (type == 4)
+            {
+                this.axWindowsMediaPlayer1.Location = new Point(1, 1);
+
+                int ch = UseBoard ? this.Height - BoardSize.Height : this.Height;
+                int cw = UseBoard ? this.Width - BoardSize.Width : this.Width;
+
+                this.axWindowsMediaPlayer1.Height = ch - 1;
+                this.axWindowsMediaPlayer1.Width = cw - 1;
+            }
+
+            #endregion
+        }
+        private void SetScrollH(int value)
+        {
+            int current = this.VerticalScroll.Value;
+            int pace = this.VerticalScroll.LargeChange;
+            int adjust = value - current;
+
+            while (adjust > pace || adjust < -pace)
+            {
+                int move = adjust > 0 ? pace : -pace;
+                this.VerticalScroll.Value += move;
+                adjust = value - this.VerticalScroll.Value;
+            }
+
+            this.VerticalScroll.Value = value;
+            this.VerticalScroll.Value = value;
+        }
+        private void SetScrollW(int value)
+        {
+            int current = this.HorizontalScroll.Value;
+            int pace = this.HorizontalScroll.LargeChange;
+            int adjust = value - current;
+
+            while (adjust > pace || adjust < -pace)
+            {
+                int move = adjust > 0 ? pace : -pace;
+                this.HorizontalScroll.Value += move;
+                adjust = value - this.HorizontalScroll.Value;
+            }
+
+            this.HorizontalScroll.Value = value;
+            this.HorizontalScroll.Value = value;
         }
 
         private void HideFiles()
@@ -1636,7 +1708,7 @@ namespace PictureViewer
 
         private void RightMenu_Refresh(object sender, EventArgs e)
         {
-            if (config.Type == 4 || (config.IsSub && config.SubType == 4)) { ShapeVideoWindow(); return; }
+            if (config.Type == 4 || (config.IsSub && config.SubType == 4)) { ShapeControl(4); return; }
             ShowCurrent();
         }
         private void RightMenu_Input(object sender, EventArgs e)
@@ -1977,8 +2049,7 @@ namespace PictureViewer
         }
         private void RightMenu_BigPicture(object sender, EventArgs e)
         {
-            this.bigPicToolStripMenuItem.Checked = !this.bigPicToolStripMenuItem.Checked;
-            NextShowBigPicture = this.bigPicToolStripMenuItem.Checked;
+            NextShowBigPicture = !this.bigPicToolStripMenuItem.Checked;
             ShowCurrent();
         }
         private void RightMenu_Find(object sender, EventArgs e)
@@ -2089,7 +2160,6 @@ namespace PictureViewer
         {
             if (config.FolderIndex < 0 || config.FolderIndex >= FileOperate.RootFiles.Count) { return; }
             if (config.FileIndex < 0 || config.FileIndex >= FileOperate.RootFiles[config.FolderIndex].Name.Count) { return; }
-            if (this.bigPicToolStripMenuItem.Checked) { NextShowBigPicture = true; }
 
             int tFolder = config.FolderIndex;
             int tFile = config.FileIndex;
@@ -2122,13 +2192,12 @@ namespace PictureViewer
                 List<string> files = FileOperate.getSubFiles(path + "\\" + name);
                 if (config.SubIndex == -1) { config.SubIndex = files.Count - 1; }
             }
-            ShowCurrent(); key.E = false;
+            ShowCurrent();
         }
         private void RightMenu_Next(object sender, EventArgs e)
         {
             if (config.FolderIndex < 0 || config.FolderIndex >= FileOperate.RootFiles.Count) { return; }
             if (config.FileIndex < 0 || config.FileIndex >= FileOperate.RootFiles[config.FolderIndex].Name.Count) { return; }
-            if (this.bigPicToolStripMenuItem.Checked) { NextShowBigPicture = true; }
 
             int tFolder = config.FolderIndex;
             int tFile = config.FileIndex;
@@ -2157,7 +2226,7 @@ namespace PictureViewer
             if (type != 1) { config.SubIndex = 0; }
             if (type == 1 && config.SubIndex == -1) { config.SubIndex = 0; }
 
-            ShowCurrent(); key.E = false; return;
+            ShowCurrent();
         }
 
         private void Form_DragEntre(object sender, DragEventArgs e)

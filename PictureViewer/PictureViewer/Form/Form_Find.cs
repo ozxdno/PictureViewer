@@ -754,6 +754,20 @@ namespace PictureViewer
             Threads[2].thread.Start();
             Threads[3].thread.Start();
 
+            //PicMatch pm = new PicMatch();
+            //pm.Picture = CopyPicture(SourPic, rate);
+            //pm.Mode = PicMatch.MODE.PART_LIKE_NOTURN;
+            //pm.IndexCmp = 0;
+            //pm.Degree = config.Degree;
+            //pm.Pixes = config.MinCmpPix;
+            //pm.Row = config.Row;
+            //pm.Col = config.Col;
+            //pm.SetGrays();
+            //pm.CmpFiles.Clear();
+            //for (int i = 0; i < Names.Count; i++) { pm.CmpFiles.Add(Paths[i] + "\\" + Names[i]); }
+            //Thread t = new Thread(pm.Start);
+            //t.Start();
+
             this.startToolStripMenuItem.Text = "Stop";
         }
         private void Stop()
