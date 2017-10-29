@@ -31,6 +31,13 @@ namespace PictureViewer.Class
         ////////////////////////////////////////////////////// public method /////////////////////////////////////////////////////
 
         /// <summary>
+        /// 释放 ZIP 占用资源。
+        /// </summary>
+        public static void Dispose()
+        {
+            if (zip != null) { zip.Dispose(); }
+        }
+        /// <summary>
         /// 添加备用密码
         /// </summary>
         /// <param name="pw">密码字符串</param>
@@ -152,7 +159,7 @@ namespace PictureViewer.Class
                 e = zip.GetNextEntry();
             }
 
-            return 0;
+            zip.Dispose(); return 0;
         }
         /// <summary>
         /// 读取 ZIP 文件中的压缩文件列表。
@@ -180,7 +187,7 @@ namespace PictureViewer.Class
                 e = zip.GetNextEntry();
             }
 
-            return files;
+            zip.Dispose(); return files;
         }
         /// <summary>
         /// 读取 ZIP 压缩包中的指定图片文件加载至缓存中，返回加载是否成功（有密码）
@@ -198,10 +205,10 @@ namespace PictureViewer.Class
             {
                 if (e.Name != name) { e = zip.GetNextEntry(); continue; }
                 Form_Main.config.SourPicture = Image.FromStream(zip);
-                return true;
+                zip.Dispose(); return true;
             }
 
-            return false;
+            zip.Dispose(); return false;
         }
         /// <summary>
         /// 读取 ZIP 压缩包中的 GIF 文件加载至缓存中，返回加载是否成功（有密码）
@@ -219,10 +226,10 @@ namespace PictureViewer.Class
             {
                 if (e.Name != name) { e = zip.GetNextEntry(); continue; }
                 Form_Main.config.SourPicture = Image.FromStream(zip);
-                return true;
+                zip.Dispose(); return true;
             }
 
-            return false;
+            zip.Dispose(); return false;
         }
 
 

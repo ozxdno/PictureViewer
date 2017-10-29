@@ -40,6 +40,7 @@ namespace PictureViewer.Class
             public int Form_Main_Width { set { Load.settings.Form_Main_Width = value; } }
             public int Form_Main_Location_X { set { Load.settings.Form_Main_Location_X = value; } }
             public int Form_Main_Location_Y { set { Load.settings.Form_Main_Location_Y = value; } }
+            public bool Form_Main_Lock { set { Load.settings.Form_Main_Lock = value; } }
 
             public int Form_Find_Degree { set { Load.settings.Form_Find_Degree = value; } }
             public int Form_Find_Pixes { set { Load.settings.Form_Find_Pixes = value; } }
@@ -108,6 +109,7 @@ namespace PictureViewer.Class
                 swCFG.WriteLine("Form_Main_Width=" + Load.settings.Form_Main_Width.ToString());
                 swCFG.WriteLine("Form_Main_Location_X=" + Load.settings.Form_Main_Location_X.ToString());
                 swCFG.WriteLine("Form_Main_Location_Y=" + Load.settings.Form_Main_Location_Y.ToString());
+                swCFG.WriteLine("Form_Main_Lock=" + (Load.settings.Form_Main_Lock ? "1" : "0"));
                 swCFG.WriteLine("");
 
                 swCFG.WriteLine("Form_Main_UseBoard=" + (Load.settings.Form_Main_UseBoard ? "1" : "0"));

@@ -43,6 +43,7 @@ namespace PictureViewer.Class
             public bool Form_Main_UseBoard;
             public bool Form_Main_ShapeWindow;
             public int Form_Main_ShapeWindowRate;
+            public bool Form_Main_Lock;
 
             public int Form_Find_Degree;
             public int Form_Find_Pixes;
@@ -71,6 +72,7 @@ namespace PictureViewer.Class
             public bool Form_Main_UseBoard;
             public bool Form_Main_ShapeWindow;
             public bool Form_Main_ShapeWindowRate;
+            public bool Form_Main_Lock;
 
             public bool Form_Find_Degree;
             public bool Form_Find_Pixes;
@@ -143,6 +145,7 @@ namespace PictureViewer.Class
                         case "Form_Main_UseBoard": settings.Form_Main_UseBoard = int.Parse(Item[1]) != 0; Found.Form_Main_UseBoard = true; break;
                         case "Form_Main_ShapeWindow": settings.Form_Main_ShapeWindow = int.Parse(Item[1]) != 0; Found.Form_Main_ShapeWindow = true; break;
                         case "Form_Main_ShapeWindowRate":settings.Form_Main_ShapeWindowRate = int.Parse(Item[1]); Found.Form_Main_ShapeWindowRate = true; break;
+                        case "Form_Main_Lock": settings.Form_Main_Lock = int.Parse(Item[1]) != 0; Found.Form_Main_Lock = true; break;
                         default: break;
                     }
                 }
@@ -218,6 +221,7 @@ namespace PictureViewer.Class
             if (!Found.Form_Main_UseBoard) { settings.Form_Main_UseBoard = false; }
             if (!Found.Form_Main_ShapeWindow) { settings.Form_Main_ShapeWindow = true; }
             if (!Found.Form_Main_ShapeWindowRate) { settings.Form_Main_ShapeWindowRate = 80; }
+            if (!Found.Form_Main_Lock) { settings.Form_Main_Lock = false; }
 
             if (!Found.Form_Main_Location_X) { settings.Form_Main_Location_X = sw * 25 / 100; }
             if (!Found.Form_Main_Location_Y) { settings.Form_Main_Location_Y = sh * 25 / 100; }
