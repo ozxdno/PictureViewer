@@ -44,6 +44,8 @@ namespace PictureViewer.Class
             public bool Form_Main_ShapeWindow;
             public int Form_Main_ShapeWindowRate;
             public bool Form_Main_Lock;
+            public int Form_Main_MaxWindowSize;
+            public int Form_Main_MinWindowSize;
 
             public int Form_Find_Degree;
             public int Form_Find_Pixes;
@@ -73,6 +75,8 @@ namespace PictureViewer.Class
             public bool Form_Main_ShapeWindow;
             public bool Form_Main_ShapeWindowRate;
             public bool Form_Main_Lock;
+            public bool Form_Main_MaxWindowSize;
+            public bool Form_Main_MinWindowSize;
 
             public bool Form_Find_Degree;
             public bool Form_Find_Pixes;
@@ -112,7 +116,9 @@ namespace PictureViewer.Class
                     Line = srCFG.ReadLine(); if (Line == "") { continue; }
                     Item = Line.Split('=');
 
-                    switch(Item[0])
+                    #region 文本
+
+                    switch (Item[0])
                     {
                         case "ExportFolder": Form_Main.config.ExportFolder = Item.Length == 1 ? "" : Item[1]; break;
                         case "FolderIndex": Form_Main.config.FolderIndex = int.Parse(Item[1]); break;
@@ -146,27 +152,49 @@ namespace PictureViewer.Class
                         case "Form_Main_ShapeWindow": settings.Form_Main_ShapeWindow = int.Parse(Item[1]) != 0; Found.Form_Main_ShapeWindow = true; break;
                         case "Form_Main_ShapeWindowRate":settings.Form_Main_ShapeWindowRate = int.Parse(Item[1]); Found.Form_Main_ShapeWindowRate = true; break;
                         case "Form_Main_Lock": settings.Form_Main_Lock = int.Parse(Item[1]) != 0; Found.Form_Main_Lock = true; break;
+                        case "Form_Main_MaxWindowSize": settings.Form_Main_MaxWindowSize = int.Parse(Item[1]); Found.Form_Main_MaxWindowSize = true; break;
+                        case "Form_Main_MinWindowSize": settings.Form_Main_MinWindowSize = int.Parse(Item[1]); Found.Form_Main_MinWindowSize = true; break;
                         default: break;
+                    }
+
+                    #endregion
+
+                    #region 根目录
+
+                    for (int i = 0; i < RootPath.Length; i++)
+                    {
+                        FileOperate.ROOT root = new FileOperate.ROOT();
+                        root.Path = RootPath[i];
+                        root.Name = new List<string>();
+                        if (!Directory.Exists(root.Path)) { continue; }
+
+                        DirectoryInfo dir = new DirectoryInfo(root.Path);
+                        FileInfo[] files = dir.GetFiles();
+                        DirectoryInfo[] folders = dir.GetDirectories();
+
+                        foreach (DirectoryInfo folder in folders) { root.Name.Add(folder.Name); }
+                        foreach (FileInfo file in files)
+                        { if (FileOperate.IsSupport(FileOperate.getExtension(file.Name))) { root.Name.Add(file.Name); } }
+
+                        FileOperate.RootFiles.Add(root);
+                    }
+                    RootPath = new string[0];
+
+                    #endregion
+                }
+
+                #region 去除重复根目录
+
+                for (int i = FileOperate.RootFiles.Count - 1; i >= 0; i--)
+                {
+                    for (int j = 0; j < i; j++)
+                    {
+                        if (FileOperate.RootFiles[i].Path != FileOperate.RootFiles[j].Path) { continue; }
+                        FileOperate.RootFiles.RemoveAt(i); break;
                     }
                 }
 
-                for (int i = 0; i < RootPath.Length; i++)
-                {
-                    FileOperate.ROOT root = new FileOperate.ROOT();
-                    root.Path = RootPath[i];
-                    root.Name = new List<string>();
-                    if (!Directory.Exists(root.Path)) { continue; }
-
-                    DirectoryInfo dir = new DirectoryInfo(root.Path);
-                    FileInfo[] files = dir.GetFiles();
-                    DirectoryInfo[] folders = dir.GetDirectories();
-
-                    foreach (DirectoryInfo folder in folders) { root.Name.Add(folder.Name); }
-                    foreach (FileInfo file in files)
-                    { if (FileOperate.IsSupport(FileOperate.getExtension(file.Name))) { root.Name.Add(file.Name); } }
-
-                    FileOperate.RootFiles.Add(root);
-                }
+                #endregion
             }
             catch
             {
@@ -225,6 +253,9 @@ namespace PictureViewer.Class
 
             if (!Found.Form_Main_Location_X) { settings.Form_Main_Location_X = sw * 25 / 100; }
             if (!Found.Form_Main_Location_Y) { settings.Form_Main_Location_Y = sh * 25 / 100; }
+
+            if (!Found.Form_Main_MaxWindowSize) { settings.Form_Main_MaxWindowSize = 90; }
+            if (!Found.Form_Main_MinWindowSize) { settings.Form_Main_MinWindowSize = 10; }
 
             #endregion
         }

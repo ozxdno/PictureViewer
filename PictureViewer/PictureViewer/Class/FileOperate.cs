@@ -476,6 +476,45 @@ namespace PictureViewer.Class
         }
 
         /// <summary>
+        /// 指定序号的路径（根目录）是否存在
+        /// </summary>
+        /// <param name="FolderIndex">指定路径（根目录）</param>
+        /// <returns></returns>
+        public static bool ExistFolder(int FolderIndex)
+        {
+            return FolderIndex >= 0 && FolderIndex < RootFiles.Count;
+        }
+        /// <summary>
+        /// 指定序号的文件是否存在
+        /// </summary>
+        /// <param name="FolderIndex">指定路径（根目录）</param>
+        /// <param name="FileIndex">指定文件</param>
+        /// <returns></returns>
+        public static bool ExistFile(int FolderIndex, int FileIndex)
+        {
+            if (!ExistFolder(FolderIndex)) { return false; }
+            return FileIndex >= 0 && FileIndex < RootFiles[FolderIndex].Name.Count;
+        }
+        /// <summary>
+        /// 判断该后缀是否为漫画文件后缀（子文件夹）
+        /// </summary>
+        /// <param name="extension">后缀</param>
+        /// <returns></returns>
+        public static bool IsComic(string extension)
+        {
+            int type = FileSupport.getFileType(extension);
+            return IsComic(type);
+        }
+        /// <summary>
+        /// 判断该类型的文件是否为漫画文件（子文件夹）
+        /// </summary>
+        /// <param name="type">文件类型</param>
+        /// <returns></returns>
+        public static bool IsComic(int type)
+        {
+            return type == 1 || type == 5;
+        }
+        /// <summary>
         /// 判断该后缀是否为音频文件后缀
         /// </summary>
         /// <param name="extension">后缀</param>
@@ -492,6 +531,39 @@ namespace PictureViewer.Class
         public static bool IsVideo(string extension)
         {
             return FileSupport.IsVideo(extension);
+        }
+        
+        /// <summary>
+        /// 获取指定序号的根目录，超出范围会自动更正，不存在返回 NULL
+        /// </summary>
+        /// <param name="FolderIndex">指定根目录序号</param>
+        /// <returns></returns>
+        public static string getIndexPath(int FolderIndex)
+        {
+            if (RootFiles.Count == 0) { return null; }
+
+            if (FolderIndex < 0) { FolderIndex = 0; }
+            if (FolderIndex >= RootFiles.Count) { FolderIndex = RootFiles.Count - 1; }
+
+            return RootFiles[FolderIndex].Path;
+        }
+        /// <summary>
+        /// 获取指定序号文件的文件名，超出范围会自动更正，不存在返回 NULL
+        /// </summary>
+        /// <param name="FolderIndex">指定根目录序号</param>
+        /// <param name="FileIndex">指定文件序号</param>
+        /// <returns></returns>
+        public static string getIndexName(int FolderIndex, int FileIndex)
+        {
+            if (RootFiles.Count == 0) { return null; }
+            if (FolderIndex < 0) { FolderIndex = 0; }
+            if (FolderIndex >= RootFiles.Count) { FolderIndex = RootFiles.Count - 1; }
+
+            if (RootFiles[FolderIndex].Name.Count == 0) { return null; }
+            if (FileIndex < 0) { FileIndex = 0; }
+            if (FileIndex >= RootFiles[FolderIndex].Name.Count) { FileIndex = RootFiles[FolderIndex].Name.Count - 1; }
+
+            return RootFiles[FolderIndex].Name[FileIndex];
         }
 
         ///////////////////////////////////////////////////// private method ///////////////////////////////////////////////

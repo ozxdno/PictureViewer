@@ -74,10 +74,11 @@ namespace PictureViewer.Class
                 swCFG.WriteLine("ExportFolder=" + Form_Main.config.ExportFolder);
                 swCFG.WriteLine("");
 
-                string RootPath = ""; if (FileOperate.RootFiles.Count != 0) { RootPath = FileOperate.RootFiles[0].Path; }
-                for (int i = 1; i < FileOperate.RootFiles.Count; i++)
-                { RootPath += "|" + FileOperate.RootFiles[i].Path; }
-                swCFG.WriteLine("RootPath=" + RootPath);
+                //string RootPath = ""; if (FileOperate.RootFiles.Count != 0) { RootPath = FileOperate.RootFiles[0].Path; }
+                //for (int i = 1; i < FileOperate.RootFiles.Count; i++)
+                //{ RootPath += "|" + FileOperate.RootFiles[i].Path; }
+                for (int i = 0; i < FileOperate.RootFiles.Count; i++)
+                { swCFG.WriteLine("RootPath=" + FileOperate.RootFiles[i].Path); }
                 swCFG.WriteLine("");
 
                 //swCFG.WriteLine("FileType0=" + FileSupport.O_FileType(0));
@@ -115,6 +116,8 @@ namespace PictureViewer.Class
                 swCFG.WriteLine("Form_Main_UseBoard=" + (Load.settings.Form_Main_UseBoard ? "1" : "0"));
                 swCFG.WriteLine("Form_Main_ShapeWindow=" + (Load.settings.Form_Main_ShapeWindow ? "1" : "0"));
                 swCFG.WriteLine("Form_Main_ShapeWindowRate=" + Load.settings.Form_Main_ShapeWindowRate.ToString());
+                swCFG.WriteLine("Form_Main_MaxWindowSize=" + Load.settings.Form_Main_MaxWindowSize.ToString());
+                swCFG.WriteLine("Form_Main_MinWindowSize=" + Load.settings.Form_Main_MinWindowSize.ToString());
                 swCFG.WriteLine("");
             }
             catch { swCFG.Close(); return false; } swCFG.Close(); return true;

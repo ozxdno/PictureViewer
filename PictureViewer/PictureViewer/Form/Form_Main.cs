@@ -184,17 +184,25 @@ namespace PictureViewer
         /// <summary>
         /// 客户区高度
         /// </summary>
-        private int ClientHeight { get { return UseBoard ? this.Height - BoardSize.Height : this.Height; } }
+        private int ClientHeight
+        {
+            get { return UseBoard ? this.Height - BoardSize.Height : this.Height; }
+            set { this.Height = UseBoard ? value + BoardSize.Height : value; }
+        }
         /// <summary>
         /// 客户区宽度
         /// </summary>
-        private int ClientWidth { get { return UseBoard ? this.Width - BoardSize.Width : this.Width; } }
+        private int ClientWidth
+        {
+            get { return UseBoard ? this.Width - BoardSize.Width : this.Width; }
+            set { this.Width = UseBoard ? value + BoardSize.Width : value; }
+        }
         /// <summary>
         /// 开启无文件提示（仅一次）
         /// </summary>
         private bool TipForInput = false;
         /// <summary>
-        /// 上一次滚轮翻页时间
+        /// 上一次滚轮翻页时间，最大值（ulong.MaxValue）表示正在翻页
         /// </summary>
         private ulong WheelPageTime;
         /// <summary>
@@ -301,9 +309,11 @@ namespace PictureViewer
 
             int sh = Screen.PrimaryScreen.Bounds.Height;
             int sw = Screen.PrimaryScreen.Bounds.Width;
+            int max = Class.Load.settings.Form_Main_MaxWindowSize;
+            int min = Class.Load.settings.Form_Main_MinWindowSize;
 
-            MaxWindowSize = new Size(sw, sh);
-            MinWindowSize = new Size(sw / 10, sh / 10);
+            MaxWindowSize = new Size(sw * max / 100, sh * max / 100);
+            MinWindowSize = new Size(sw * min / 100, sh * min / 100);
 
             #endregion
 
@@ -395,7 +405,7 @@ namespace PictureViewer
             Class.Save.settings.Form_Main_ShapeWindow = UseShapeWindow;
             Class.Save.settings.Form_Main_ShapeWindowRate = ShapeWindowRate;
             Class.Save.settings.Form_Main_Lock = this.lockToolStripMenuItem.Checked;
-
+            
             Timer.Close(); Class.Save.Save_CFG();
         }
         private void Form_KeyDown(object sender, KeyEventArgs e)
@@ -854,6 +864,8 @@ namespace PictureViewer
 
             if (this.lockToolStripMenuItem.Checked)
             {
+                if (WheelPageTime == ulong.MaxValue) { return; }
+
                 if (config.Time - WheelPageTime < 20) { return; }
                 WheelPageTime = config.Time;
 
@@ -867,13 +879,13 @@ namespace PictureViewer
             #region 根据文件类型确定待执行的代码段
 
             int codephase = config.IsSub ? config.SubType : config.Type;
-            if (codephase == -1) { codephase = 2; }
+            if (!NoHide && (config.IsSub ? config.SubHide : config.Hide)) { codephase = -1; }
 
             #endregion
 
             #region 图片型文件滑动滚轮操作
 
-            if (codephase == 2)
+            if (codephase == -1 || codephase == 2)
             {
                 // 必须存在源图
                 if (config.SourPicture == null) { return; }
@@ -890,8 +902,8 @@ namespace PictureViewer
                 // 下一次的显示比例
                 if (e.Delta > 0) { ShapeWindowRate = currRate + 5; }
                 if (e.Delta < 0) { ShapeWindowRate = currRate - 5; }
-                if (ShapeWindowRate <= 0) { ShapeWindowRate = 5; }
-                if (ShapeWindowRate >= MaxWindowSize.Height / ch * 100) { ShapeWindowRate = MaxWindowSize.Height / ch * 100; }
+                if (ShapeWindowRate <= Class.Load.settings.Form_Main_MinWindowSize) { ShapeWindowRate = Class.Load.settings.Form_Main_MinWindowSize; }
+                if (ShapeWindowRate >= Class.Load.settings.Form_Main_MaxWindowSize) { ShapeWindowRate = Class.Load.settings.Form_Main_MaxWindowSize; }
 
                 // 不自动裁剪窗体时，显示图片的比例不能大于当前窗口（出现滚动条）
                 int nexth = sh * ShapeWindowRate / 100;
@@ -913,6 +925,8 @@ namespace PictureViewer
                 }
 
                 // 显示图片
+                if (ShapeWindowRate <= Class.Load.settings.Form_Main_MinWindowSize) { ShapeWindowRate = Class.Load.settings.Form_Main_MinWindowSize; }
+                if (ShapeWindowRate >= Class.Load.settings.Form_Main_MaxWindowSize) { ShapeWindowRate = Class.Load.settings.Form_Main_MaxWindowSize; }
                 ShowRate();
             }
 
@@ -1114,7 +1128,7 @@ namespace PictureViewer
 
                 #region 刷新播放时间
 
-                if (config.Type == 4 || (config.IsSub && config.SubType == 4))
+                if ((config.Type == 4 && !config.Hide && NoHide) || (config.IsSub && config.SubType == 4 && NoHide && !config.SubHide))
                 {
                     string index = "[" + (config.FileIndex+1).ToString() + "/" + FileOperate.RootFiles[config.FolderIndex].Name.Count.ToString() + "]";
                     string subindex = "[" + (config.SubIndex + 1).ToString() + "/" + config.SubFiles.Count.ToString() + "]";
@@ -1232,9 +1246,14 @@ namespace PictureViewer
             config.SubExtension = "";
             config.SubHide = false;
 
+            if (config.FolderIndex < 0) { config.FolderIndex = 0; }
+            if (config.FolderIndex >= FileOperate.RootFiles.Count) { config.FolderIndex = FileOperate.RootFiles.Count - 1; }
             if (config.FolderIndex >= 0 && config.FolderIndex < FileOperate.RootFiles.Count)
             {
                 config.Path = FileOperate.RootFiles[config.FolderIndex].Path;
+
+                if (config.FileIndex < 0) { config.FileIndex = 0; }
+                if (config.FileIndex >= FileOperate.RootFiles[config.FolderIndex].Name.Count) { config.FileIndex = FileOperate.RootFiles[config.FolderIndex].Name.Count - 1; }
                 if (config.FileIndex >= 0 && config.FileIndex < FileOperate.RootFiles[config.FolderIndex].Name.Count)
                 { config.Name = FileOperate.RootFiles[config.FolderIndex].Name[config.FileIndex]; }
             }
@@ -1326,12 +1345,13 @@ namespace PictureViewer
 
             #region 隐藏文件不予显示
 
-            if (!NoHide && (config.Hide || config.SubHide))
+            if (!NoHide && (!config.IsSub ? config.Hide : config.SubHide))
             {
                 this.Text = config.IsSub ?
                     index + " " + subindex + " [Unknow] " + config.Name + " : " + config.SubName :
                     index + " [Unknow] " + config.Name;
-                ShowUnk(); return;
+
+                config.Type = -1; config.SubType = -1; ShowUnk(); return;
             }
 
             #endregion
@@ -1516,7 +1536,7 @@ namespace PictureViewer
             // 源图太大，则放大。
             // 源图不大，则显示源图
 
-            if (config.SourPicture == null || (focus && config.DestPicture == null)) { return; }
+            if (config.SourPicture == null) { return; }
             if (!focus) { SetScroll0(); }
             ShapeWindow();
             
@@ -1525,12 +1545,10 @@ namespace PictureViewer
             if (UseBoard) { xF -= BoardSize.Width / 2; }
             int yF = MousePosition.Y - this.Location.Y - this.pictureBox1.Location.Y;
             if (UseBoard) { yF -= 30; }
-            int dh = 0; try { dh = config.DestPicture.Height; } catch { }
-            int dw = 0; try { dw = config.DestPicture.Width; } catch { }
-            double xR = focus ? (double)xF / dw : 0;
+            double xR = focus ? (double)xF / config.DestPicture.Width : 0;
             if (xR < 0) { xR = 0; }
             if (xR > 1) { xR = 1; }
-            double yR = focus ? (double)yF / dh : 0;
+            double yR = focus ? (double)yF / config.DestPicture.Height : 0;
             if (yR < 0) { yR = 0; }
             if (yR > 1) { yR = 1; }
 
@@ -1608,6 +1626,9 @@ namespace PictureViewer
             int sw = Screen.PrimaryScreen.Bounds.Width;
             int wh = sh * ShapeWindowRate / 100;
             int ww = sw * ShapeWindowRate / 100; // 虚拟窗口大小
+
+            // 如果已经是裁剪窗口模式，则不必再虚拟窗口大小
+            if (UseShapeWindow) { ww = cw; wh = ch; }
 
             int sourX = config.SourPicture.Width;
             int sourY = config.SourPicture.Height;
@@ -1690,7 +1711,7 @@ namespace PictureViewer
             bool isMusic = config.IsSub ? FileOperate.IsMusic(config.SubExtension) : FileOperate.IsMusic(config.Extension);
             bool isVideo = config.IsSub ? FileOperate.IsVideo(config.SubExtension) : FileOperate.IsVideo(config.Extension);
 
-            #region 错误提示的大小
+            #region 隐藏文件、错误提示的大小
 
             if (type == -1 && config.SourPicture != null)
             {
@@ -1793,8 +1814,8 @@ namespace PictureViewer
             int cw = UseBoard ? this.Width - BoardSize.Width : this.Width;
 
             #region picture box
-            
-            if (type == -1 || type == 0 || type == 2 || type == 3)
+
+            if (type == -1 || type == 0 || type == 2)
             {
                 if (config.SourPicture == null) { return; }
                 if (!NextShowBigPicture && config.DestPicture == null) { return; }
@@ -1813,6 +1834,22 @@ namespace PictureViewer
                 int x = shapew > rectw ? 0 : (rectw - shapew) / 2;
                 int y = shapeh > recth ? 0 : (recth - shapeh) / 2;
                 
+                this.pictureBox1.Location = new Point(x, y);
+                this.pictureBox1.Height = shapeh;
+                this.pictureBox1.Width = shapew;
+            }
+
+            if (type == 3)
+            {
+                if (config.SourPicture == null) { return; }
+                int shapeh = config.SourPicture.Height;
+                int shapew = config.SourPicture.Width;
+
+                int recth = UseBoard ? this.Height - BoardSize.Height : this.Height; ;
+                int rectw = UseBoard ? this.Width - BoardSize.Width : this.Width; ;
+                int x = shapew > rectw ? 0 : (rectw - shapew) / 2;
+                int y = shapeh > recth ? 0 : (recth - shapeh) / 2;
+
                 this.pictureBox1.Location = new Point(x, y);
                 this.pictureBox1.Height = shapeh;
                 this.pictureBox1.Width = shapew;
@@ -2104,7 +2141,7 @@ namespace PictureViewer
         }
         private void RightMenu_Export_ExportFolder(object sender, EventArgs e)
         {
-            if (!config.ExistFolder || !config.ExistFile) { return; }
+            if (!config.ExistFolder || !config.ExistFile) { MessageBox.Show("文件夹不存在或者当前项目不是文件夹！", "提示"); return; }
             if (config.Type != 1) { MessageBox.Show("文件夹不存在或者当前项目不是文件夹！", "提示"); return; }
 
             string exportpath = config.ExportFolder + "\\" + config.Name;
@@ -2430,74 +2467,64 @@ namespace PictureViewer
         }
         private void RightMenu_Previous(object sender, EventArgs e)
         {
-            if (config.FolderIndex < 0 || config.FolderIndex >= FileOperate.RootFiles.Count) { return; }
-            if (config.FileIndex < 0 || config.FileIndex >= FileOperate.RootFiles[config.FolderIndex].Name.Count) { return; }
+            if (FileOperate.RootFiles.Count == 0) { return; }
+            
+            int currFolder = config.FolderIndex;
+            int currFile = config.FileIndex;
+            int currSub = config.SubIndex;
 
-            int tFolder = config.FolderIndex;
-            int tFile = config.FileIndex;
-            int tSub = config.SubIndex;
+            int nextFolder = currFolder;
+            int nextFile = currFile;
+            int nextSub = currSub;
+            
+            if (config.IsSub && currSub > 0) { config.SubIndex--; ShowCurrent(); return; }
+            WheelPageTime = ulong.MaxValue;
+            bool outSub = config.IsSub && DialogResult.OK == MessageBox.Show("已经是该文件夹的最后一个文件了，是否跳出当前文件夹？\n\n" + config.Name, "请确认", MessageBoxButtons.OKCancel);
+            WheelPageTime = config.Time;
+            if (config.IsSub && !outSub) { return; }
 
-            if (config.SubFiles != null && config.SubFiles.Count != 0) { config.SubIndex--; if (config.SubIndex < 0) { config.FileIndex--; config.SubIndex = -1; } }
-            else { config.FileIndex--; config.SubIndex = -1; }
-            if (config.FileIndex < 0) { config.FolderIndex--; }
-            if (config.FolderIndex < 0)
-            {
-                //MessageBox.Show("已经是第一个文件了！", "提示");
-                //config.FolderIndex = 0;
-                //config.FileIndex = 0;
-                //config.SubIndex = 0; return;
+            nextFile--; nextSub = int.MaxValue;
+            if (nextFile < 0) { nextFile = int.MaxValue; nextFolder--; }
+            if (nextFolder < 0) { nextFolder = int.MaxValue; }
+            WheelPageTime = ulong.MaxValue;
+            bool outFolder = nextFolder != currFolder && DialogResult.OK == MessageBox.Show("已经是该路径的最后一个文件了，是否跳出当前路径？\n\n " + config.Path, "请确认", MessageBoxButtons.OKCancel);
+            WheelPageTime = config.Time;
+            if (nextFolder != currFolder && !outFolder) { return; }
 
-                config.FolderIndex = tFolder; config.FileIndex = tFile; config.SubIndex = tSub;
-                if (DialogResult.Cancel == MessageBox.Show("已经是第一个文件了，是否转到上一个？", "确认转到", MessageBoxButtons.OKCancel))
-                { return; }
-                config.FolderIndex = FileOperate.RootFiles.Count - 1;
-                config.FileIndex = FileOperate.RootFiles[config.FolderIndex].Name.Count - 1;
-            }
-
-            if (config.FileIndex < 0) { config.FileIndex = FileOperate.RootFiles[config.FolderIndex].Name.Count - 1; }
-            string name = FileOperate.RootFiles[config.FolderIndex].Name[config.FileIndex];
-            int type = FileOperate.getFileType(FileOperate.getExtension(name));
-
-            if (type == 1)
-            {
-                string path = FileOperate.RootFiles[config.FolderIndex].Path;
-                List<string> files = FileOperate.getSubFiles(path + "\\" + name);
-                if (config.SubIndex == -1) { config.SubIndex = files.Count - 1; }
-            }
+            config.FolderIndex = nextFolder;
+            config.FileIndex = nextFile;
+            config.SubIndex = nextSub;
             ShowCurrent();
         }
         private void RightMenu_Next(object sender, EventArgs e)
         {
-            if (config.FolderIndex < 0 || config.FolderIndex >= FileOperate.RootFiles.Count) { return; }
-            if (config.FileIndex < 0 || config.FileIndex >= FileOperate.RootFiles[config.FolderIndex].Name.Count) { return; }
+            if (FileOperate.RootFiles.Count == 0) { return; }
+            
+            int currFolder = config.FolderIndex;
+            int currFile = config.FileIndex;
+            int currSub = config.SubIndex;
 
-            int tFolder = config.FolderIndex;
-            int tFile = config.FileIndex;
-            int tSub = config.SubIndex;
+            int nextFolder = currFolder;
+            int nextFile = currFile;
+            int nextSub = currSub;
 
-            if (config.SubFiles != null && config.SubIndex < config.SubFiles.Count - 1) { config.SubIndex++; if (config.SubIndex >= config.SubFiles.Count) { config.FileIndex++; config.SubIndex = -1; } }
-            else { config.FileIndex++; config.SubIndex = -1; }
-            if (config.FileIndex >= FileOperate.RootFiles[config.FolderIndex].Name.Count) { config.FolderIndex++; config.FileIndex = 0; }
-            if (config.FolderIndex >= FileOperate.RootFiles.Count)
-            {
-                //MessageBox.Show("已经是最后一个文件了！", "提示");
-                //config.FolderIndex = FileOperate.RootFiles.Count - 1;
-                //config.FileIndex = FileOperate.RootFiles[config.FolderIndex].Name.Count - 1;
-                //config.SubIndex = config.SubFiles == null ? 0 : config.SubFiles.Count - 1;
-                //return;
+            if (config.IsSub && currSub != config.SubFiles.Count - 1) { config.SubIndex++; ShowCurrent(); return; }
+            WheelPageTime = ulong.MaxValue;
+            bool outSub = config.IsSub && DialogResult.OK == MessageBox.Show("已经是该文件夹的最后一个文件了，是否跳出当前文件夹？\n\n" + config.Name, "请确认", MessageBoxButtons.OKCancel);
+            WheelPageTime = config.Time;
+            if (config.IsSub && !outSub) { return; }
 
-                config.FolderIndex = tFolder; config.FileIndex = tFile; config.SubIndex = tSub;
-                if (DialogResult.Cancel == MessageBox.Show("已经是最后一个文件了，是否转到下一个？", "确认转到", MessageBoxButtons.OKCancel))
-                { return; }
-                config.FolderIndex = 0;
-                config.FileIndex = 0;
-            }
+            nextFile++; nextSub = 0;
+            if (!FileOperate.ExistFile(nextFolder, nextFile)) { nextFile = 0; nextFolder++; }
+            if (!FileOperate.ExistFolder(nextFolder)) { nextFolder = 0; }
+            WheelPageTime = ulong.MaxValue;
+            bool outFolder = nextFolder != currFolder && DialogResult.OK == MessageBox.Show("已经是该路径的最后一个文件了，是否跳出当前路径？" + config.Path, "请确认", MessageBoxButtons.OKCancel);
+            WheelPageTime = config.Time;
+            if (nextFolder != currFolder && !outFolder) { return; }
 
-            string name = FileOperate.RootFiles[config.FolderIndex].Name[config.FileIndex];
-            int type = FileOperate.getFileType(FileOperate.getExtension(name));
-            if (type != 1) { config.SubIndex = 0; }
-            if (type == 1 && config.SubIndex == -1) { config.SubIndex = 0; }
-
+            config.FolderIndex = nextFolder;
+            config.FileIndex = nextFile;
+            config.SubIndex = nextSub;
             ShowCurrent();
         }
 
