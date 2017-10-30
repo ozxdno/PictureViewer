@@ -873,6 +873,7 @@ namespace PictureViewer
             #region 根据文件类型确定待执行的代码段
 
             int codephase = config.IsSub ? config.SubType : config.Type;
+            if (UseBoard) { BoardSize = this.Size - this.ClientSize; }
 
             #endregion
 
