@@ -298,6 +298,28 @@ namespace PictureViewer.Class
             Form_Main.config.FileIndex = cover.Name.Count == 0 ? -1 : 0;
             Form_Main.config.SubIndex = 0;
         }
+        /// <summary>
+        /// 重新加载所有根目录下的文件
+        /// </summary>
+        public static void Reload()
+        {
+            for (int i = 0; i < RootFiles.Count; i++)
+            {
+                RootFiles[i].Name.Clear();
+                if (!Directory.Exists(RootFiles[i].Path)) { continue; }
+
+                DirectoryInfo dir = new DirectoryInfo(RootFiles[i].Path);
+                FileInfo[] files = dir.GetFiles();
+                DirectoryInfo[] folders = dir.GetDirectories();
+
+                for (int j = 0; j < folders.Length; j++) { RootFiles[j].Name.Add(folders[i].Name); }
+                for (int j = 0; j < files.Length; j++)
+                {
+                    if (!IsSupport(files[i].Extension)) { continue; }
+                    RootFiles[i].Name.Add(files[j].Name);
+                }
+            }
+        }
 
         /// <summary>
         /// 获取文件夹路径下的图片文件
@@ -314,11 +336,12 @@ namespace PictureViewer.Class
 
             foreach (FileInfo file in files)
             {
-                int type = getFileType(file.Extension);
-                if (type == -1) { continue; }
-                if (type == 1) { continue; }
+                //int type = getFileType(file.Extension);
+                //if (type == -1) { continue; }
+                //if (type == 1) { continue; }
+                //Files.Add(file.Name);
 
-                Files.Add(file.Name);
+                if (IsSupport(file.Extension)) { Files.Add(file.Name); }
             }
 
             return Files;

@@ -861,7 +861,7 @@ namespace PictureViewer
                 {
                     string name = FileOperate.RootFiles[i].Name[j];
                     string extension = FileOperate.getExtension(name);
-                    if (FileOperate.IsSupportHide(extension) && !Form_Main.NoHide) { continue; }
+                    //if (FileOperate.IsSupportHide(extension) && !Form_Main.NoHide) { continue; }
                     int type = FileOperate.getFileType(extension);
 
                     if (type == 2) { Paths.Add(root); Names.Add(name); continue; }
@@ -873,7 +873,7 @@ namespace PictureViewer
                     {
                         string subextension = FileOperate.getExtension(subnames[k]);
                         int subtype = FileOperate.getFileType(subextension);
-                        if (FileOperate.IsSupportHide(subextension) && !Form_Main.NoHide) { continue; }
+                        //if (FileOperate.IsSupportHide(subextension) && !Form_Main.NoHide) { continue; }
 
                         if (subtype == 2) { Paths.Add(root + "\\" + name); Names.Add(subnames[k]); continue; }
                         if (subtype == 3) { Paths.Add(root + "\\" + name); Names.Add(subnames[k]); continue; }

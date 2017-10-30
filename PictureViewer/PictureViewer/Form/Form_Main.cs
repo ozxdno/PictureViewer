@@ -21,11 +21,6 @@ namespace PictureViewer
         ///////////////////////////////////////////////////// public attribute ///////////////////////////////////////////////
 
         /// <summary>
-        /// 显示隐藏文件
-        /// </summary>
-        public static bool NoHide = false;
-
-        /// <summary>
         /// 配置项
         /// </summary>
         public static CONFIG config;
@@ -34,11 +29,6 @@ namespace PictureViewer
         /// </summary>
         public struct CONFIG
         {
-            /// <summary>
-            /// 计数器
-            /// </summary>
-            public ulong Time;
-
             /// <summary>
             /// 配置文件所在路径
             /// </summary>
@@ -146,6 +136,10 @@ namespace PictureViewer
         /// 刷新界面的定时器
         /// </summary>
         private System.Timers.Timer Timer = new System.Timers.Timer(10);
+        /// <summary>
+        /// 计数器（代表时间，10ms一次）
+        /// </summary>
+        private ulong TimeCount;
         /// <summary>
         /// 下一张图片是否显示源图（否则显示自适应窗体的图）
         /// </summary>
@@ -374,7 +368,7 @@ namespace PictureViewer
 
             #region 计时器
 
-            config.Time = 0;
+            TimeCount = 0;
             Timer.Elapsed += new System.Timers.ElapsedEventHandler(Updata);
             Timer.AutoReset = true;
             Timer.Start();
@@ -548,8 +542,8 @@ namespace PictureViewer
                 if (input.Input == "#hide") { HideCurrentFolder(); return; }
                 if (input.Input == "#show2") { ShowFiles(); return; }
                 if (input.Input == "#hide2") { HideFiles(); return; }
-                if (input.Input == "#show hide") { NoHide = true; ShowCurrent(); return; }
-                if (input.Input == "#hide hide") { NoHide = false; ShowCurrent();  return; }
+                if (input.Input == "#show hide") { FileSupport.SupportHide = true; FileOperate.Reload(); ShowCurrent(); return; }
+                if (input.Input == "#hide hide") { FileSupport.SupportHide = false; FileOperate.Reload(); ShowCurrent();  return; }
                 if (input.Input == "#small") { UseSmallWindowOpen = true; return; }
                 if (input.Input == "#big") { UseSmallWindowOpen = false; return; }
                 if (input.Input.Length != 0 && input.Input[0] != '-')
@@ -601,7 +595,7 @@ namespace PictureViewer
                 mouse.Down = true;
                 mouse.Up = false;
                 mouse.pDown = MousePosition;
-                mouse.tDown = config.Time;
+                mouse.tDown = TimeCount;
                 mouse.nDown++;
             }
         }
@@ -609,14 +603,14 @@ namespace PictureViewer
         {
             if (e.nButton == 1)
             {
-                if (mouse.tUp != 0 && config.Time - mouse.tUp < 20)
+                if (mouse.tUp != 0 && TimeCount - mouse.tUp < 20)
                 { Form_Main_DoubleClick(null, null); }
 
                 this.Cursor = Cursors.Default;
                 mouse.Down = false;
                 mouse.Up = true;
                 mouse.pUp = MousePosition;
-                mouse.tUp = config.Time;
+                mouse.tUp = TimeCount;
                 mouse.nUp++;
             }
             if (e.nButton == 2)
@@ -866,8 +860,8 @@ namespace PictureViewer
             {
                 if (WheelPageTime == ulong.MaxValue) { return; }
 
-                if (config.Time - WheelPageTime < 20) { return; }
-                WheelPageTime = config.Time;
+                if (TimeCount - WheelPageTime < 20) { return; }
+                WheelPageTime = TimeCount;
 
                 if (e.Delta > 0) { RightMenu_Previous(null, null); }
                 if (e.Delta < 0) { RightMenu_Next(null, null); }
@@ -879,7 +873,6 @@ namespace PictureViewer
             #region 根据文件类型确定待执行的代码段
 
             int codephase = config.IsSub ? config.SubType : config.Type;
-            if (!NoHide && (config.IsSub ? config.SubHide : config.Hide)) { codephase = -1; }
 
             #endregion
 
@@ -943,7 +936,7 @@ namespace PictureViewer
             {
                 #region 计数器
 
-                config.Time++;
+                TimeCount++;
 
                 #endregion
 
@@ -1128,7 +1121,7 @@ namespace PictureViewer
 
                 #region 刷新播放时间
 
-                if ((config.Type == 4 && !config.Hide && NoHide) || (config.IsSub && config.SubType == 4 && NoHide && !config.SubHide))
+                if ((config.Type == 4) || (config.IsSub && config.SubType == 4))
                 {
                     string index = "[" + (config.FileIndex+1).ToString() + "/" + FileOperate.RootFiles[config.FolderIndex].Name.Count.ToString() + "]";
                     string subindex = "[" + (config.SubIndex + 1).ToString() + "/" + config.SubFiles.Count.ToString() + "]";
@@ -1345,7 +1338,7 @@ namespace PictureViewer
 
             #region 隐藏文件不予显示
 
-            if (!NoHide && (!config.IsSub ? config.Hide : config.SubHide))
+            if (!FileSupport.SupportHide && !config.IsSub ? config.Hide : config.SubHide)
             {
                 this.Text = config.IsSub ?
                     index + " " + subindex + " [Unknow] " + config.Name + " : " + config.SubName :
@@ -1628,7 +1621,7 @@ namespace PictureViewer
             int ww = sw * ShapeWindowRate / 100; // 虚拟窗口大小
 
             // 如果已经是裁剪窗口模式，则不必再虚拟窗口大小
-            if (UseShapeWindow) { ww = cw; wh = ch; }
+            if (UseShapeWindow && !UseBoard) { ww = cw; wh = ch; }
 
             int sourX = config.SourPicture.Width;
             int sourY = config.SourPicture.Height;
@@ -2148,10 +2141,31 @@ namespace PictureViewer
             if (Directory.Exists(exportpath))
             { MessageBox.Show("输出目录已经存在：\n" + exportpath + "！", "错误"); return; }
 
-            if (DialogResult.Cancel == MessageBox.Show("把文件夹 “" + config.Name + "” 导出？", "确认导出", MessageBoxButtons.OKCancel))
-            { return; }
+            string sourpath = config.Path + "\\" + config.Name;
+            if (Directory.Exists(exportpath))
+            { MessageBox.Show("当前文件夹不存在！\n" + sourpath, "错误"); return; }
+            DirectoryInfo dir = new DirectoryInfo(sourpath);
+            FileInfo[] files = dir.GetFiles();
+            DirectoryInfo[] folders = dir.GetDirectories();
 
-            if (config.SubFiles.Count == 0)
+            bool makeSure = false;
+            if (!makeSure && folders.Length != 0 || config.SubFiles.Count != files.Length)
+            {
+                if (DialogResult.Cancel == MessageBox.Show("该文件夹还存在其他文件夹或文件，导出后会删除未识别文件夹或文件。\n是否导出？", "确认导出", MessageBoxButtons.OKCancel))
+                { return; }
+
+                makeSure = true;
+            }
+
+            if (!makeSure)
+            {
+                if (DialogResult.Cancel == MessageBox.Show("把文件夹 “" + config.Name + "” 导出？", "确认导出", MessageBoxButtons.OKCancel))
+                { return; }
+
+                makeSure = true;
+            }
+
+            if (!makeSure && config.SubFiles.Count == 0)
             {
                 if (DialogResult.Cancel == MessageBox.Show("该文件夹为空文件夹，是否导出？", "确认导出", MessageBoxButtons.OKCancel))
                 { return; }
@@ -2377,9 +2391,9 @@ namespace PictureViewer
             { MessageBox.Show("不能匹配图片之外的文件", "提示"); return; }
             
             // 不能匹配隐藏文件
-            bool hide = config.IsSub ? config.SubHide : config.Hide;
-            hide = !NoHide && hide;
-            if (hide) { MessageBox.Show("不能匹配图片之外的文件", "提示"); return; }
+            //bool hide = config.IsSub ? config.SubHide : config.Hide;
+            //hide = !NoHide && hide;
+            //if (hide) { MessageBox.Show("不能匹配图片之外的文件", "提示"); return; }
 
             // 不支持的模式
             if (this.likeToolStripMenuItem.Checked)
@@ -2480,7 +2494,7 @@ namespace PictureViewer
             if (config.IsSub && currSub > 0) { config.SubIndex--; ShowCurrent(); return; }
             WheelPageTime = ulong.MaxValue;
             bool outSub = config.IsSub && DialogResult.OK == MessageBox.Show("已经是该文件夹的最后一个文件了，是否跳出当前文件夹？\n\n" + config.Name, "请确认", MessageBoxButtons.OKCancel);
-            WheelPageTime = config.Time;
+            WheelPageTime = TimeCount;
             if (config.IsSub && !outSub) { return; }
 
             nextFile--; nextSub = int.MaxValue;
@@ -2488,7 +2502,7 @@ namespace PictureViewer
             if (nextFolder < 0) { nextFolder = int.MaxValue; }
             WheelPageTime = ulong.MaxValue;
             bool outFolder = nextFolder != currFolder && DialogResult.OK == MessageBox.Show("已经是该路径的最后一个文件了，是否跳出当前路径？\n\n " + config.Path, "请确认", MessageBoxButtons.OKCancel);
-            WheelPageTime = config.Time;
+            WheelPageTime = TimeCount;
             if (nextFolder != currFolder && !outFolder) { return; }
 
             config.FolderIndex = nextFolder;
@@ -2511,7 +2525,7 @@ namespace PictureViewer
             if (config.IsSub && currSub != config.SubFiles.Count - 1) { config.SubIndex++; ShowCurrent(); return; }
             WheelPageTime = ulong.MaxValue;
             bool outSub = config.IsSub && DialogResult.OK == MessageBox.Show("已经是该文件夹的最后一个文件了，是否跳出当前文件夹？\n\n" + config.Name, "请确认", MessageBoxButtons.OKCancel);
-            WheelPageTime = config.Time;
+            WheelPageTime = TimeCount;
             if (config.IsSub && !outSub) { return; }
 
             nextFile++; nextSub = 0;
@@ -2519,7 +2533,7 @@ namespace PictureViewer
             if (!FileOperate.ExistFolder(nextFolder)) { nextFolder = 0; }
             WheelPageTime = ulong.MaxValue;
             bool outFolder = nextFolder != currFolder && DialogResult.OK == MessageBox.Show("已经是该路径的最后一个文件了，是否跳出当前路径？" + config.Path, "请确认", MessageBoxButtons.OKCancel);
-            WheelPageTime = config.Time;
+            WheelPageTime = TimeCount;
             if (nextFolder != currFolder && !outFolder) { return; }
 
             config.FolderIndex = nextFolder;

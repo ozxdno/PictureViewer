@@ -13,6 +13,10 @@ namespace PictureViewer.Class
     {
         ///////////////////////////////////////////////////// public attribute ///////////////////////////////////////////////
 
+        /// <summary>
+        /// 是否允许导入隐藏文件
+        /// </summary>
+        public static bool SupportHide = false;
 
         ///////////////////////////////////////////////////// private attribute ///////////////////////////////////////////////
         
@@ -30,6 +34,7 @@ namespace PictureViewer.Class
         /// </summary>
         public static void Initialize()
         {
+            //-1 - 错误
             // 0 - 等待开发支持程序
             // 1 - 文件夹
             // 2 - 图片
@@ -78,7 +83,7 @@ namespace PictureViewer.Class
             for (int i = 0; i < Types.Count; i++)
             {
                 if (ShowExtensions[i] == extension) { return true; }
-                if (HideExtensions[i] == extension) { return true; }
+                if (SupportHide && HideExtensions[i] == extension) { return true; }
             }
 
             return false;

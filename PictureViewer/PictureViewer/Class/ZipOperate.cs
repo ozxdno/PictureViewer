@@ -49,6 +49,12 @@ namespace PictureViewer.Class
             // 分割并加入密码列表
             List<string> newpws = pw.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).ToList();
             PassWords.InsertRange(0, newpws);
+
+            // 去除重复密码
+            for (int i = PassWords.Count - 1; i > -0; i--)
+            {
+                for (int j = 0; j < i; j++) { if (PassWords[i] == PassWords[j]) { PassWords.RemoveAt(i); } }
+            }
         }
         /// <summary>
         /// 删除备用密码
