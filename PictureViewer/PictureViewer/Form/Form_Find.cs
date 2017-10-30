@@ -25,10 +25,13 @@ namespace PictureViewer
         /// 正在显示的寻找结果图片
         /// </summary>
         public static Bitmap DestPic;
+
         /// <summary>
         /// 查找是否已经结束
         /// </summary>
         public static bool IsFinish = false;
+        public static bool IsSwitch = false;
+
         /// <summary>
         /// 查找模式
         /// </summary>
@@ -331,7 +334,7 @@ namespace PictureViewer
                                 Form_Main.config.FileIndex = j;
                                 Form_Main.config.SubIndex = k;
 
-                                this.Close(); return;
+                                IsSwitch = true; this.Close(); return;
                             }
                         }
                     }
@@ -346,7 +349,7 @@ namespace PictureViewer
                             Form_Main.config.FileIndex = j;
                             Form_Main.config.SubIndex = 0;
 
-                            this.Close(); return;
+                            IsSwitch = true; this.Close(); return;
                         }
                     }
                 }
@@ -499,7 +502,7 @@ namespace PictureViewer
                                 Form_Main.config.FileIndex = j;
                                 Form_Main.config.SubIndex = k;
 
-                                this.Close(); return;
+                                IsSwitch = true; this.Close(); return;
                             }
                         }
                     }
@@ -511,7 +514,7 @@ namespace PictureViewer
                             Form_Main.config.FileIndex = j;
                             Form_Main.config.SubIndex = 0;
 
-                            this.Close(); return;
+                            IsSwitch = true; this.Close(); return;
                         }
                     }
                 }

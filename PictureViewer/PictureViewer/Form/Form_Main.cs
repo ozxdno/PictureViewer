@@ -2421,7 +2421,9 @@ namespace PictureViewer
             this.sameToolStripMenuItem.Checked = Class.Load.settings.Form_Main_Find_Same;
             this.likeToolStripMenuItem.Checked = Class.Load.settings.Form_Main_Find_Like;
             this.turnToolStripMenuItem.Checked = Class.Load.settings.Form_Main_Find_Turn;
-            ShowCurrent();
+
+            // 是否跳转
+            if (Form_Find.IsSwitch) { ShowCurrent(); }
         }
         private void RightMenu_Find_Full(object sender, EventArgs e)
         {
