@@ -29,6 +29,9 @@ namespace PictureViewer
         /// 配置项
         /// </summary>
         public static CONFIG config;
+        /// <summary>
+        /// 配置项
+        /// </summary>
         public struct CONFIG
         {
             /// <summary>
@@ -144,7 +147,7 @@ namespace PictureViewer
         /// </summary>
         private System.Timers.Timer Timer = new System.Timers.Timer(10);
         /// <summary>
-        /// 下一张图片的显示状态（源图/缩放图）
+        /// 下一张图片是否显示源图（否则显示自适应窗体的图）
         /// </summary>
         private bool NextShowBigPicture = false;
         /// <summary>
@@ -160,7 +163,10 @@ namespace PictureViewer
         /// </summary>
         private bool UseShapeWindow = false;
         /// <summary>
-        /// 窗体缩放率 / 图片缩放比率
+        /// 窗体缩放率 / 图片缩放比率。计算方法如下：
+        /// 首先获取与屏幕成比例的窗口，
+        /// 该窗口裁剪成与显示 图片/视频 相同比例大小（如果有必要），
+        /// 最后调整控件大小。
         /// </summary>
         private int ShapeWindowRate = 80;
         /// <summary>
@@ -176,11 +182,23 @@ namespace PictureViewer
         /// </summary>
         private Size BoardSize;
         /// <summary>
+        /// 客户区高度
+        /// </summary>
+        private int ClientHeight { get { return UseBoard ? this.Height - BoardSize.Height : this.Height; } }
+        /// <summary>
+        /// 客户区宽度
+        /// </summary>
+        private int ClientWidth { get { return UseBoard ? this.Width - BoardSize.Width : this.Width; } }
+        /// <summary>
         /// 开启无文件提示（仅一次）
         /// </summary>
         private bool TipForInput = false;
         /// <summary>
-        /// 鼠标左键信息
+        /// 上一次滚轮翻页时间
+        /// </summary>
+        private ulong WheelPageTime;
+        /// <summary>
+        /// 鼠标信息
         /// </summary>
         private MOUSE mouse;
         /// <summary>
@@ -201,7 +219,6 @@ namespace PictureViewer
             public ulong tUp;
             public uint nDown;
             public uint nUp;
-            public ulong tWheel;
         }
         /// <summary>
         /// 方向键信息
@@ -236,8 +253,6 @@ namespace PictureViewer
         public Form_Main()
         {
             InitializeComponent();
-
-            this.pictureBox1.MouseWheel += Form_MouseWheel;
             this.MouseWheel += Form_MouseWheel;
         }
         
@@ -301,9 +316,10 @@ namespace PictureViewer
 
             #endregion
 
-            #region 其他
+            #region 其他，参数初始化
 
             this.lockToolStripMenuItem.Checked = Class.Load.settings.Form_Main_Lock;
+            WheelPageTime = 0;
 
             #endregion
 
@@ -343,7 +359,6 @@ namespace PictureViewer
             mouse.nUp = 0;
             mouse.tDown = 0;
             mouse.tUp = 0;
-            mouse.tWheel = 0;
 
             #endregion
 
@@ -816,7 +831,7 @@ namespace PictureViewer
             int ch = UseBoard ? this.Height - BoardSize.Height : this.Height;
             int cw = UseBoard ? this.Width - BoardSize.Width : this.Width;
 
-            #region 播放视频/音频时关闭
+            #region 播放视频/音频时，滚轮不起作用
 
             if (config.Type == 4 || (config.IsSub && config.SubType == 4))
             {
@@ -839,8 +854,8 @@ namespace PictureViewer
 
             if (this.lockToolStripMenuItem.Checked)
             {
-                if (config.Time - mouse.tWheel < 20) { return; }
-                mouse.tWheel = config.Time;
+                if (config.Time - WheelPageTime < 20) { return; }
+                WheelPageTime = config.Time;
 
                 if (e.Delta > 0) { RightMenu_Previous(null, null); }
                 if (e.Delta < 0) { RightMenu_Next(null, null); }
@@ -849,28 +864,36 @@ namespace PictureViewer
 
             #endregion
 
-            #region 滑动滚轮放大缩小
-            
-            if (!this.lockToolStripMenuItem.Checked && config.SourPicture != null && (
-                (this.pictureBox1.Height <= ch && this.pictureBox1.Width <= cw) ||
-                (!this.HorizontalScroll.Visible && !this.VerticalScroll.Visible)))
+            #region 根据文件类型确定待执行的代码段
+
+            int codephase = config.IsSub ? config.SubType : config.Type;
+            if (codephase == -1) { codephase = 2; }
+
+            #endregion
+
+            #region 图片型文件滑动滚轮操作
+
+            if (codephase == 2)
             {
-                int type = config.IsSub ? config.SubType : config.Type;
-                if (type != 2 && type != -1) { return; }
+                // 必须存在源图
                 if (config.SourPicture == null) { return; }
                 
+                // 屏幕参数
                 int sh = Screen.PrimaryScreen.Bounds.Height;
                 int sw = Screen.PrimaryScreen.Bounds.Width;
 
+                // 当前缩放
                 double rate1 = (double)this.pictureBox1.Height / sh * 100;
                 double rate2 = (double)this.pictureBox1.Width / sw * 100;
                 int currRate = (int)Math.Max(rate1, rate2);
 
+                // 下一次的显示比例
                 if (e.Delta > 0) { ShapeWindowRate = currRate + 5; }
                 if (e.Delta < 0) { ShapeWindowRate = currRate - 5; }
                 if (ShapeWindowRate <= 0) { ShapeWindowRate = 5; }
-                if (ShapeWindowRate >= MaxWindowSize.Height / ch * 100) { return; }
+                if (ShapeWindowRate >= MaxWindowSize.Height / ch * 100) { ShapeWindowRate = MaxWindowSize.Height / ch * 100; }
 
+                // 不自动裁剪窗体时，显示图片的比例不能大于当前窗口（出现滚动条）
                 int nexth = sh * ShapeWindowRate / 100;
                 int nextw = sw * ShapeWindowRate / 100;
                 double h2w = (double)config.SourPicture.Height / config.SourPicture.Width;
@@ -888,7 +911,8 @@ namespace PictureViewer
                     rate2 = (double)nextw / sw * 100;
                     ShapeWindowRate = (int)Math.Max(rate1, rate2);
                 }
-                
+
+                // 显示图片
                 ShowRate();
             }
 
@@ -1405,7 +1429,7 @@ namespace PictureViewer
 
             this.axWindowsMediaPlayer1.Visible = false;
             this.pictureBox1.Visible = true;
-
+            
             if (NextShowBigPicture) { ShowBig(); } else { ShowSmall(); }
 
             this.axWindowsMediaPlayer1.Visible = false;
