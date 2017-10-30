@@ -941,6 +941,17 @@ namespace PictureViewer
 
                 #endregion
 
+                #region force
+
+                //if (ClientWidth != this.ClientSize.Width) { this.ClientSize = new Size(ClientWidth, ClientHeight); }
+                //if (ClientHeight >= this.pictureBox1.Height && ClientWidth >= this.pictureBox1.Width)
+                //{
+                //    this.HorizontalScroll.Visible = false;
+                //    this.VerticalScroll.Visible = false;
+                //}
+
+                #endregion
+
                 #region 刷新隐藏翻页键菜单
 
                 bool hideU = this.hideUToolStripMenuItem.Checked;
@@ -977,7 +988,7 @@ namespace PictureViewer
                 int setH = this.Height / 5;
                 int font = setW * 3 / 4;
                 int bgW = this.Width / 20; if (!UseBoard) { bgW += 5; }
-                int edW = bgW + setW; 
+                int edW = bgW + setW;
                 int bgH = this.Height / 2 - setH / 2; if (!UseBoard) { bgH += 15; }
                 int edH = bgH + setH;
                 if (showPageMark && !hideL && bgW <= ptX && ptX <= edW && bgH <= ptY && ptY <= edH)
@@ -1610,7 +1621,7 @@ namespace PictureViewer
             int type = config.IsSub ? config.SubType : config.Type;
             if (type != 2 && type != -1) { return; }
             if (config.SourPicture == null) { return; }
-
+            
             SetScroll0();
             ShapeWindow(true);
 
