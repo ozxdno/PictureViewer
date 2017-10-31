@@ -200,6 +200,10 @@ namespace PictureViewer
         /// </summary>
         private ulong WheelPageTime;
         /// <summary>
+        /// 该窗体是否被激活
+        /// </summary>
+        private bool IsActive;
+        /// <summary>
         /// 鼠标信息
         /// </summary>
         private MOUSE mouse;
@@ -207,6 +211,10 @@ namespace PictureViewer
         /// 方向键信息
         /// </summary>
         private KEY key;
+        /// <summary>
+        /// 提示信息
+        /// </summary>
+        private TIP tip;
 
         /// <summary>
         /// 鼠标信息
@@ -221,6 +229,11 @@ namespace PictureViewer
             public ulong tUp;
             public uint nDown;
             public uint nUp;
+
+            public bool Down2;
+            public bool Up2;
+            public ulong tDown2;
+            public ulong tUp2;
         }
         /// <summary>
         /// 方向键信息
@@ -249,9 +262,38 @@ namespace PictureViewer
             /// </summary>
             public bool R;
         }
-        
+        /// <summary>
+        /// 提示信息
+        /// </summary>
+        private struct TIP
+        {
+            /// <summary>
+            /// 上一次的位置
+            /// </summary>
+            public Point Previous;
+            /// <summary>
+            /// 悬停起始时间
+            /// </summary>
+            public ulong Begin;
+            /// <summary>
+            /// 提示信息
+            /// </summary>
+            public string Message;
+            /// <summary>
+            /// 提示窗口
+            /// </summary>
+            public Form_Tip Form;
+            /// <summary>
+            /// 是否已经开启
+            /// </summary>
+            public bool Visible;
+        }
+
+        [DllImport("user32.dll")]
+        public static extern void keybd_event(byte bVk, byte bScan, int dwFlags, int dwExtraInfo);
+
         ///////////////////////////////////////////////////// public method ///////////////////////////////////////////////
-        
+
         public Form_Main()
         {
             InitializeComponent();
@@ -324,6 +366,14 @@ namespace PictureViewer
 
             this.lockToolStripMenuItem.Checked = Class.Load.settings.Form_Main_Lock;
             WheelPageTime = 0;
+
+            tip.Previous = new Point(0, 0);
+            tip.Message = "";
+            tip.Form = new Form_Tip();
+            tip.Begin = 0;
+            tip.Visible = false;
+
+            this.tipToolStripMenuItem.Checked = Class.Load.settings.Form_Main_Tip;
 
             #endregion
 
@@ -399,6 +449,7 @@ namespace PictureViewer
             Class.Save.settings.Form_Main_ShapeWindow = UseShapeWindow;
             Class.Save.settings.Form_Main_ShapeWindowRate = ShapeWindowRate;
             Class.Save.settings.Form_Main_Lock = this.lockToolStripMenuItem.Checked;
+            Class.Save.settings.Form_Main_Tip = this.tipToolStripMenuItem.Checked;
             
             Timer.Close(); Class.Save.Save_CFG();
         }
@@ -560,7 +611,7 @@ namespace PictureViewer
 
             if (e.KeyValue == 27)
             {
-                Form_Closed(null, null);
+                this.Visible = false; Form_Closed(null, null);
                 Application.ExitThread();
             }
 
@@ -598,6 +649,13 @@ namespace PictureViewer
                 mouse.tDown = TimeCount;
                 mouse.nDown++;
             }
+
+            if (e.nButton == 2)
+            {
+                mouse.Down2 = true;
+                mouse.Up2 = false;
+                mouse.tDown2 = TimeCount;
+            }
         }
         private void WMP_MouseUp(object sender, AxWMPLib._WMPOCXEvents_MouseUpEvent e)
         {
@@ -616,6 +674,10 @@ namespace PictureViewer
             if (e.nButton == 2)
             {
                 this.contextMenuStrip1.Show(MousePosition);
+
+                mouse.Down2 = false;
+                mouse.Up2 = true;
+                mouse.tUp2 = TimeCount;
             }
         }
 
@@ -818,6 +880,14 @@ namespace PictureViewer
                 mouse.Down = true;
                 mouse.Up = false;
                 mouse.pDown = MousePosition;
+                mouse.tDown = TimeCount;
+            }
+
+            if (e.Button == MouseButtons.Right)
+            {
+                mouse.Down2 = true;
+                mouse.Up2 = false;
+                mouse.tDown2 = TimeCount;
             }
         }
         private void Form_MouseUp(object sender, MouseEventArgs e)
@@ -828,12 +898,23 @@ namespace PictureViewer
                 mouse.Down = false;
                 mouse.Up = true;
                 mouse.pUp = MousePosition;
+                mouse.tUp = TimeCount;
+            }
+
+            if (e.Button == MouseButtons.Right)
+            {
+                mouse.Down2 = false;
+                mouse.Up2 = true;
+                mouse.tUp2 = TimeCount;
             }
         }
         private void Form_MouseWheel(object sender, MouseEventArgs e)
         {
             int ch = UseBoard ? this.Height - BoardSize.Height : this.Height;
             int cw = UseBoard ? this.Width - BoardSize.Width : this.Width;
+
+            if (!tip.Visible && !IsActive) { return; }
+            if (tip.Visible) { IsActive = false; }
 
             #region 播放视频/音频时，滚轮不起作用
 
@@ -846,19 +927,20 @@ namespace PictureViewer
 
             #region 滚轮滚动屏幕
 
-            if ((this.pictureBox1.Visible && (this.pictureBox1.Height > ch || this.pictureBox1.Width > cw)) ||
-                (this.HorizontalScroll.Visible || this.VerticalScroll.Visible))
+            if ((this.HorizontalScroll.Visible || this.VerticalScroll.Visible) ||
+                (this.pictureBox1.Visible && (this.pictureBox1.Height > ch || this.pictureBox1.Width > cw)))
             {
                 return;
             }
 
             #endregion
-            
+
             #region 滑动滚轮上下翻页
 
-            if (this.lockToolStripMenuItem.Checked)
+            if (this.lockToolStripMenuItem.Checked ||
+                (!this.axWindowsMediaPlayer1.Visible && !this.pictureBox1.Visible))
             {
-                if (WheelPageTime == ulong.MaxValue) { return; }
+                //if (WheelPageTime == ulong.MaxValue) { return; }
 
                 if (TimeCount - WheelPageTime < 20) { return; }
                 WheelPageTime = TimeCount;
@@ -873,7 +955,7 @@ namespace PictureViewer
             #region 根据文件类型确定待执行的代码段
 
             int codephase = config.IsSub ? config.SubType : config.Type;
-            if (UseBoard) { BoardSize = this.Size - this.ClientSize; }
+            //if (UseBoard) { BoardSize = this.Size - this.ClientSize; }
 
             #endregion
 
@@ -926,9 +1008,9 @@ namespace PictureViewer
 
             #endregion
         }
-        private void Form_MouseEnter(object sender, EventArgs e)
+        private void Form_MouseHover(object sender, MouseEventArgs e)
         {
-
+            
         }
 
         private void Updata(object source, System.Timers.ElapsedEventArgs e)
@@ -941,14 +1023,69 @@ namespace PictureViewer
 
                 #endregion
 
-                #region force
+                #region 提示信息
 
-                //if (ClientWidth != this.ClientSize.Width) { this.ClientSize = new Size(ClientWidth, ClientHeight); }
-                //if (ClientHeight >= this.pictureBox1.Height && ClientWidth >= this.pictureBox1.Width)
-                //{
-                //    this.HorizontalScroll.Visible = false;
-                //    this.VerticalScroll.Visible = false;
-                //}
+                bool inX = MousePosition.X >= this.Location.X && MousePosition.X <= this.Location.X + this.Width;
+                bool inY = MousePosition.Y >= this.Location.Y && MousePosition.Y <= this.Location.Y + this.Height;
+
+                if (this.tipToolStripMenuItem.Checked && inX && inY && MousePosition == tip.Previous)
+                {
+                    ulong hover = TimeCount - tip.Begin;
+                    int type = config.IsSub ? config.SubType : config.Type;
+                    ulong pause = 300;
+
+                    bool mustOK = hover > 20 &&
+                        hover < pause &&
+                        !UseBoard &&
+                        TimeCount - mouse.tDown > 50 &&
+                        TimeCount - mouse.tDown2 > 50 &&
+                        TimeCount - mouse.tUp > 20 &&
+                        TimeCount - mouse.tUp2 > 20 &&
+                        !mouse.Down &&
+                        !mouse.Down2 &&
+                        !this.contextMenuStrip1.Visible &&
+                        IsActive &&
+                        !(this.HorizontalScroll.Visible || this.VerticalScroll.Visible) &&
+                        !this.label1.Visible &&
+                        !this.label2.Visible &&
+                        !this.label3.Visible &&
+                        !this.label4.Visible;
+                    
+                    if (mustOK && tip.Message != this.Text)
+                    {
+                        tip.Begin = TimeCount;
+                        tip.Message = this.Text;
+                        tip.Visible = true;
+                        tip.Form.show(tip.Message);
+                        IsActive = true;
+                    }
+                    
+                    if (mustOK && tip.Message == this.Text)
+                    {
+                        tip.Message = this.Text;
+                        tip.Visible = true;
+                        tip.Form.show(tip.Message);
+                        IsActive = true;
+                    }
+
+                    if (hover > pause || TimeCount - mouse.tDown < 50 || TimeCount - mouse.tDown2 < 50)
+                    {
+                        tip.Form.hide(); tip.Visible = false;
+                    }
+                }
+                if ((this.tipToolStripMenuItem.Checked && inX && inY && MousePosition != tip.Previous))
+                {
+                    tip.Previous = MousePosition;
+                    tip.Begin = TimeCount;
+                    if (tip.Visible) { tip.Visible = false; tip.Form.hide(); }
+                }
+
+                if (tip.Form.KeyValue != -1)
+                {
+                    keybd_event((byte)tip.Form.KeyValue, 0, 0, 0);
+                    tip.Form.KeyValue = -1;
+                    tip.Visible = false; tip.Form.hide();
+                }
 
                 #endregion
 
@@ -970,7 +1107,7 @@ namespace PictureViewer
 
                 #region 是否显示详细信息
 
-                this.infoToolStripMenuItem.Visible = !UseBoard;
+                //this.infoToolStripMenuItem.Visible = !UseBoard;
 
                 #endregion
 
@@ -978,9 +1115,15 @@ namespace PictureViewer
 
                 int ptX = MousePosition.X - this.Location.X; if (!UseBoard) { ptX += 10; }
                 int ptY = MousePosition.Y - this.Location.Y; if (!UseBoard) { ptY += 30; }
-                bool showPageMark = this.Width > 150 && this.Height > 150 && !mouse.Down;
+
+                bool showPageMark = this.Width > 150 && this.Height > 150 && !mouse.Down &&
+                    !this.HorizontalScroll.Visible &&
+                    !this.VerticalScroll.Visible;
 
                 #endregion
+
+                //int scrollw = this.HorizontalScroll.Value;
+                //int scrollh = this.VerticalScroll.Value;
 
                 #region 左翻页
 
@@ -1030,8 +1173,7 @@ namespace PictureViewer
                     this.label2.Visible = true;
                     this.label2.Font = new Font("宋体", font);
 
-                    //this.HorizontalScroll.Value = xvalue;
-                    //this.VerticalScroll.Value = yvalue;
+                    //SetScrollW(xvalue); SetScrollH(yvalue);
                 }
                 else { this.label2.Visible = false; }
 
@@ -1091,6 +1233,8 @@ namespace PictureViewer
                 else { this.label4.Visible = false; }
 
                 #endregion
+
+                //SetScrollW(scrollw); SetScrollH(scrollh);
 
                 #region 拖拽窗体
 
@@ -1487,7 +1631,7 @@ namespace PictureViewer
 
             this.axWindowsMediaPlayer1.Visible = true;
             this.pictureBox1.Visible = false;
-
+            
             ShapeWindow();
             ShapeControl();
 
@@ -1662,15 +1806,24 @@ namespace PictureViewer
             
             int centreh = this.Location.Y + this.Height / 2;
             int centrew = this.Location.X + this.Width / 2;
-            int ch = UseBoard ? this.Height - BoardSize.Height : this.Height;
-            int cw = UseBoard ? this.Width - BoardSize.Width : this.Width;
 
-            if (show) { this.Location = new Point(this.Location.X - BoardSize.Width, this.Location.Y - BoardSize.Height); }
-            else { this.Location = new Point(this.Location.X + BoardSize.Width, this.Location.Y + BoardSize.Height); }
+            int clienth = UseBoard ? this.Height - BoardSize.Height : this.Height;
+            int clientw = UseBoard ? this.Width - BoardSize.Width : this.Width;
+
+            int xscroll = this.HorizontalScroll.Value;
+            int yscroll = this.VerticalScroll.Value;
 
             UseBoard = show;
             if (show) { this.FormBorderStyle = FormBorderStyle.Sizable; }
             else { this.FormBorderStyle = FormBorderStyle.None; }
+
+            this.Height = UseBoard ? clienth + BoardSize.Height : clienth;
+            this.Width = UseBoard ? clientw + BoardSize.Width : clientw;
+
+            if (show) { this.Location = new Point(this.Location.X - BoardSize.Width, this.Location.Y - BoardSize.Height); }
+            else { this.Location = new Point(this.Location.X + BoardSize.Width, this.Location.Y + BoardSize.Height); }
+            
+            //SetScrollW(xscroll); SetScrollH(yscroll);
 
             if (!show)
             {
@@ -1690,15 +1843,34 @@ namespace PictureViewer
                 int type = config.IsSub ? config.SubType : config.Type;
                 bool isMusic = config.IsSub ? FileOperate.IsMusic(config.SubExtension) : FileOperate.IsMusic(config.Extension);
 
-                int ch2 = UseBoard ? this.Height - BoardSize.Height : this.Height;
-                int cw2 = UseBoard ? this.Width - BoardSize.Width : this.Width;
+                int rech = UseBoard ? this.Height - BoardSize.Height : this.Height;
+                int recw = UseBoard ? this.Width - BoardSize.Width : this.Width;
+                bool PicWindowIsOK = true;
+                int picx = this.pictureBox1.Location.X;
+                int picy = this.pictureBox1.Location.Y;
+                int pich = this.pictureBox1.Height;
+                int picw = this.pictureBox1.Width;
+                if (PicWindowIsOK && pich >= rech) { PicWindowIsOK = picy <= 1; }
+                if (PicWindowIsOK && picw >= recw) { PicWindowIsOK = picx <= 1; }
+                if (PicWindowIsOK && pich < rech)
+                {
+                    int stdy = UseBoard ? (this.Height - BoardSize.Height - pich) / 2 : (this.Height - pich) / 2;
+                    PicWindowIsOK = Math.Abs(stdy - picy) <= 1;
+                }
+                if (PicWindowIsOK && picw < recw)
+                {
+                    int stdx = UseBoard ? (this.Width - BoardSize.Width - picw) / 2 : (this.Width - picw) / 2;
+                    PicWindowIsOK = Math.Abs(stdx - picx) <= 1;
+                }
 
-                if (type == 2 && (ch != ch2 || cw != cw2)) { ShowSmall(); }
-                if (type == 3 && (ch != ch2 || cw != cw2)) { ShowSmall(); }
+                if (type == -1 || type == 0 || type == 2 || type == 3)
+                {
+                    if (!PicWindowIsOK) { ShowCurrent(); }
+                }
                 if (type == 4 && isMusic) { ShapeWindow(); ShapeControl(); }
             }
 
-            this.Location = new Point(centrew - this.Width / 2, centreh - this.Height / 2);
+            //this.Location = new Point(centrew - this.Width / 2, centreh - this.Height / 2);
             if (show) { this.toolTip1.Dispose(); } else { this.toolTip1 = new ToolTip(); }
         }
         private void ShapeWindow(bool zoom = false)
@@ -2016,6 +2188,8 @@ namespace PictureViewer
 
         private void RightMenu_Refresh(object sender, EventArgs e)
         {
+            this.IsActive = true;
+
             if (config.Type == 4 || (config.IsSub && config.SubType == 4)) { ShapeControl(); return; }
             ShowCurrent();
         }
@@ -2515,19 +2689,19 @@ namespace PictureViewer
             int nextSub = currSub;
             
             if (config.IsSub && currSub > 0) { config.SubIndex--; ShowCurrent(); return; }
-            WheelPageTime = ulong.MaxValue;
+            //WheelPageTime = ulong.MaxValue;
             bool emptySub = config.SubFiles.Count == 0;
             bool outSub = config.IsSub && !emptySub && DialogResult.OK == MessageBox.Show("已经是该文件夹的第一个文件了，是否跳出当前文件夹？\n\n" + config.Name, "请确认", MessageBoxButtons.OKCancel);
-            WheelPageTime = TimeCount;
+            //WheelPageTime = TimeCount;
             if (config.IsSub && !outSub && !emptySub) { return; }
 
             nextFile--; nextSub = int.MaxValue;
             if (nextFile < 0) { nextFile = int.MaxValue; nextFolder--; }
             if (nextFolder < 0) { nextFolder = int.MaxValue; }
-            WheelPageTime = ulong.MaxValue;
-            bool emptyFolder = FileOperate.getIndexName(nextFolder, 0) == null;
+            //WheelPageTime = ulong.MaxValue;
+            bool emptyFolder = FileOperate.getIndexName(currFolder, 0) == null;
             bool outFolder = nextFolder != currFolder && !emptyFolder && DialogResult.OK == MessageBox.Show("已经是该路径的第一个文件了，是否跳出当前路径？\n\n " + config.Path, "请确认", MessageBoxButtons.OKCancel);
-            WheelPageTime = TimeCount;
+            //WheelPageTime = TimeCount;
             if (nextFolder != currFolder && !outFolder && !emptyFolder) { return; }
 
             config.FolderIndex = nextFolder;
@@ -2548,19 +2722,19 @@ namespace PictureViewer
             int nextSub = currSub;
 
             if (config.IsSub && currSub != config.SubFiles.Count - 1) { config.SubIndex++; ShowCurrent(); return; }
-            WheelPageTime = ulong.MaxValue;
+            //WheelPageTime = ulong.MaxValue;
             bool emptySub = config.SubFiles.Count == 0;
             bool outSub = config.IsSub && !emptySub && DialogResult.OK == MessageBox.Show("已经是该文件夹的最后一个文件了，是否跳出当前文件夹？\n\n" + config.Name, "请确认", MessageBoxButtons.OKCancel);
-            WheelPageTime = TimeCount;
+            //WheelPageTime = TimeCount;
             if (config.IsSub && !outSub && !emptySub) { return; }
 
             nextFile++; nextSub = 0;
             if (!FileOperate.ExistFile(nextFolder, nextFile)) { nextFile = 0; nextFolder++; }
             if (!FileOperate.ExistFolder(nextFolder)) { nextFolder = 0; }
-            WheelPageTime = ulong.MaxValue;
-            bool emptyFolder = FileOperate.getIndexName(nextFolder, 0) == null;
-            bool outFolder = nextFolder != currFolder && !emptyFolder && DialogResult.OK == MessageBox.Show("已经是该路径的最后一个文件了，是否跳出当前路径？" + config.Path, "请确认", MessageBoxButtons.OKCancel);
-            WheelPageTime = TimeCount;
+            //WheelPageTime = ulong.MaxValue;
+            bool emptyFolder = FileOperate.getIndexName(currFolder, 0) == null;
+            bool outFolder = nextFolder != currFolder && !emptyFolder && DialogResult.OK == MessageBox.Show("已经是该路径的最后一个文件了，是否跳出当前路径？\n\n" + config.Path, "请确认", MessageBoxButtons.OKCancel);
+            //WheelPageTime = TimeCount;
             if (nextFolder != currFolder && !outFolder && !emptyFolder) { return; }
 
             config.FolderIndex = nextFolder;
@@ -2600,6 +2774,15 @@ namespace PictureViewer
             if (desttype == 1) { config.SubFiles.Insert(config.SubIndex,sourname); }
             if (desttype != 1) { FileOperate.RootFiles[config.FolderIndex].Name.Insert(config.FileIndex, sourname); }
             ShowCurrent();
+        }
+
+        private void Form_Main_Activated(object sender, EventArgs e)
+        {
+            IsActive = true;
+        }
+        private void Form_Main_Deactivate(object sender, EventArgs e)
+        {
+            IsActive = false;
         }
     }
 }

@@ -48,6 +48,7 @@ namespace PictureViewer.Class
             public bool Form_Main_UseBoard { set { Load.settings.Form_Main_UseBoard = value; } }
             public bool Form_Main_ShapeWindow { set { Load.settings.Form_Main_ShapeWindow = value; } }
             public int Form_Main_ShapeWindowRate { set { Load.settings.Form_Main_ShapeWindowRate = value; } }
+            public bool Form_Main_Tip { set { Load.settings.Form_Main_Tip = value; } }
         }
 
         ///////////////////////////////////////////////////// private attribute ///////////////////////////////////////////////
@@ -118,6 +119,7 @@ namespace PictureViewer.Class
                 swCFG.WriteLine("Form_Main_ShapeWindowRate=" + Load.settings.Form_Main_ShapeWindowRate.ToString());
                 swCFG.WriteLine("Form_Main_MaxWindowSize=" + Load.settings.Form_Main_MaxWindowSize.ToString());
                 swCFG.WriteLine("Form_Main_MinWindowSize=" + Load.settings.Form_Main_MinWindowSize.ToString());
+                swCFG.WriteLine("Form_Main_Tip=" + (Load.settings.Form_Main_Tip ? "1" : "0"));
                 swCFG.WriteLine("");
             }
             catch { swCFG.Close(); return false; } swCFG.Close(); return true;

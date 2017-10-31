@@ -39,6 +39,7 @@
             this.inputToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.exportToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.pathToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.exportFolderToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.gotoToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.previousToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.nextToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -71,8 +72,8 @@
             this.label3 = new System.Windows.Forms.Label();
             this.label4 = new System.Windows.Forms.Label();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
-            this.exportFolderToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.axWindowsMediaPlayer1 = new AxWMPLib.AxWindowsMediaPlayer();
+            this.tipToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.contextMenuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.axWindowsMediaPlayer1)).BeginInit();
@@ -91,8 +92,9 @@
             this.nextToolStripMenuItem,
             this.shapeToolStripMenuItem,
             this.lockToolStripMenuItem,
-            this.hideToolStripMenuItem,
+            this.tipToolStripMenuItem,
             this.bigPicToolStripMenuItem,
+            this.hideToolStripMenuItem,
             this.toolStripMenuItem2,
             this.filePathToolStripMenuItem,
             this.deleteToolStripMenuItem,
@@ -104,7 +106,7 @@
             this.openFileToolStripMenuItem,
             this.openComicToolStripMenuItem});
             this.contextMenuStrip1.Name = "contextMenuStrip1";
-            this.contextMenuStrip1.Size = new System.Drawing.Size(153, 478);
+            this.contextMenuStrip1.Size = new System.Drawing.Size(153, 500);
             // 
             // updataToolStripMenuItem
             // 
@@ -121,18 +123,19 @@
             this.infoToolStripMenuItem.Name = "infoToolStripMenuItem";
             this.infoToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
             this.infoToolStripMenuItem.Text = "Info";
+            this.infoToolStripMenuItem.Visible = false;
             // 
             // titleToolStripMenuItem1
             // 
             this.titleToolStripMenuItem1.Name = "titleToolStripMenuItem1";
-            this.titleToolStripMenuItem1.Size = new System.Drawing.Size(100, 22);
+            this.titleToolStripMenuItem1.Size = new System.Drawing.Size(152, 22);
             this.titleToolStripMenuItem1.Text = "Title";
             this.titleToolStripMenuItem1.ToolTipText = "File Belongs To (Folder)";
             // 
             // textToolStripMenuItem
             // 
             this.textToolStripMenuItem.Name = "textToolStripMenuItem";
-            this.textToolStripMenuItem.Size = new System.Drawing.Size(100, 22);
+            this.textToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
             this.textToolStripMenuItem.Text = "Text";
             this.textToolStripMenuItem.ToolTipText = "File Name";
             // 
@@ -166,6 +169,13 @@
             this.pathToolStripMenuItem.Size = new System.Drawing.Size(155, 22);
             this.pathToolStripMenuItem.Text = "Path";
             this.pathToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Export_Path);
+            // 
+            // exportFolderToolStripMenuItem
+            // 
+            this.exportFolderToolStripMenuItem.Name = "exportFolderToolStripMenuItem";
+            this.exportFolderToolStripMenuItem.Size = new System.Drawing.Size(155, 22);
+            this.exportFolderToolStripMenuItem.Text = "Export Folder";
+            this.exportFolderToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Export_ExportFolder);
             // 
             // gotoToolStripMenuItem
             // 
@@ -417,13 +427,6 @@
             // 
             this.toolTip1.ShowAlways = true;
             // 
-            // exportFolderToolStripMenuItem
-            // 
-            this.exportFolderToolStripMenuItem.Name = "exportFolderToolStripMenuItem";
-            this.exportFolderToolStripMenuItem.Size = new System.Drawing.Size(155, 22);
-            this.exportFolderToolStripMenuItem.Text = "Export Folder";
-            this.exportFolderToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Export_ExportFolder);
-            // 
             // axWindowsMediaPlayer1
             // 
             this.axWindowsMediaPlayer1.ContextMenuStrip = this.contextMenuStrip1;
@@ -436,6 +439,13 @@
             this.axWindowsMediaPlayer1.Visible = false;
             this.axWindowsMediaPlayer1.MouseDownEvent += new AxWMPLib._WMPOCXEvents_MouseDownEventHandler(this.WMP_MouseDown);
             this.axWindowsMediaPlayer1.MouseUpEvent += new AxWMPLib._WMPOCXEvents_MouseUpEventHandler(this.WMP_MouseUp);
+            // 
+            // tipToolStripMenuItem
+            // 
+            this.tipToolStripMenuItem.CheckOnClick = true;
+            this.tipToolStripMenuItem.Name = "tipToolStripMenuItem";
+            this.tipToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.tipToolStripMenuItem.Text = "Tip";
             // 
             // Form_Main
             // 
@@ -451,9 +461,12 @@
             this.Controls.Add(this.label1);
             this.Controls.Add(this.pictureBox1);
             this.Controls.Add(this.axWindowsMediaPlayer1);
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.KeyPreview = true;
             this.Name = "Form_Main";
             this.Text = "Form1";
+            this.Activated += new System.EventHandler(this.Form_Main_Activated);
+            this.Deactivate += new System.EventHandler(this.Form_Main_Deactivate);
             this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.Form_Closed);
             this.Load += new System.EventHandler(this.Form_Loaded);
             this.DragDrop += new System.Windows.Forms.DragEventHandler(this.Form_DragDrop);
@@ -515,6 +528,7 @@
         private System.Windows.Forms.ToolStripMenuItem titleToolStripMenuItem1;
         private System.Windows.Forms.ToolStripMenuItem textToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem exportFolderToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem tipToolStripMenuItem;
     }
 }
 

@@ -46,6 +46,7 @@ namespace PictureViewer.Class
             public bool Form_Main_Lock;
             public int Form_Main_MaxWindowSize;
             public int Form_Main_MinWindowSize;
+            public bool Form_Main_Tip;
 
             public int Form_Find_Degree;
             public int Form_Find_Pixes;
@@ -77,6 +78,7 @@ namespace PictureViewer.Class
             public bool Form_Main_Lock;
             public bool Form_Main_MaxWindowSize;
             public bool Form_Main_MinWindowSize;
+            public bool Form_Main_Tip;
 
             public bool Form_Find_Degree;
             public bool Form_Find_Pixes;
@@ -154,6 +156,7 @@ namespace PictureViewer.Class
                         case "Form_Main_Lock": settings.Form_Main_Lock = int.Parse(Item[1]) != 0; Found.Form_Main_Lock = true; break;
                         case "Form_Main_MaxWindowSize": settings.Form_Main_MaxWindowSize = int.Parse(Item[1]); Found.Form_Main_MaxWindowSize = true; break;
                         case "Form_Main_MinWindowSize": settings.Form_Main_MinWindowSize = int.Parse(Item[1]); Found.Form_Main_MinWindowSize = true; break;
+                        case "Form_Main_Tip": settings.Form_Main_Tip = int.Parse(Item[1]) != 0; Found.Form_Main_Tip = true; break;
                         default: break;
                     }
 
@@ -256,6 +259,8 @@ namespace PictureViewer.Class
 
             if (!Found.Form_Main_MaxWindowSize) { settings.Form_Main_MaxWindowSize = 90; }
             if (!Found.Form_Main_MinWindowSize) { settings.Form_Main_MinWindowSize = 10; }
+
+            if (!Found.Form_Main_Tip) { settings.Form_Main_Tip = true; }
 
             #endregion
         }

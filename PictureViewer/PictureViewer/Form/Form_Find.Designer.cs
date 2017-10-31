@@ -29,12 +29,19 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form_Find));
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.contextMenuStrip1 = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.exportToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.export2ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.startToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.restartToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.modeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.fullToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.partToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.sameToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.likeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.turnToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.degreeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.pixesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.switchToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -48,12 +55,6 @@
             this.textBox1 = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
-            this.modeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.fullToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.partToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.sameToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.likeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.turnToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.contextMenuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox2)).BeginInit();
@@ -88,56 +89,103 @@
             // exportToolStripMenuItem
             // 
             this.exportToolStripMenuItem.Name = "exportToolStripMenuItem";
-            this.exportToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.exportToolStripMenuItem.Size = new System.Drawing.Size(121, 22);
             this.exportToolStripMenuItem.Text = "Export";
             this.exportToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Export);
             // 
             // export2ToolStripMenuItem
             // 
             this.export2ToolStripMenuItem.Name = "export2ToolStripMenuItem";
-            this.export2ToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.export2ToolStripMenuItem.Size = new System.Drawing.Size(121, 22);
             this.export2ToolStripMenuItem.Text = "Export2";
             this.export2ToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Export2);
             // 
             // startToolStripMenuItem
             // 
             this.startToolStripMenuItem.Name = "startToolStripMenuItem";
-            this.startToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.startToolStripMenuItem.Size = new System.Drawing.Size(121, 22);
             this.startToolStripMenuItem.Text = "Start";
             this.startToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Start);
             // 
             // restartToolStripMenuItem
             // 
             this.restartToolStripMenuItem.Name = "restartToolStripMenuItem";
-            this.restartToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.restartToolStripMenuItem.Size = new System.Drawing.Size(121, 22);
             this.restartToolStripMenuItem.Text = "Restart";
             this.restartToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Restart);
+            // 
+            // modeToolStripMenuItem
+            // 
+            this.modeToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.fullToolStripMenuItem,
+            this.partToolStripMenuItem,
+            this.sameToolStripMenuItem,
+            this.likeToolStripMenuItem,
+            this.turnToolStripMenuItem});
+            this.modeToolStripMenuItem.Name = "modeToolStripMenuItem";
+            this.modeToolStripMenuItem.Size = new System.Drawing.Size(121, 22);
+            this.modeToolStripMenuItem.Text = "Mode";
+            // 
+            // fullToolStripMenuItem
+            // 
+            this.fullToolStripMenuItem.Name = "fullToolStripMenuItem";
+            this.fullToolStripMenuItem.Size = new System.Drawing.Size(108, 22);
+            this.fullToolStripMenuItem.Text = "Full";
+            this.fullToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Mode_Full);
+            // 
+            // partToolStripMenuItem
+            // 
+            this.partToolStripMenuItem.Name = "partToolStripMenuItem";
+            this.partToolStripMenuItem.Size = new System.Drawing.Size(108, 22);
+            this.partToolStripMenuItem.Text = "Part";
+            this.partToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Mode_Part);
+            // 
+            // sameToolStripMenuItem
+            // 
+            this.sameToolStripMenuItem.Name = "sameToolStripMenuItem";
+            this.sameToolStripMenuItem.Size = new System.Drawing.Size(108, 22);
+            this.sameToolStripMenuItem.Text = "Same";
+            this.sameToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Mode_Same);
+            // 
+            // likeToolStripMenuItem
+            // 
+            this.likeToolStripMenuItem.Name = "likeToolStripMenuItem";
+            this.likeToolStripMenuItem.Size = new System.Drawing.Size(108, 22);
+            this.likeToolStripMenuItem.Text = "Like";
+            this.likeToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Mode_Like);
+            // 
+            // turnToolStripMenuItem
+            // 
+            this.turnToolStripMenuItem.Name = "turnToolStripMenuItem";
+            this.turnToolStripMenuItem.Size = new System.Drawing.Size(108, 22);
+            this.turnToolStripMenuItem.Text = "Turn";
+            this.turnToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Mode_Turn);
             // 
             // degreeToolStripMenuItem
             // 
             this.degreeToolStripMenuItem.Name = "degreeToolStripMenuItem";
-            this.degreeToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.degreeToolStripMenuItem.Size = new System.Drawing.Size(121, 22);
             this.degreeToolStripMenuItem.Text = "Degree";
             this.degreeToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Degree);
             // 
             // pixesToolStripMenuItem
             // 
             this.pixesToolStripMenuItem.Name = "pixesToolStripMenuItem";
-            this.pixesToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.pixesToolStripMenuItem.Size = new System.Drawing.Size(121, 22);
             this.pixesToolStripMenuItem.Text = "Pixes";
             this.pixesToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Pixes);
             // 
             // switchToolStripMenuItem
             // 
             this.switchToolStripMenuItem.Name = "switchToolStripMenuItem";
-            this.switchToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.switchToolStripMenuItem.Size = new System.Drawing.Size(121, 22);
             this.switchToolStripMenuItem.Text = "Switch";
             this.switchToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Switch);
             // 
             // openToolStripMenuItem
             // 
             this.openToolStripMenuItem.Name = "openToolStripMenuItem";
-            this.openToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.openToolStripMenuItem.Size = new System.Drawing.Size(121, 22);
             this.openToolStripMenuItem.Text = "Open";
             this.openToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Open);
             // 
@@ -229,53 +277,6 @@
             this.label2.Visible = false;
             this.label2.Click += new System.EventHandler(this.RightMenu_Export);
             // 
-            // modeToolStripMenuItem
-            // 
-            this.modeToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.fullToolStripMenuItem,
-            this.partToolStripMenuItem,
-            this.sameToolStripMenuItem,
-            this.likeToolStripMenuItem,
-            this.turnToolStripMenuItem});
-            this.modeToolStripMenuItem.Name = "modeToolStripMenuItem";
-            this.modeToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
-            this.modeToolStripMenuItem.Text = "Mode";
-            // 
-            // fullToolStripMenuItem
-            // 
-            this.fullToolStripMenuItem.Name = "fullToolStripMenuItem";
-            this.fullToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
-            this.fullToolStripMenuItem.Text = "Full";
-            this.fullToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Mode_Full);
-            // 
-            // partToolStripMenuItem
-            // 
-            this.partToolStripMenuItem.Name = "partToolStripMenuItem";
-            this.partToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
-            this.partToolStripMenuItem.Text = "Part";
-            this.partToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Mode_Part);
-            // 
-            // sameToolStripMenuItem
-            // 
-            this.sameToolStripMenuItem.Name = "sameToolStripMenuItem";
-            this.sameToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
-            this.sameToolStripMenuItem.Text = "Same";
-            this.sameToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Mode_Same);
-            // 
-            // likeToolStripMenuItem
-            // 
-            this.likeToolStripMenuItem.Name = "likeToolStripMenuItem";
-            this.likeToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
-            this.likeToolStripMenuItem.Text = "Like";
-            this.likeToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Mode_Like);
-            // 
-            // turnToolStripMenuItem
-            // 
-            this.turnToolStripMenuItem.Name = "turnToolStripMenuItem";
-            this.turnToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
-            this.turnToolStripMenuItem.Text = "Turn";
-            this.turnToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Mode_Turn);
-            // 
             // Form_Find
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -290,6 +291,7 @@
             this.Controls.Add(this.pictureBox1);
             this.Controls.Add(this.textBox1);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.KeyPreview = true;
             this.MaximizeBox = false;
             this.Name = "Form_Find";
