@@ -57,6 +57,7 @@
             this.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
             this.Text = "Form_Tip";
             this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.Form_Tip_KeyDown);
+            this.KeyUp += new System.Windows.Forms.KeyEventHandler(this.Form_Tip_KeyUp);
             this.ResumeLayout(false);
             this.PerformLayout();
 

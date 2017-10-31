@@ -312,10 +312,13 @@ namespace PictureViewer.Class
                 FileInfo[] files = dir.GetFiles();
                 DirectoryInfo[] folders = dir.GetDirectories();
 
-                for (int j = 0; j < folders.Length; j++) { RootFiles[j].Name.Add(folders[i].Name); }
+                for (int j = 0; j < folders.Length; j++)
+                {
+                    RootFiles[i].Name.Add(folders[j].Name);
+                }
                 for (int j = 0; j < files.Length; j++)
                 {
-                    if (!IsSupport(files[i].Extension)) { continue; }
+                    if (!IsSupport(files[j].Extension)) { continue; }
                     RootFiles[i].Name.Add(files[j].Name);
                 }
             }

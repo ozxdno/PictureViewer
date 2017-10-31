@@ -295,10 +295,14 @@ namespace PictureViewer
             /// 是否已经开启
             /// </summary>
             public bool Visible;
+            /// <summary>
+            /// 强行隐藏提示
+            /// </summary>
+            public bool Hide;
         }
-
+        
         [DllImport("user32.dll")]
-        public static extern void keybd_event(byte bVk, byte bScan, int dwFlags, int dwExtraInfo);
+        public static extern void keybd_event(byte bVk, byte bScan, int dwFlags, int dwExtraInfo); // dwFlags = 0 按下 dwFlags = 2 抬起
 
         ///////////////////////////////////////////////////// public method ///////////////////////////////////////////////
 
@@ -477,7 +481,7 @@ namespace PictureViewer
 
             #region 上一项
 
-            if (e.KeyValue == 17)
+            if (e.KeyValue == 33)
             {
                 RightMenu_Previous(null, null); return;
             }
@@ -486,7 +490,7 @@ namespace PictureViewer
 
             #region 下一项
 
-            if (e.KeyValue == 35)
+            if (e.KeyValue == 34)
             {
                 RightMenu_Next(null, null); return;
             }
@@ -688,7 +692,7 @@ namespace PictureViewer
                 mouse.tUp2 = TimeCount;
             }
         }
-
+        
         private void Form_Main_DoubleClick(object sender, EventArgs e)
         {
             #region 判断位置是否摆正
@@ -923,10 +927,7 @@ namespace PictureViewer
         {
             int ch = UseBoard ? this.Height - BoardSize.Height : this.Height;
             int cw = UseBoard ? this.Width - BoardSize.Width : this.Width;
-
-            if (!tip.Visible && !IsActive) { return; }
-            if (tip.Visible) { IsActive = false; }
-
+            
             #region 播放视频/音频时，滚轮不起作用
 
             if (config.Type == 4 || (config.IsSub && config.SubType == 4))
@@ -951,13 +952,19 @@ namespace PictureViewer
             if (this.lockToolStripMenuItem.Checked ||
                 (!this.axWindowsMediaPlayer1.Visible && !this.pictureBox1.Visible))
             {
-                //if (WheelPageTime == ulong.MaxValue) { return; }
-
+                if (WheelPageTime == ulong.MaxValue) { return; }
                 if (TimeCount - WheelPageTime < 20) { return; }
-                WheelPageTime = TimeCount;
+                
+                WheelPageTime = ulong.MaxValue;
+                bool prevState = tip.Hide;
+                tip.Hide = true;
 
                 if (e.Delta > 0) { RightMenu_Previous(null, null); }
                 if (e.Delta < 0) { RightMenu_Next(null, null); }
+
+                tip.Hide = prevState;
+                WheelPageTime = TimeCount;
+
                 return;
             }
 
@@ -1046,6 +1053,7 @@ namespace PictureViewer
                     ulong pause = 300;
 
                     bool mustOK =
+                        !(tip.Hide) &&
                         TimeCount - mouse.tDown > 50 &&
                         TimeCount - mouse.tDown2 > 50 &&
                         TimeCount - mouse.tUp > 20 &&
@@ -1084,13 +1092,9 @@ namespace PictureViewer
                         tip.Form.hide(); tip.Visible = false;
                     }
                 }
-                if ((this.tipToolStripMenuItem.Checked && inX && inY && MousePosition != tip.Previous))
-                {
-                    tip.Previous = MousePosition;
-                    tip.Begin = TimeCount;
-                    if (tip.Visible) { tip.Visible = false; tip.Form.hide(); }
-                }
-                if ((!inX || !inY) && tip.Visible)
+                if (tip.Hide ||
+                    ((!inX || !inY) && tip.Visible) ||
+                    (this.tipToolStripMenuItem.Checked && inX && inY && MousePosition != tip.Previous))
                 {
                     tip.Previous = MousePosition;
                     tip.Begin = TimeCount;
@@ -1099,9 +1103,33 @@ namespace PictureViewer
 
                 if (tip.Form.KeyValue != -1)
                 {
-                    keybd_event((byte)tip.Form.KeyValue, 0, 0, 0);
-                    tip.Form.KeyValue = -1;
-                    tip.Visible = false; tip.Form.hide();
+                    if (tip.Form.KeyValue == 33 ||
+                        tip.Form.KeyValue == 34 ||
+                        tip.Form.KeyValue == 37 ||
+                        tip.Form.KeyValue == 38 ||
+                        tip.Form.KeyValue == 39 ||
+                        tip.Form.KeyValue == 40 ||
+                        tip.Form.KeyValue == 65 ||
+                        tip.Form.KeyValue == 13)
+                    {
+                        KeyEventArgs eKey = new KeyEventArgs((Keys)tip.Form.KeyValue);
+                        if (tip.Form.KeyState == 0) { Form_KeyDown(null, eKey); }
+                        if (tip.Form.KeyState == 2) { Form_KeyUp(null, eKey); }
+                        tip.Form.KeyValue = -1;
+                    }
+
+                    if (tip.Form.KeyValue == 46 ||
+                        tip.Form.KeyValue == 49 ||
+                        tip.Form.KeyValue == 50 ||
+                        tip.Form.KeyValue == 51 ||
+                        tip.Form.KeyValue == 52 ||
+                        tip.Form.KeyValue == 80 ||
+                        tip.Form.KeyValue == 27)
+                    {
+                        keybd_event((byte)tip.Form.KeyValue, 0, tip.Form.KeyState, 0);
+                        tip.Form.KeyValue = -1;
+                        tip.Visible = false; tip.Form.hide();
+                    }
                 }
 
                 #endregion
@@ -1497,7 +1525,7 @@ namespace PictureViewer
 
             #region 隐藏文件不予显示
 
-            if (!FileSupport.SupportHide && !config.IsSub ? config.Hide : config.SubHide)
+            if (!FileSupport.SupportHide && (!config.IsSub ? config.Hide : config.SubHide))
             {
                 this.Text = config.IsSub ?
                     index + " " + subindex + " [Unknow] " + config.Name + " : " + config.SubName :

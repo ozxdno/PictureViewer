@@ -38,10 +38,27 @@ namespace PictureViewer
             this.Hide();
         }
 
+        /// <summary>
+        /// 按下键的键值
+        /// </summary>
         public int KeyValue = -1;
+        /// <summary>
+        /// 键的状态：
+        /// 0 - 按下
+        /// 2 - 抬起
+        /// </summary>
+        public int KeyState = 0;
+
         private void Form_Tip_KeyDown(object sender, KeyEventArgs e)
         {
             KeyValue = e.KeyValue;
+            KeyState = 0;
+        }
+
+        private void Form_Tip_KeyUp(object sender, KeyEventArgs e)
+        {
+            KeyValue = e.KeyValue;
+            KeyState = 2;
         }
     }
 }
