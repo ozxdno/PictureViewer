@@ -2516,17 +2516,19 @@ namespace PictureViewer
             
             if (config.IsSub && currSub > 0) { config.SubIndex--; ShowCurrent(); return; }
             WheelPageTime = ulong.MaxValue;
-            bool outSub = config.IsSub && DialogResult.OK == MessageBox.Show("已经是该文件夹的最后一个文件了，是否跳出当前文件夹？\n\n" + config.Name, "请确认", MessageBoxButtons.OKCancel);
+            bool emptySub = config.SubFiles.Count == 0;
+            bool outSub = config.IsSub && !emptySub && DialogResult.OK == MessageBox.Show("已经是该文件夹的第一个文件了，是否跳出当前文件夹？\n\n" + config.Name, "请确认", MessageBoxButtons.OKCancel);
             WheelPageTime = TimeCount;
-            if (config.IsSub && !outSub) { return; }
+            if (config.IsSub && !outSub && !emptySub) { return; }
 
             nextFile--; nextSub = int.MaxValue;
             if (nextFile < 0) { nextFile = int.MaxValue; nextFolder--; }
             if (nextFolder < 0) { nextFolder = int.MaxValue; }
             WheelPageTime = ulong.MaxValue;
-            bool outFolder = nextFolder != currFolder && DialogResult.OK == MessageBox.Show("已经是该路径的最后一个文件了，是否跳出当前路径？\n\n " + config.Path, "请确认", MessageBoxButtons.OKCancel);
+            bool emptyFolder = FileOperate.getIndexName(nextFolder, 0) == null;
+            bool outFolder = nextFolder != currFolder && !emptyFolder && DialogResult.OK == MessageBox.Show("已经是该路径的第一个文件了，是否跳出当前路径？\n\n " + config.Path, "请确认", MessageBoxButtons.OKCancel);
             WheelPageTime = TimeCount;
-            if (nextFolder != currFolder && !outFolder) { return; }
+            if (nextFolder != currFolder && !outFolder && !emptyFolder) { return; }
 
             config.FolderIndex = nextFolder;
             config.FileIndex = nextFile;
@@ -2547,17 +2549,19 @@ namespace PictureViewer
 
             if (config.IsSub && currSub != config.SubFiles.Count - 1) { config.SubIndex++; ShowCurrent(); return; }
             WheelPageTime = ulong.MaxValue;
-            bool outSub = config.IsSub && DialogResult.OK == MessageBox.Show("已经是该文件夹的最后一个文件了，是否跳出当前文件夹？\n\n" + config.Name, "请确认", MessageBoxButtons.OKCancel);
+            bool emptySub = config.SubFiles.Count == 0;
+            bool outSub = config.IsSub && !emptySub && DialogResult.OK == MessageBox.Show("已经是该文件夹的最后一个文件了，是否跳出当前文件夹？\n\n" + config.Name, "请确认", MessageBoxButtons.OKCancel);
             WheelPageTime = TimeCount;
-            if (config.IsSub && !outSub) { return; }
+            if (config.IsSub && !outSub && !emptySub) { return; }
 
             nextFile++; nextSub = 0;
             if (!FileOperate.ExistFile(nextFolder, nextFile)) { nextFile = 0; nextFolder++; }
             if (!FileOperate.ExistFolder(nextFolder)) { nextFolder = 0; }
             WheelPageTime = ulong.MaxValue;
-            bool outFolder = nextFolder != currFolder && DialogResult.OK == MessageBox.Show("已经是该路径的最后一个文件了，是否跳出当前路径？" + config.Path, "请确认", MessageBoxButtons.OKCancel);
+            bool emptyFolder = FileOperate.getIndexName(nextFolder, 0) == null;
+            bool outFolder = nextFolder != currFolder && !emptyFolder && DialogResult.OK == MessageBox.Show("已经是该路径的最后一个文件了，是否跳出当前路径？" + config.Path, "请确认", MessageBoxButtons.OKCancel);
             WheelPageTime = TimeCount;
-            if (nextFolder != currFolder && !outFolder) { return; }
+            if (nextFolder != currFolder && !outFolder && !emptyFolder) { return; }
 
             config.FolderIndex = nextFolder;
             config.FileIndex = nextFile;
