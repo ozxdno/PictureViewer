@@ -1611,6 +1611,7 @@ namespace PictureViewer
             g.Dispose();
             
             this.pictureBox1.Image = config.DestPicture;
+            SetScroll0();
             ShapeControl();
         }
         private void ShowRate()
@@ -1651,6 +1652,9 @@ namespace PictureViewer
 
             this.pictureBox1.Image = config.DestPicture;
             ShapeControl(true);
+
+            this.axWindowsMediaPlayer1.Visible = false;
+            this.pictureBox1.Visible = true;
         }
         private void ShowBoard(bool show)
         {
@@ -1807,10 +1811,14 @@ namespace PictureViewer
             }
 
             #endregion
+
             
-            this.Height = UseBoard ? shapeh + BoardSize.Height : shapeh;
-            this.Width = UseBoard ? shapew + BoardSize.Width : shapew;
-            this.Location = new Point(centrew - this.Width / 2, centreh - this.Height / 2);
+            int newh = UseBoard ? shapeh + BoardSize.Height : shapeh;
+            int neww = UseBoard ? shapew + BoardSize.Width : shapew;
+            this.Height = newh;
+            this.Width = neww;
+            this.Location = new Point(centrew - neww / 2, centreh - newh / 2);
+            
         }
         private void ShapeControl(bool zoom = false)
         {
@@ -1855,9 +1863,9 @@ namespace PictureViewer
                 int x = shapew > rectw ? 0 : (rectw - shapew) / 2;
                 int y = shapeh > recth ? 0 : (recth - shapeh) / 2;
 
-                this.pictureBox1.Location = new Point(x, y);
                 this.pictureBox1.Height = shapeh;
                 this.pictureBox1.Width = shapew;
+                this.pictureBox1.Location = new Point(x, y);
             }
 
             #endregion
