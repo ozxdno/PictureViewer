@@ -200,6 +200,14 @@ namespace PictureViewer
         /// </summary>
         private ulong WheelPageTime;
         /// <summary>
+        /// 缓存上一次 X 方向的滑动量
+        /// </summary>
+        private int PrevScrollX;
+        /// <summary>
+        /// 缓存上一次 Y 方向的滑动量
+        /// </summary>
+        private int PrevScrollY;
+        /// <summary>
         /// 该窗体是否被激活
         /// </summary>
         private bool IsActive;
@@ -881,6 +889,9 @@ namespace PictureViewer
                 mouse.Up = false;
                 mouse.pDown = MousePosition;
                 mouse.tDown = TimeCount;
+
+                PrevScrollX = this.HorizontalScroll.Value;
+                PrevScrollY = this.VerticalScroll.Value;
             }
 
             if (e.Button == MouseButtons.Right)
@@ -1255,28 +1266,14 @@ namespace PictureViewer
                 #endregion
 
                 #region 拖拽图片
-
-                if ((this.HorizontalScroll.Visible || this.VerticalScroll.Visible) && mouse.Down)
+                
+                if((this.HorizontalScroll.Visible || this.VerticalScroll.Visible) && mouse.Down)
                 {
-                    Point Current = MousePosition;
-                    int xMove = -(Current.X - mouse.pDown.X) / 10;
-                    int yMove = -(Current.Y - mouse.pDown.Y) / 10;
+                    int xS = MousePosition.X - mouse.pDown.X;
+                    int yS = MousePosition.Y - mouse.pDown.Y;
 
-                    //if (xMove > yMove) { yMove = 0; }
-                    //if (yMove > xMove) { xMove = 0; }
-
-                    int xScroll = this.HorizontalScroll.Value;
-                    int yScroll = this.VerticalScroll.Value;
-                    xScroll += xMove;
-                    yScroll += yMove;
-                    if (xScroll < this.HorizontalScroll.Minimum) { xScroll = this.HorizontalScroll.Minimum; }
-                    if (xScroll > this.HorizontalScroll.Maximum) { xScroll = this.HorizontalScroll.Maximum; }
-                    if (yScroll < this.VerticalScroll.Minimum) { yScroll = this.VerticalScroll.Minimum; }
-                    if (yScroll > this.VerticalScroll.Maximum) { yScroll = this.VerticalScroll.Maximum; }
-
-                    if (this.HorizontalScroll.Visible) { this.HorizontalScroll.Value = xScroll; }
-                    if (this.VerticalScroll.Visible) { this.VerticalScroll.Value = yScroll; }
-                    //mouse.Previous = Current;
+                    SetScrollW(PrevScrollX - xS);
+                    SetScrollH(PrevScrollY - yS);
                 }
 
                 #endregion
@@ -2069,6 +2066,9 @@ namespace PictureViewer
         }
         private void SetScrollH(int value)
         {
+            if (value < this.VerticalScroll.Minimum) { value = this.VerticalScroll.Minimum; }
+            if (value > this.VerticalScroll.Maximum) { value = this.VerticalScroll.Maximum; }
+
             int current = this.VerticalScroll.Value;
             int pace = this.VerticalScroll.LargeChange;
             int adjust = value - current;
@@ -2085,6 +2085,9 @@ namespace PictureViewer
         }
         private void SetScrollW(int value)
         {
+            if (value < this.HorizontalScroll.Minimum) { value = this.HorizontalScroll.Minimum; }
+            if (value > this.HorizontalScroll.Maximum) { value = this.HorizontalScroll.Maximum; }
+
             int current = this.HorizontalScroll.Value;
             int pace = this.HorizontalScroll.LargeChange;
             int adjust = value - current;
