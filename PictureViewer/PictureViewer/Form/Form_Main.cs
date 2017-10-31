@@ -1622,7 +1622,9 @@ namespace PictureViewer
             int type = config.IsSub ? config.SubType : config.Type;
             if (type != 2 && type != -1) { return; }
             if (config.SourPicture == null) { return; }
-            
+
+            //if (UseShapeWindow) { ShowSmall(); return; }
+
             SetScroll0();
             ShapeWindow(true);
 
@@ -1651,10 +1653,8 @@ namespace PictureViewer
             g.Dispose();
 
             this.pictureBox1.Image = config.DestPicture;
+            SetScroll0();
             ShapeControl(true);
-
-            this.axWindowsMediaPlayer1.Visible = false;
-            this.pictureBox1.Visible = true;
         }
         private void ShowBoard(bool show)
         {
@@ -1817,8 +1817,9 @@ namespace PictureViewer
             int neww = UseBoard ? shapew + BoardSize.Width : shapew;
             this.Height = newh;
             this.Width = neww;
-            this.Location = new Point(centrew - neww / 2, centreh - newh / 2);
-            
+            int setx = centrew - this.Width / 2;
+            int sety = centreh - this.Height / 2;
+            this.Location = new Point(setx, sety);
         }
         private void ShapeControl(bool zoom = false)
         {
