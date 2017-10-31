@@ -260,7 +260,7 @@ namespace PictureViewer.Class
             if (!Found.Form_Main_MaxWindowSize) { settings.Form_Main_MaxWindowSize = 90; }
             if (!Found.Form_Main_MinWindowSize) { settings.Form_Main_MinWindowSize = 10; }
 
-            if (!Found.Form_Main_Tip) { settings.Form_Main_Tip = true; }
+            if (!Found.Form_Main_Tip) { settings.Form_Main_Tip = !settings.Form_Main_UseBoard; }
 
             #endregion
         }

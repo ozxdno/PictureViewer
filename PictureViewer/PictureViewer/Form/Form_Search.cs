@@ -171,12 +171,8 @@ namespace PictureViewer
                 this.listBox1.Items.RemoveAt(i);
             }
 
-            //for (int i = 0; i < FileNames.Count; i++)
-            //{ this.listBox1.Items[i] = "[" + (i + 1).ToString() + "] " + FileNames[i]; }
-
-            //this.listBox1.Items.Clear();
-            //for (int i = 0; i < FileIndexs.Count; i++)
-            //{ this.listBox1.Items.Add("[" + (i + 1).ToString() + "] " + FileNames[i]); }
+            this.toolTip1.ToolTipTitle = "Search Result : " + this.listBox1.Items.Count.ToString();
+            this.toolTip1.SetToolTip(this.listBox1, "Unselect File");
         }
     }
 }

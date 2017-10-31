@@ -1034,9 +1034,7 @@ namespace PictureViewer
                     int type = config.IsSub ? config.SubType : config.Type;
                     ulong pause = 300;
 
-                    bool mustOK = hover > 20 &&
-                        hover < pause &&
-                        !UseBoard &&
+                    bool mustOK =
                         TimeCount - mouse.tDown > 50 &&
                         TimeCount - mouse.tDown2 > 50 &&
                         TimeCount - mouse.tUp > 20 &&
@@ -1044,13 +1042,13 @@ namespace PictureViewer
                         !mouse.Down &&
                         !mouse.Down2 &&
                         !this.contextMenuStrip1.Visible &&
-                        IsActive &&
+                        !(!IsActive && !tip.Visible) &&
                         !(this.HorizontalScroll.Visible || this.VerticalScroll.Visible) &&
                         !this.label1.Visible &&
                         !this.label2.Visible &&
                         !this.label3.Visible &&
                         !this.label4.Visible;
-                    
+
                     if (mustOK && tip.Message != this.Text)
                     {
                         tip.Begin = TimeCount;
@@ -1059,8 +1057,10 @@ namespace PictureViewer
                         tip.Form.show(tip.Message);
                         IsActive = true;
                     }
-                    
-                    if (mustOK && tip.Message == this.Text)
+
+                    if (mustOK && tip.Message == this.Text &&
+                        hover > 20 &&
+                        hover < pause)
                     {
                         tip.Message = this.Text;
                         tip.Visible = true;
@@ -1074,6 +1074,12 @@ namespace PictureViewer
                     }
                 }
                 if ((this.tipToolStripMenuItem.Checked && inX && inY && MousePosition != tip.Previous))
+                {
+                    tip.Previous = MousePosition;
+                    tip.Begin = TimeCount;
+                    if (tip.Visible) { tip.Visible = false; tip.Form.hide(); }
+                }
+                if ((!inX || !inY) && tip.Visible)
                 {
                     tip.Previous = MousePosition;
                     tip.Begin = TimeCount;
@@ -1823,10 +1829,11 @@ namespace PictureViewer
             if (show) { this.Location = new Point(this.Location.X - BoardSize.Width, this.Location.Y - BoardSize.Height); }
             else { this.Location = new Point(this.Location.X + BoardSize.Width, this.Location.Y + BoardSize.Height); }
             
-            //SetScrollW(xscroll); SetScrollH(yscroll);
+            SetScrollW(xscroll); SetScrollH(yscroll);
 
             if (!show)
             {
+                this.tipToolStripMenuItem.Checked = true;
                 // 当不显示边框时
                 // 音乐文件的窗体大小需要切换
 
@@ -1836,6 +1843,7 @@ namespace PictureViewer
             }
             else
             {
+                this.tipToolStripMenuItem.Checked = false;
                 // 当显示边框时
                 // 音乐文件的窗体大小需要切换
                 // 图片文件窗口过小，重新调整窗口
