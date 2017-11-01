@@ -1144,6 +1144,54 @@ namespace PictureViewer
 
                 #endregion
 
+                #region 播放
+
+                if (this.playToolStripMenuItem.Checked)
+                {
+                    bool playNext = (config.IsSub ? config.SubType : config.Type) != 4;
+
+                    if (!playNext)
+                    {
+                        playNext = this.axWindowsMediaPlayer1.playState == WMPLib.WMPPlayState.wmppsStopped;
+                    }
+                    
+                    if (playNext)
+                    {
+                        int nextFolder = config.FolderIndex;
+                        int nextFile = config.IsSub ? config.FileIndex : config.FileIndex + 1;
+                        int nextSub = config.IsSub ? 0 : config.SubIndex + 1;
+                        
+                        if (FileOperate.ExistFolder(nextFolder))
+                        {
+                            string path = FileOperate.RootFiles[nextFolder].Path;
+
+                            for (; nextFile < FileOperate.RootFiles[nextFolder].Name.Count; nextFile++)
+                            {
+                                string name = FileOperate.RootFiles[nextFolder].Name[nextFile];
+                                int type = FileOperate.getFileType(FileOperate.getExtension(name));
+                                if (type != 4 && type != 1) { nextSub = 0; continue; }
+
+                                if (type == 4) { config.FolderIndex = nextFolder; config.FileIndex = nextFile; ShowCurrent(); break; }
+
+                                List<string> subfiles = FileOperate.getSubFiles(path + "\\" + name);
+                                bool found = false;
+                                for (; nextSub < subfiles.Count; nextSub++)
+                                {
+                                    int subtype = FileOperate.getFileType(FileOperate.getExtension(subfiles[nextSub]));
+                                    if (subtype != 4) { continue; }
+                                    config.FolderIndex = nextFolder; config.FileIndex = nextFile; config.SubIndex = nextSub;
+                                    found = true; ShowCurrent(); break;
+                                }
+                                if (found) { break; }
+                            }
+                            if (nextFile >= FileOperate.RootFiles[nextFolder].Name.Count)
+                            { this.playToolStripMenuItem.Checked = false; }
+                        }
+                    }
+                }
+
+                #endregion
+
                 #region 刷新隐藏翻页键菜单
 
                 bool hideU = this.hideUToolStripMenuItem.Checked;

@@ -45,12 +45,13 @@
             this.nextToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.shapeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.lockToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.tipToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.bigPicToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.hideToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.hideUToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.hideDToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.hideLToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.hideRToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.bigPicToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem2 = new System.Windows.Forms.ToolStripSeparator();
             this.filePathToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.deleteToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -73,7 +74,7 @@
             this.label4 = new System.Windows.Forms.Label();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.axWindowsMediaPlayer1 = new AxWMPLib.AxWindowsMediaPlayer();
-            this.tipToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.playToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.contextMenuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.axWindowsMediaPlayer1)).BeginInit();
@@ -97,6 +98,7 @@
             this.hideToolStripMenuItem,
             this.toolStripMenuItem2,
             this.filePathToolStripMenuItem,
+            this.playToolStripMenuItem,
             this.deleteToolStripMenuItem,
             this.findToolStripMenuItem,
             this.searchToolStripMenuItem,
@@ -106,7 +108,7 @@
             this.openFileToolStripMenuItem,
             this.openComicToolStripMenuItem});
             this.contextMenuStrip1.Name = "contextMenuStrip1";
-            this.contextMenuStrip1.Size = new System.Drawing.Size(153, 500);
+            this.contextMenuStrip1.Size = new System.Drawing.Size(153, 522);
             // 
             // updataToolStripMenuItem
             // 
@@ -128,14 +130,14 @@
             // titleToolStripMenuItem1
             // 
             this.titleToolStripMenuItem1.Name = "titleToolStripMenuItem1";
-            this.titleToolStripMenuItem1.Size = new System.Drawing.Size(152, 22);
+            this.titleToolStripMenuItem1.Size = new System.Drawing.Size(100, 22);
             this.titleToolStripMenuItem1.Text = "Title";
             this.titleToolStripMenuItem1.ToolTipText = "File Belongs To (Folder)";
             // 
             // textToolStripMenuItem
             // 
             this.textToolStripMenuItem.Name = "textToolStripMenuItem";
-            this.textToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.textToolStripMenuItem.Size = new System.Drawing.Size(100, 22);
             this.textToolStripMenuItem.Text = "Text";
             this.textToolStripMenuItem.ToolTipText = "File Name";
             // 
@@ -212,6 +214,21 @@
             this.lockToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
             this.lockToolStripMenuItem.Text = "Lock";
             // 
+            // tipToolStripMenuItem
+            // 
+            this.tipToolStripMenuItem.CheckOnClick = true;
+            this.tipToolStripMenuItem.Name = "tipToolStripMenuItem";
+            this.tipToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.tipToolStripMenuItem.Text = "Tip";
+            // 
+            // bigPicToolStripMenuItem
+            // 
+            this.bigPicToolStripMenuItem.Name = "bigPicToolStripMenuItem";
+            this.bigPicToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.bigPicToolStripMenuItem.Text = "Big Picture";
+            this.bigPicToolStripMenuItem.Visible = false;
+            this.bigPicToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_BigPicture);
+            // 
             // hideToolStripMenuItem
             // 
             this.hideToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
@@ -251,14 +268,6 @@
             this.hideRToolStripMenuItem.Name = "hideRToolStripMenuItem";
             this.hideRToolStripMenuItem.Size = new System.Drawing.Size(116, 22);
             this.hideRToolStripMenuItem.Text = "Hide R";
-            // 
-            // bigPicToolStripMenuItem
-            // 
-            this.bigPicToolStripMenuItem.Name = "bigPicToolStripMenuItem";
-            this.bigPicToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
-            this.bigPicToolStripMenuItem.Text = "Big Picture";
-            this.bigPicToolStripMenuItem.Visible = false;
-            this.bigPicToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_BigPicture);
             // 
             // toolStripMenuItem2
             // 
@@ -440,12 +449,12 @@
             this.axWindowsMediaPlayer1.MouseDownEvent += new AxWMPLib._WMPOCXEvents_MouseDownEventHandler(this.WMP_MouseDown);
             this.axWindowsMediaPlayer1.MouseUpEvent += new AxWMPLib._WMPOCXEvents_MouseUpEventHandler(this.WMP_MouseUp);
             // 
-            // tipToolStripMenuItem
+            // playToolStripMenuItem
             // 
-            this.tipToolStripMenuItem.CheckOnClick = true;
-            this.tipToolStripMenuItem.Name = "tipToolStripMenuItem";
-            this.tipToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
-            this.tipToolStripMenuItem.Text = "Tip";
+            this.playToolStripMenuItem.CheckOnClick = true;
+            this.playToolStripMenuItem.Name = "playToolStripMenuItem";
+            this.playToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.playToolStripMenuItem.Text = "Play";
             // 
             // Form_Main
             // 
@@ -529,6 +538,7 @@
         private System.Windows.Forms.ToolStripMenuItem textToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem exportFolderToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem tipToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem playToolStripMenuItem;
     }
 }
 

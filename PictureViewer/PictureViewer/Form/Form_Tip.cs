@@ -29,8 +29,19 @@ namespace PictureViewer
             this.Height = this.label1.Height + 2;
             //this.Width = (int)sz.Width + 3;
             this.Width = this.label1.Width + 12;
-            this.Location = new Point(MousePosition.X + 20, MousePosition.Y + 20);
-            
+
+            int sh = Screen.PrimaryScreen.Bounds.Height;
+            int sw = Screen.PrimaryScreen.Bounds.Width;
+
+            int bgx = MousePosition.X + 20;
+            int edx = bgx + this.Width;
+            int bgy = MousePosition.Y + 20;
+            int edy = bgy + this.Height;
+
+            if (edx > sw) { edx = sw - 10; bgx = edx - this.Width; }
+            if (edy > sh) { edy = MousePosition.Y - 20; bgy = edy - this.Height; }
+
+            this.Location = new Point(bgx, bgy);
             this.Show();
         }
         public void hide()
