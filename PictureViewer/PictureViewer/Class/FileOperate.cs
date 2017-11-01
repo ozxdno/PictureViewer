@@ -87,7 +87,7 @@ namespace PictureViewer.Class
         /// <summary>
         /// 搜索根目录
         /// </summary>
-        /// <param name="rootpath"></param>
+        /// <param name="rootpath">需要寻找的根目录</param>
         /// <returns></returns>
         public static int Search(string rootpath)
         {
@@ -558,18 +558,19 @@ namespace PictureViewer.Class
         {
             return FileSupport.IsVideo(extension);
         }
-        
+
         /// <summary>
         /// 获取指定序号的根目录，超出范围会自动更正，不存在返回 NULL
         /// </summary>
         /// <param name="FolderIndex">指定根目录序号</param>
+        /// <param name="Fit">是否自动调整索引号</param>
         /// <returns></returns>
-        public static string getIndexPath(int FolderIndex)
+        public static string getIndexPath(int FolderIndex, bool Fit = true)
         {
             if (RootFiles.Count == 0) { return null; }
 
-            if (FolderIndex < 0) { FolderIndex = 0; }
-            if (FolderIndex >= RootFiles.Count) { FolderIndex = RootFiles.Count - 1; }
+            if (FolderIndex < 0) { if (!Fit) { return null; } FolderIndex = 0; }
+            if (FolderIndex >= RootFiles.Count) { if (!Fit) { return null; } FolderIndex = RootFiles.Count - 1; }
 
             return RootFiles[FolderIndex].Path;
         }
@@ -578,16 +579,17 @@ namespace PictureViewer.Class
         /// </summary>
         /// <param name="FolderIndex">指定根目录序号</param>
         /// <param name="FileIndex">指定文件序号</param>
+        /// <param name="Fit">是否自动调整索引号</param>
         /// <returns></returns>
-        public static string getIndexName(int FolderIndex, int FileIndex)
+        public static string getIndexName(int FolderIndex, int FileIndex, bool Fit = true)
         {
             if (RootFiles.Count == 0) { return null; }
-            if (FolderIndex < 0) { FolderIndex = 0; }
-            if (FolderIndex >= RootFiles.Count) { FolderIndex = RootFiles.Count - 1; }
+            if (FolderIndex < 0) { if (!Fit) { return null; } FolderIndex = 0; }
+            if (FolderIndex >= RootFiles.Count) { if (!Fit) { return null; } FolderIndex = RootFiles.Count - 1; }
 
             if (RootFiles[FolderIndex].Name.Count == 0) { return null; }
-            if (FileIndex < 0) { FileIndex = 0; }
-            if (FileIndex >= RootFiles[FolderIndex].Name.Count) { FileIndex = RootFiles[FolderIndex].Name.Count - 1; }
+            if (FileIndex < 0) { if (!Fit) { return null; } FileIndex = 0; }
+            if (FileIndex >= RootFiles[FolderIndex].Name.Count) { if (!Fit) { return null; } FileIndex = RootFiles[FolderIndex].Name.Count - 1; }
 
             return RootFiles[FolderIndex].Name[FileIndex];
         }

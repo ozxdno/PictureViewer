@@ -979,7 +979,7 @@ namespace PictureViewer
 
             #region 图片型文件滑动滚轮操作
 
-            if (codephase == -1 || codephase == 2)
+            if (codephase == -1 || codephase == 0 || codephase == 2)
             {
                 // 必须存在源图
                 if (config.SourPicture == null) { return; }
@@ -1051,24 +1051,30 @@ namespace PictureViewer
                     ulong hover = TimeCount - tip.Begin;
                     int type = config.IsSub ? config.SubType : config.Type;
                     ulong pause = 300;
+                    bool sameText = this.Text == tip.Message;
 
                     bool mustOK =
                         !(tip.Hide) &&
+                        hover > 20 &&
+                        !mouse.Down &&
+                        !mouse.Down2 &&
                         TimeCount - mouse.tDown > 50 &&
                         TimeCount - mouse.tDown2 > 50 &&
                         TimeCount - mouse.tUp > 20 &&
                         TimeCount - mouse.tUp2 > 20 &&
-                        !mouse.Down &&
-                        !mouse.Down2 &&
                         !this.contextMenuStrip1.Visible &&
                         !(!IsActive && !tip.Visible) &&
-                        !(this.HorizontalScroll.Visible || this.VerticalScroll.Visible) &&
                         !this.label1.Visible &&
                         !this.label2.Visible &&
                         !this.label3.Visible &&
                         !this.label4.Visible;
 
-                    if (mustOK && tip.Message != this.Text)
+                    if (sameText)
+                    {
+                        sameText = true;
+                    }
+                    
+                    if (mustOK && !sameText)
                     {
                         tip.Begin = TimeCount;
                         tip.Message = this.Text;
@@ -1078,8 +1084,8 @@ namespace PictureViewer
                     }
 
                     if (mustOK && tip.Message == this.Text &&
-                        hover > 20 &&
-                        hover < pause)
+                        hover < pause &&
+                         !(this.HorizontalScroll.Visible || this.VerticalScroll.Visible))
                     {
                         tip.Message = this.Text;
                         tip.Visible = true;
@@ -1087,9 +1093,13 @@ namespace PictureViewer
                         IsActive = true;
                     }
 
-                    if (hover > pause || TimeCount - mouse.tDown < 50 || TimeCount - mouse.tDown2 < 50)
+                    if (hover > pause ||
+                        TimeCount - mouse.tDown < 50 ||
+                        TimeCount - mouse.tDown2 < 50 ||
+                        TimeCount - mouse.tUp < 20 ||
+                        TimeCount - mouse.tUp2 < 20)
                     {
-                        tip.Form.hide(); tip.Visible = false;
+                        if (sameText) { tip.Form.hide(); tip.Visible = false; }
                     }
                 }
                 if (tip.Hide ||
@@ -1512,7 +1522,7 @@ namespace PictureViewer
                 "[" + (config.SubIndex + 1).ToString() + "/" + config.SubFiles.Count.ToString() + "]" :
                 "";
 
-            if (config.Error == 1) { config.Error = 0; this.Text = index + " [Wrong Password] " + config.Name; ShowErr(); return; }
+            //if (config.Error == 1) { config.Error = 0; this.Text = index + " [Wrong Password] " + config.Name; ShowErr(); return; }
 
             if (FileOperate.RootFiles.Count == 0) { this.Text = "[Empty] You can click right button to input a folder to start"; ShowNot(); return; }
             if (!config.ExistFolder) { this.Text = "[Not Exist] " + config.Path; ShowNot(); return; }
@@ -1600,6 +1610,12 @@ namespace PictureViewer
 
             if (config.Type == 5)
             {
+                if (!ZipOperate.Known)
+                {
+                    this.Text = index + " " + subindex + " [Wrong Password] " + config.Name + " : " + config.SubName;
+                    ShowErr(); return;
+                }
+
                 this.Text = index + " " + subindex + " " + config.Name + " : " + config.SubName;
                 
                 if (config.SubType == 2 && ZipOperate.LoadPictureEX()) { ShowPicture(null, null, false); return; }
@@ -1795,7 +1811,7 @@ namespace PictureViewer
             // 不能放出滚动条
 
             int type = config.IsSub ? config.SubType : config.Type;
-            if (type != 2 && type != -1) { return; }
+            if (type != 2 && type != -1 && type != 0) { return; }
             if (config.SourPicture == null) { return; }
 
             //if (UseShapeWindow) { ShowSmall(); return; }
@@ -1927,7 +1943,7 @@ namespace PictureViewer
 
             #region 隐藏文件、错误提示的大小
 
-            if (type == -1 && config.SourPicture != null)
+            if ((type == -1 || type == 0) && config.SourPicture != null)
             {
                 int maxh = sh * ShapeWindowRate / 100;
                 int maxw = sw * ShapeWindowRate / 100;
@@ -2557,7 +2573,7 @@ namespace PictureViewer
 
             config.FolderIndex = search.FolderIndex;
             config.FileIndex = search.FileIndex;
-            config.SubIndex = 0;
+            config.SubIndex = search.SubIndex;
             ShowCurrent();
         }
         private void RightMenu_OpenExport(object sender, EventArgs e)
