@@ -47,6 +47,16 @@ namespace PictureViewer.Class
             public int Form_Main_MaxWindowSize;
             public int Form_Main_MinWindowSize;
             public bool Form_Main_Tip;
+            public bool Form_Main_Play_Root;
+            public bool Form_Main_Play_Subroot;
+            public bool Form_Main_Play_Picture;
+            public bool Form_Main_Play_Gif;
+            public bool Form_Main_Play_Music;
+            public bool Form_Main_Play_Video;
+            public bool Form_Main_Play_Single;
+            public bool Form_Main_Play_Order;
+            public bool Form_Main_Play_Circle;
+            public int Form_Main_Play_ShowTime;
 
             public int Form_Find_Degree;
             public int Form_Find_Pixes;
@@ -79,6 +89,16 @@ namespace PictureViewer.Class
             public bool Form_Main_MaxWindowSize;
             public bool Form_Main_MinWindowSize;
             public bool Form_Main_Tip;
+            public bool Form_Main_Play_Root;
+            public bool Form_Main_Play_Subroot;
+            public bool Form_Main_Play_Picture;
+            public bool Form_Main_Play_Gif;
+            public bool Form_Main_Play_Music;
+            public bool Form_Main_Play_Video;
+            public bool Form_Main_Play_Single;
+            public bool Form_Main_Play_Order;
+            public bool Form_Main_Play_Circle;
+            public bool Form_Main_Play_ShowTime;
 
             public bool Form_Find_Degree;
             public bool Form_Find_Pixes;
@@ -157,6 +177,16 @@ namespace PictureViewer.Class
                         case "Form_Main_MaxWindowSize": settings.Form_Main_MaxWindowSize = int.Parse(Item[1]); Found.Form_Main_MaxWindowSize = true; break;
                         case "Form_Main_MinWindowSize": settings.Form_Main_MinWindowSize = int.Parse(Item[1]); Found.Form_Main_MinWindowSize = true; break;
                         case "Form_Main_Tip": settings.Form_Main_Tip = int.Parse(Item[1]) != 0; Found.Form_Main_Tip = true; break;
+                        case "Form_Main_Play_Root": settings.Form_Main_Play_Root = int.Parse(Item[1]) != 0; Found.Form_Main_Play_Root = true; break;
+                        case "Form_Main_Play_Subroot": settings.Form_Main_Play_Subroot = int.Parse(Item[1]) != 0; Found.Form_Main_Play_Subroot = true; break;
+                        case "Form_Main_Play_Picture": settings.Form_Main_Play_Picture = int.Parse(Item[1]) != 0; Found.Form_Main_Play_Picture = true; break;
+                        case "Form_Main_Play_Gif": settings.Form_Main_Play_Gif = int.Parse(Item[1]) != 0; Found.Form_Main_Play_Gif = true; break;
+                        case "Form_Main_Play_Music": settings.Form_Main_Play_Music = int.Parse(Item[1]) != 0; Found.Form_Main_Play_Music = true; break;
+                        case "Form_Main_Play_Video": settings.Form_Main_Play_Video = int.Parse(Item[1]) != 0; Found.Form_Main_Play_Video = true; break;
+                        case "Form_Main_Play_Single": settings.Form_Main_Play_Single = int.Parse(Item[1]) != 0; Found.Form_Main_Play_Single = true; break;
+                        case "Form_Main_Play_Order": settings.Form_Main_Play_Order = int.Parse(Item[1]) != 0; Found.Form_Main_Play_Order = true; break;
+                        case "Form_Main_Play_Circle": settings.Form_Main_Play_Circle = int.Parse(Item[1]) != 0; Found.Form_Main_Play_Circle = true; break;
+                        case "Form_Main_Play_ShowTime": settings.Form_Main_Play_ShowTime = int.Parse(Item[1]); Found.Form_Main_Play_ShowTime = true; break;
                         default: break;
                     }
 
@@ -242,12 +272,13 @@ namespace PictureViewer.Class
 
             int sh = System.Windows.Forms.Screen.PrimaryScreen.Bounds.Height;
             int sw = System.Windows.Forms.Screen.PrimaryScreen.Bounds.Width;
+            int side = Math.Min(sh * 10 / 100, sw * 10 / 100);
 
             if (!Found.Form_Main_UseSmallWindowOpen) { settings.Form_Main_UseSmallWindowOpen = false; }
-            if (!Found.Form_Main_Height) { settings.Form_Main_Height = sh * 50 / 100; }
-            if (!Found.Form_Main_Width) { settings.Form_Main_Width = sw * 50 / 100; }
+            if (!Found.Form_Main_Height) { settings.Form_Main_Height = sh * 80 / 100; }
+            if (!Found.Form_Main_Width) { settings.Form_Main_Width = sw * 80 / 100; }
             if (settings.Form_Main_UseSmallWindowOpen)
-            { settings.Form_Main_Height = 150; settings.Form_Main_Width = 200; }
+            { settings.Form_Main_Height = settings.Form_Main_Width = side; }
 
             if (!Found.Form_Main_UseBoard) { settings.Form_Main_UseBoard = false; }
             if (!Found.Form_Main_ShapeWindow) { settings.Form_Main_ShapeWindow = true; }
@@ -261,6 +292,17 @@ namespace PictureViewer.Class
             if (!Found.Form_Main_MinWindowSize) { settings.Form_Main_MinWindowSize = 10; }
 
             if (!Found.Form_Main_Tip) { settings.Form_Main_Tip = !settings.Form_Main_UseBoard; }
+
+            if (!Found.Form_Main_Play_Root) { settings.Form_Main_Play_Root = true; }
+            if (!Found.Form_Main_Play_Subroot) { settings.Form_Main_Play_Subroot = false; }
+            if (!Found.Form_Main_Play_Picture) { settings.Form_Main_Play_Picture = true; }
+            if (!Found.Form_Main_Play_Gif) { settings.Form_Main_Play_Gif = false; }
+            if (!Found.Form_Main_Play_Music) { settings.Form_Main_Play_Music = false; }
+            if (!Found.Form_Main_Play_Video) { settings.Form_Main_Play_Video = false; }
+            if (!Found.Form_Main_Play_Single) { settings.Form_Main_Play_Single = false; }
+            if (!Found.Form_Main_Play_Order) { settings.Form_Main_Play_Order = false; }
+            if (!Found.Form_Main_Play_Circle) { settings.Form_Main_Play_Circle = true; }
+            if (!Found.Form_Main_Play_ShowTime) { settings.Form_Main_Play_ShowTime = 50; }
 
             #endregion
         }

@@ -223,6 +223,10 @@ namespace PictureViewer
         /// 提示信息
         /// </summary>
         private TIP tip;
+        /// <summary>
+        /// 播放设置
+        /// </summary>
+        private PLAY play;
 
         /// <summary>
         /// 鼠标信息
@@ -300,6 +304,48 @@ namespace PictureViewer
             /// </summary>
             public bool Hide;
         }
+        /// <summary>
+        /// 播放设置
+        /// </summary>
+        private struct PLAY
+        {
+            /// <summary>
+            /// 是否需要播放
+            /// </summary>
+            public bool IsPlaying;
+            /// <summary>
+            /// 正在显示的文件类型
+            /// 1 - 保留；
+            /// 2 - 图片；
+            /// 3 - Gif；
+            /// 4 - 音乐；
+            /// 5 - 视频；
+            /// </summary>
+            public int Type;
+            /// <summary>
+            /// 起始播放时间
+            /// </summary>
+            public ulong Begin;
+
+            public int FolderIndex;
+            public int FileIndex;
+            public int SubIndex;
+
+            public bool Root;
+            public bool Subroot;
+
+            public bool Picture;
+            public bool Gif;
+            public bool Music;
+            public bool Video;
+
+            public bool Single;
+            public bool Order;
+            public bool Circle;
+
+            public ulong ShowTime;
+            public bool FoundNext;
+        }
         
         [DllImport("user32.dll")]
         public static extern void keybd_event(byte bVk, byte bScan, int dwFlags, int dwExtraInfo); // dwFlags = 0 按下 dwFlags = 2 抬起
@@ -372,6 +418,15 @@ namespace PictureViewer
             this.Width = Class.Load.settings.Form_Main_Width;
             this.Location = new Point(Class.Load.settings.Form_Main_Location_X, Class.Load.settings.Form_Main_Location_Y);
 
+            if (UseSmallWindowOpen)
+            {
+                int side = Math.Min(MinWindowSize.Height, MinWindowSize.Width);
+                this.Height = side;
+                this.Width = side;
+                this.Location = new Point((sw - this.Width) / 2, (sh - this.Height) / 2);
+                ShapeWindowRate = 10;
+            }
+
             #endregion
 
             #region 其他，参数初始化
@@ -386,6 +441,39 @@ namespace PictureViewer
             tip.Visible = false;
 
             this.tipToolStripMenuItem.Checked = Class.Load.settings.Form_Main_Tip;
+
+            #endregion
+
+            #region play
+
+            play.IsPlaying = false;
+            play.Type = -1;
+            play.Begin = 0;
+            play.Root = Class.Load.settings.Form_Main_Play_Root;
+            play.Subroot = Class.Load.settings.Form_Main_Play_Subroot;
+            play.FolderIndex = 0;
+            play.FileIndex = 0;
+            play.SubIndex = 0;
+            play.Picture = Class.Load.settings.Form_Main_Play_Picture;
+            play.Gif = Class.Load.settings.Form_Main_Play_Gif;
+            play.Music = Class.Load.settings.Form_Main_Play_Music;
+            play.Video = Class.Load.settings.Form_Main_Play_Video;
+            play.Single = Class.Load.settings.Form_Main_Play_Single;
+            play.Order = Class.Load.settings.Form_Main_Play_Order;
+            play.Circle = Class.Load.settings.Form_Main_Play_Circle;
+            play.ShowTime = (ulong)(Class.Load.settings.Form_Main_Play_ShowTime);
+            play.FoundNext = false;
+
+            this.rootToolStripMenuItem.Checked = play.Root;
+            this.subrootToolStripMenuItem.Checked = play.Subroot;
+            this.pictureToolStripMenuItem.Checked = play.Picture;
+            this.gifToolStripMenuItem.Checked = play.Gif;
+            this.musicToolStripMenuItem.Checked = play.Music;
+            this.videoToolStripMenuItem.Checked = play.Video;
+            this.singleToolStripMenuItem.Checked = play.Single;
+            this.orderToolStripMenuItem.Checked = play.Order;
+            this.circleToolStripMenuItem.Checked = play.Circle;
+            this.showTimeToolStripMenuItem.Text = "Time: " + play.ShowTime.ToString();
 
             #endregion
 
@@ -462,7 +550,18 @@ namespace PictureViewer
             Class.Save.settings.Form_Main_ShapeWindowRate = ShapeWindowRate;
             Class.Save.settings.Form_Main_Lock = this.lockToolStripMenuItem.Checked;
             Class.Save.settings.Form_Main_Tip = this.tipToolStripMenuItem.Checked;
-            
+
+            Class.Save.settings.Form_Main_Play_Root = play.Root;
+            Class.Save.settings.Form_Main_Play_Subroot = play.Subroot;
+            Class.Save.settings.Form_Main_Play_Picture = play.Picture;
+            Class.Save.settings.Form_Main_Play_Gif = play.Gif;
+            Class.Save.settings.Form_Main_Play_Music = play.Music;
+            Class.Save.settings.Form_Main_Play_Video = play.Video;
+            Class.Save.settings.Form_Main_Play_Single = play.Single;
+            Class.Save.settings.Form_Main_Play_Order = play.Order;
+            Class.Save.settings.Form_Main_Play_Circle = play.Circle;
+            Class.Save.settings.Form_Main_Play_ShowTime = (int)play.ShowTime;
+
             Timer.Close(); Class.Save.Save_CFG();
         }
         private void Form_KeyDown(object sender, KeyEventArgs e)
@@ -695,6 +794,12 @@ namespace PictureViewer
         
         private void Form_Main_DoubleClick(object sender, EventArgs e)
         {
+            #region 播放时的双击操作
+
+            if (play.IsPlaying && play.Type != 4 && play.Type != 5) { play.IsPlaying = false; return; }
+
+            #endregion
+
             #region 判断位置是否摆正
 
             int rech = UseBoard ? this.Height - BoardSize.Height : this.Height;
@@ -952,6 +1057,8 @@ namespace PictureViewer
             if (this.lockToolStripMenuItem.Checked ||
                 (!this.axWindowsMediaPlayer1.Visible && !this.pictureBox1.Visible))
             {
+                //play.IsPlaying = false;
+
                 if (WheelPageTime == ulong.MaxValue) { return; }
                 if (TimeCount - WheelPageTime < 20) { return; }
                 
@@ -1046,6 +1153,8 @@ namespace PictureViewer
                 bool inX = MousePosition.X >= this.Location.X && MousePosition.X <= this.Location.X + this.Width;
                 bool inY = MousePosition.Y >= this.Location.Y && MousePosition.Y <= this.Location.Y + this.Height;
 
+                #region 提示
+
                 if (this.tipToolStripMenuItem.Checked && inX && inY && MousePosition == tip.Previous)
                 {
                     ulong hover = TimeCount - tip.Begin;
@@ -1102,14 +1211,21 @@ namespace PictureViewer
                         if (sameText) { tip.Form.hide(); tip.Visible = false; }
                     }
                 }
-                if (tip.Hide ||
-                    ((!inX || !inY) && tip.Visible) ||
-                    (this.tipToolStripMenuItem.Checked && inX && inY && MousePosition != tip.Previous))
+
+                #endregion
+
+                #region 刷新
+
+                if (MousePosition != tip.Previous || !IsActive)
                 {
                     tip.Previous = MousePosition;
                     tip.Begin = TimeCount;
                     if (tip.Visible) { tip.Visible = false; tip.Form.hide(); }
                 }
+
+                #endregion
+
+                #region 按键
 
                 if (tip.Form.KeyValue != -1)
                 {
@@ -1144,50 +1260,263 @@ namespace PictureViewer
 
                 #endregion
 
+                #endregion
+
                 #region 播放
 
-                if (this.playToolStripMenuItem.Checked)
-                {
-                    bool playNext = (config.IsSub ? config.SubType : config.Type) != 4;
+                #region 菜单栏刷新
 
-                    if (!playNext)
+                play.Root = this.rootToolStripMenuItem.Checked;
+                play.Subroot = this.subrootToolStripMenuItem.Checked;
+
+                play.Picture = this.pictureToolStripMenuItem.Checked;
+                play.Gif = this.gifToolStripMenuItem.Checked;
+                play.Music = this.musicToolStripMenuItem.Checked;
+                play.Video = this.videoToolStripMenuItem.Checked;
+
+                play.Single = this.singleToolStripMenuItem.Checked;
+                play.Order = this.orderToolStripMenuItem.Checked;
+                play.Circle = this.circleToolStripMenuItem.Checked;
+
+                play.IsPlaying = play.IsPlaying &&
+                    (play.Root || play.Subroot) &&
+                    (play.Picture || play.Gif || play.Music || play.Video) &&
+                    (play.Single || play.Order || play.Circle);
+
+                this.playToolStripMenuItem.Checked = play.IsPlaying;
+                this.startToolStripMenuItem.Text = play.IsPlaying ? "Stop" : "Start";
+
+                #endregion
+
+                if (play.IsPlaying)
+                {
+                    #region 能否播放下一个
+
+                    bool playNext = true;
+
+                    if(playNext)
+                    {
+                        string name = config.IsSub ? config.SubFiles[config.SubIndex] : config.Name;
+                        string extension = FileOperate.getExtension(name);
+                        int type = FileOperate.getFileType(extension);
+                        bool isMusic = FileOperate.IsMusic(extension);
+                        bool isVideo = FileOperate.IsVideo(extension);
+                        
+                        if (type == 2) { play.Type = 2; }
+                        if (type == 3) { play.Type = 3; }
+                        if (type == 4 && isMusic) { play.Type = 4; }
+                        if (type == 4 && isVideo) { play.Type = 5; }
+                    }
+                    if (playNext && (play.Type == 2 || play.Type == 3))
+                    {
+                        ulong showtime = play.ShowTime;
+                        if (showtime < 10) { showtime = 10; }
+                        playNext = TimeCount - play.Begin > showtime;
+                    }
+                    if (playNext && (play.Type == 4 || play.Type == 5))
                     {
                         playNext = this.axWindowsMediaPlayer1.playState == WMPLib.WMPPlayState.wmppsStopped;
                     }
-                    
-                    if (playNext)
+
+                    #endregion
+
+                    #region 单曲循环
+
+                    if (playNext && play.Single)
+                    {
+                        play.Begin = TimeCount;
+                        if (play.Type != 2) { ShowCurrent(); } else { play.IsPlaying = false; }
+                        playNext = false;
+                    }
+
+                    #endregion
+
+                    #region 根目录列表播放/循环
+
+                    if (playNext && play.Root && !play.Single)
                     {
                         int nextFolder = config.FolderIndex;
                         int nextFile = config.IsSub ? config.FileIndex : config.FileIndex + 1;
-                        int nextSub = config.IsSub ? 0 : config.SubIndex + 1;
-                        
+                        int nextSub = config.IsSub ? config.SubIndex + 1 : 0;
+
+                        #region 查询下一个文件
+
                         if (FileOperate.ExistFolder(nextFolder))
                         {
                             string path = FileOperate.RootFiles[nextFolder].Path;
+                            play.FoundNext = false;
 
-                            for (; nextFile < FileOperate.RootFiles[nextFolder].Name.Count; nextFile++)
+                            #region 查询列表
+
+                            for (; nextFile < FileOperate.RootFiles[nextFolder].Name.Count; nextFile++, nextSub = 0)
                             {
-                                string name = FileOperate.RootFiles[nextFolder].Name[nextFile];
-                                int type = FileOperate.getFileType(FileOperate.getExtension(name));
-                                if (type != 4 && type != 1) { nextSub = 0; continue; }
+                                if (play.FoundNext) { break; }
 
-                                if (type == 4) { config.FolderIndex = nextFolder; config.FileIndex = nextFile; ShowCurrent(); break; }
+                                string name = FileOperate.RootFiles[nextFolder].Name[nextFile];
+                                string extension = FileOperate.getExtension(name);
+                                int type = FileOperate.getFileType(extension);
+                                bool IsMusic = FileOperate.IsMusic(extension);
+                                bool IsVideo = FileOperate.IsVideo(extension);
+
+                                play.FoundNext = 
+                                    (play.Picture && type == 2) ||
+                                    (play.Gif && type == 3) ||
+                                    (play.Music && IsMusic) ||
+                                    (play.Video && IsVideo);
+
+                                if (play.FoundNext) { play.FolderIndex = nextFolder; play.FileIndex = nextFile; play.SubIndex = nextSub; break; }
+                                if (!FileOperate.IsComic(type)) { continue; }
 
                                 List<string> subfiles = FileOperate.getSubFiles(path + "\\" + name);
-                                bool found = false;
                                 for (; nextSub < subfiles.Count; nextSub++)
                                 {
-                                    int subtype = FileOperate.getFileType(FileOperate.getExtension(subfiles[nextSub]));
-                                    if (subtype != 4) { continue; }
-                                    config.FolderIndex = nextFolder; config.FileIndex = nextFile; config.SubIndex = nextSub;
-                                    found = true; ShowCurrent(); break;
+                                    type = FileOperate.getFileType(FileOperate.getExtension(subfiles[nextSub]));
+
+                                    play.FoundNext =
+                                        (play.Picture && type == 2) ||
+                                        (play.Gif && type == 3) ||
+                                        (play.Music && IsMusic) ||
+                                        (play.Video && IsVideo);
+
+                                    if (!play.FoundNext) { continue; }
+
+                                    play.FolderIndex = nextFolder; play.FileIndex = nextFile; play.SubIndex = nextSub; break;
                                 }
-                                if (found) { break; }
                             }
-                            if (nextFile >= FileOperate.RootFiles[nextFolder].Name.Count)
-                            { this.playToolStripMenuItem.Checked = false; }
+
+                            #endregion
+
+                            #region 查询循环
+
+                            for (nextFile = 0; nextFile <= config.FileIndex; nextFile++)
+                            {
+                                if (play.FoundNext || !play.Circle) { break; }
+
+                                string name = FileOperate.RootFiles[nextFolder].Name[nextFile];
+                                string extension = FileOperate.getExtension(name);
+                                int type = FileOperate.getFileType(extension);
+                                bool IsMusic = FileOperate.IsMusic(extension);
+                                bool IsVideo = FileOperate.IsVideo(extension);
+
+                                play.FoundNext =
+                                    (play.Picture && type == 2) ||
+                                    (play.Gif && type == 3) ||
+                                    (play.Music && IsMusic) ||
+                                    (play.Video && IsVideo);
+
+                                if (play.FoundNext) { play.FolderIndex = nextFolder; play.FileIndex = nextFile; play.SubIndex = nextSub; break; }
+                                if (!FileOperate.IsComic(type)) { continue; }
+
+                                List<string> subfiles = FileOperate.getSubFiles(path + "\\" + name);
+                                for (nextSub = 0; nextSub < subfiles.Count; nextSub++)
+                                {
+                                    type = FileOperate.getFileType(FileOperate.getExtension(subfiles[nextSub]));
+
+                                    play.FoundNext =
+                                        (play.Picture && type == 2) ||
+                                        (play.Gif && type == 3) ||
+                                        (play.Music && IsMusic) ||
+                                        (play.Video && IsVideo);
+
+                                    if (!play.FoundNext) { continue; }
+
+                                    play.FolderIndex = nextFolder; play.FileIndex = nextFile; play.SubIndex = nextSub; break;
+                                }
+                            }
+
+                            #endregion
                         }
+
+                        #endregion
+
+                        #region 播放查到的文件
+
+                        if (!play.FoundNext) { play.IsPlaying = false; } else
+                        {
+                            config.FolderIndex = play.FolderIndex;
+                            config.FileIndex = play.FileIndex;
+                            config.SubIndex = play.SubIndex;
+                            play.Begin = TimeCount;
+                            ShowCurrent();
+                        }
+
+                        #endregion
                     }
+
+                    #endregion
+
+                    #region 子目录列表播放/循环
+
+                    if (playNext && play.Subroot && !play.Single)
+                    {
+                        int nextFolder = config.FolderIndex;
+                        int nextFile = config.FileIndex;
+                        int nextSub = config.SubIndex + 1;
+                        play.FoundNext = false;
+
+                        #region 查询列表
+
+                        for (; nextSub < config.SubFiles.Count; nextSub++)
+                        {
+                            if (play.FoundNext) { break; }
+
+                            string name = config.SubFiles[nextSub];
+                            string extension = FileOperate.getExtension(name);
+                            int type = FileOperate.getFileType(extension);
+                            bool IsMusic = FileOperate.IsMusic(extension);
+                            bool IsVideo = FileOperate.IsVideo(extension);
+
+                            play.FoundNext =
+                                    (play.Picture && type == 2) ||
+                                    (play.Gif && type == 3) ||
+                                    (play.Music && IsMusic) ||
+                                    (play.Video && IsVideo);
+
+                            if (play.FoundNext) { play.FolderIndex = nextFolder; play.FileIndex = nextFile; play.SubIndex = nextSub; }
+                        }
+
+                        #endregion
+
+                        #region 循环查询
+
+                        for (nextSub = 0; nextSub < config.SubIndex; nextSub++)
+                        {
+                            if (!play.Circle || play.FoundNext) { break; }
+
+                            string name = config.SubFiles[nextSub];
+                            string extension = FileOperate.getExtension(name);
+                            int type = FileOperate.getFileType(extension);
+                            bool IsMusic = FileOperate.IsMusic(extension);
+                            bool IsVideo = FileOperate.IsVideo(extension);
+
+                            play.FoundNext =
+                                    (play.Picture && type == 2) ||
+                                    (play.Gif && type == 3) ||
+                                    (play.Music && IsMusic) ||
+                                    (play.Video && IsVideo);
+
+                            if (play.FoundNext) { play.FolderIndex = nextFolder; play.FileIndex = nextFile; play.SubIndex = nextSub; }
+                        }
+
+                        #endregion
+
+                        #region 播放查到的文件
+
+                        if (!play.FoundNext) { play.IsPlaying = false; }
+                        else
+                        {
+                            config.FolderIndex = play.FolderIndex;
+                            config.FileIndex = play.FileIndex;
+                            config.SubIndex = play.SubIndex;
+                            play.Begin = TimeCount;
+                            ShowCurrent();
+                        }
+
+                        #endregion
+
+                    }
+
+                    #endregion
                 }
 
                 #endregion
@@ -2227,6 +2556,12 @@ namespace PictureViewer
         }
         private void ShowFiles()
         {
+            // 释放资源
+            if (config.SourPicture != null) { try { config.SourPicture.Dispose(); } catch { } }
+            if (config.DestPicture != null) { try { config.DestPicture.Dispose(); } catch { } }
+            if (this.axWindowsMediaPlayer1.playState == WMPLib.WMPPlayState.wmppsPlaying)
+            { try { this.axWindowsMediaPlayer1.Ctlcontrols.stop(); } catch { } }
+
             // 更改文件后缀
             for (int i = 0; i < FileOperate.RootFiles.Count; i++) { FileOperate.ShowFiles(FileOperate.RootFiles[i].Path); }
 
@@ -2275,6 +2610,12 @@ namespace PictureViewer
         }
         private void ShowCurrentFolder()
         {
+            // 释放资源
+            if (config.SourPicture != null) { try { config.SourPicture.Dispose(); } catch { } }
+            if (config.DestPicture != null) { try { config.DestPicture.Dispose(); } catch { } }
+            if (this.axWindowsMediaPlayer1.playState == WMPLib.WMPPlayState.wmppsPlaying)
+            { try { this.axWindowsMediaPlayer1.Ctlcontrols.stop(); } catch { } }
+
             // 更改文件后缀
             if (config.FolderIndex < 0) { return; }
             if (config.FolderIndex >= FileOperate.RootFiles.Count) { return; }
@@ -2844,6 +3185,122 @@ namespace PictureViewer
             config.FileIndex = nextFile;
             config.SubIndex = nextSub;
             ShowCurrent();
+        }
+        private void RightMenu_Play_Order(object sender, EventArgs e)
+        {
+            this.orderToolStripMenuItem.Checked = !this.orderToolStripMenuItem.Checked;
+            if (!this.orderToolStripMenuItem.Checked) { return; }
+
+            this.circleToolStripMenuItem.Checked = false;
+            this.singleToolStripMenuItem.Checked = false;
+        }
+        private void RightMenu_Play_Circle(object sender, EventArgs e)
+        {
+            this.circleToolStripMenuItem.Checked = !this.circleToolStripMenuItem.Checked;
+            if (!this.circleToolStripMenuItem.Checked) { return; }
+
+            this.orderToolStripMenuItem.Checked = false;
+            this.singleToolStripMenuItem.Checked = false;
+        }
+        private void RightMenu_Play_Single(object sender, EventArgs e)
+        {
+            this.singleToolStripMenuItem.Checked = !this.singleToolStripMenuItem.Checked;
+            if (!this.singleToolStripMenuItem.Checked) { return; }
+
+            this.orderToolStripMenuItem.Checked = false;
+            this.circleToolStripMenuItem.Checked = false;
+        }
+        private void RightMenu_Play_Root(object sender, EventArgs e)
+        {
+            this.rootToolStripMenuItem.Checked = !this.rootToolStripMenuItem.Checked;
+            this.subrootToolStripMenuItem.Checked = !this.rootToolStripMenuItem.Checked;
+        }
+        private void RightMenu_Play_Subroot(object sender, EventArgs e)
+        {
+            this.subrootToolStripMenuItem.Checked = !this.subrootToolStripMenuItem.Checked;
+            this.rootToolStripMenuItem.Checked = !this.subrootToolStripMenuItem.Checked;
+        }
+        private void RightMenu_Play_Picture(object sender, EventArgs e)
+        {
+            this.pictureToolStripMenuItem.Checked = !this.pictureToolStripMenuItem.Checked;
+        }
+        private void RightMenu_Play_Gif(object sender, EventArgs e)
+        {
+            this.gifToolStripMenuItem.Checked = !this.gifToolStripMenuItem.Checked;
+        }
+        private void RightMenu_Play_Music(object sender, EventArgs e)
+        {
+            this.musicToolStripMenuItem.Checked = !this.musicToolStripMenuItem.Checked;
+        }
+        private void RightMenu_Play_Video(object sender, EventArgs e)
+        {
+            this.videoToolStripMenuItem.Checked = !this.videoToolStripMenuItem.Checked;
+        }
+        private void RightMenu_Play_ShowTime(object sender, EventArgs e)
+        {
+            Form_Input input = new Form_Input(play.ShowTime.ToString());
+            input.Location = MousePosition;
+            input.ShowDialog();
+
+            int showtime = 0;
+            try { showtime = int.Parse(input.Input); } catch { return; }
+            if (showtime <= 0 || showtime > 0x0FFFFFFF) { return; }
+
+            play.ShowTime = (ulong)showtime;
+            this.showTimeToolStripMenuItem.Text = "Time: " + play.ShowTime.ToString();
+        }
+        private void RightMenu_Play_Start(object sender, EventArgs e)
+        {
+            if (play.IsPlaying) { play.IsPlaying = false; return; }
+            
+            //if (!play.Root && !play.Subroot) { MessageBox.Show("必须指定播放文件夹或子文件夹！", "提示"); return; }
+            //if (!play.Picture && !play.Gif && !play.Music && !play.Video) { MessageBox.Show("必须存在可播放类型文件！", "提示"); return; }
+            //if (!play.Single && !play.Order && !play.Circle) { MessageBox.Show("必须选择播放方式！", "提示"); return; }
+            //if (play.Root && !FileOperate.ExistFolder(config.FolderIndex)) { MessageBox.Show("当前文件夹不存在！", "提示"); return; }
+            //if (play.Subroot && config.SubFiles.Count == 0) { MessageBox.Show("当前文件不是子文件夹或子文件夹为空！", "提示"); return; }
+
+            string name = config.IsSub ? config.SubFiles[config.SubIndex] : config.Name;
+            string extension = FileOperate.getExtension(name);
+            int type = FileOperate.getFileType(extension);
+            bool isMusic = FileOperate.IsMusic(extension);
+            bool isVideo = FileOperate.IsVideo(extension);
+
+            play.IsPlaying = true;
+            play.Begin = TimeCount;
+            if (type == 2) { play.Type = 2; }
+            if (type == 3) { play.Type = 3; }
+            if (type == 4 && isMusic) { play.Type = 4; }
+            if (type == 4 && isVideo) { play.Type = 5; }
+
+            if (play.Subroot && (!config.IsSub || config.SubFiles.Count == 0))
+            {
+                this.rootToolStripMenuItem.Checked = true;
+                this.subrootToolStripMenuItem.Checked = false;
+                play.Root = true;
+                play.Subroot = false;
+            }
+            if (!play.Root && !play.Subroot)
+            {
+                this.subrootToolStripMenuItem.Checked = config.IsSub && config.SubFiles.Count != 0;
+                this.rootToolStripMenuItem.Checked = !this.subrootToolStripMenuItem.Checked;
+            }
+            if (!play.Picture && !play.Gif && !play.Music && !play.Video)
+            {
+                if (play.Type == 2) { this.pictureToolStripMenuItem.Checked = true; }
+                else if (play.Type == 3) { this.gifToolStripMenuItem.Checked = true; }
+                else if (play.Type == 4) { this.musicToolStripMenuItem.Checked = true; }
+                else if (play.Type == 5) { this.videoToolStripMenuItem.Checked = true; }
+                else { this.pictureToolStripMenuItem.Checked = true; }
+            }
+            if (!play.Single && !play.Order && !play.Circle)
+            {
+                this.orderToolStripMenuItem.Checked = true;
+            }
+            if (play.Single && play.Type == 2)
+            {
+                this.singleToolStripMenuItem.Checked = false;
+                this.orderToolStripMenuItem.Checked = true;
+            }
         }
 
         private void Form_DragEntre(object sender, DragEventArgs e)

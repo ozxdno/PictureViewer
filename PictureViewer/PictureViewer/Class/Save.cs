@@ -49,6 +49,17 @@ namespace PictureViewer.Class
             public bool Form_Main_ShapeWindow { set { Load.settings.Form_Main_ShapeWindow = value; } }
             public int Form_Main_ShapeWindowRate { set { Load.settings.Form_Main_ShapeWindowRate = value; } }
             public bool Form_Main_Tip { set { Load.settings.Form_Main_Tip = value; } }
+
+            public bool Form_Main_Play_Root { set { Load.settings.Form_Main_Play_Root = value; } }
+            public bool Form_Main_Play_Subroot { set { Load.settings.Form_Main_Play_Subroot = value; } }
+            public bool Form_Main_Play_Picture { set { Load.settings.Form_Main_Play_Picture = value; } }
+            public bool Form_Main_Play_Gif { set { Load.settings.Form_Main_Play_Gif = value; } }
+            public bool Form_Main_Play_Music { set { Load.settings.Form_Main_Play_Music = value; } }
+            public bool Form_Main_Play_Video { set { Load.settings.Form_Main_Play_Video = value; } }
+            public bool Form_Main_Play_Single { set { Load.settings.Form_Main_Play_Single = value; } }
+            public bool Form_Main_Play_Order { set { Load.settings.Form_Main_Play_Order = value; } }
+            public bool Form_Main_Play_Circle { set { Load.settings.Form_Main_Play_Circle = value; } }
+            public int Form_Main_Play_ShowTime { set { Load.settings.Form_Main_Play_ShowTime = value; } }
         }
 
         ///////////////////////////////////////////////////// private attribute ///////////////////////////////////////////////
@@ -121,6 +132,17 @@ namespace PictureViewer.Class
                 swCFG.WriteLine("Form_Main_MinWindowSize=" + Load.settings.Form_Main_MinWindowSize.ToString());
                 swCFG.WriteLine("Form_Main_Tip=" + (Load.settings.Form_Main_Tip ? "1" : "0"));
                 swCFG.WriteLine("");
+
+                swCFG.WriteLine("Form_Main_Play_Root=" + (Load.settings.Form_Main_Play_Root ? "1" : "0"));
+                swCFG.WriteLine("Form_Main_Play_Subroot=" + (Load.settings.Form_Main_Play_Subroot ? "1" : "0"));
+                swCFG.WriteLine("Form_Main_Play_Picture=" + (Load.settings.Form_Main_Play_Picture ? "1" : "0"));
+                swCFG.WriteLine("Form_Main_Play_Gif=" + (Load.settings.Form_Main_Play_Gif ? "1" : "0"));
+                swCFG.WriteLine("Form_Main_Play_Music=" + (Load.settings.Form_Main_Play_Music ? "1" : "0"));
+                swCFG.WriteLine("Form_Main_Play_Video=" + (Load.settings.Form_Main_Play_Video ? "1" : "0"));
+                swCFG.WriteLine("Form_Main_Play_Single=" + (Load.settings.Form_Main_Play_Single ? "1" : "0"));
+                swCFG.WriteLine("Form_Main_Play_Order=" + (Load.settings.Form_Main_Play_Order ? "1" : "0"));
+                swCFG.WriteLine("Form_Main_Play_Circle=" + (Load.settings.Form_Main_Play_Circle ? "1" : "0"));
+                swCFG.WriteLine("Form_Main_Play_ShowTime=" + Load.settings.Form_Main_Play_ShowTime.ToString());
             }
             catch { swCFG.Close(); return false; } swCFG.Close(); return true;
         }
