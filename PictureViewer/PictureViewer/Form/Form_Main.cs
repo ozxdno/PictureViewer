@@ -1287,8 +1287,8 @@ namespace PictureViewer
                 #region 播放
 
                 #region 菜单栏刷新
-                
-                this.playToolStripMenuItem.Checked = play.IsPlaying;
+
+                this.playToolStripMenuItem.Checked = play.IsPlaying = play.IsPlaying && play.PlayIndexes.Count != 0;
                 this.startToolStripMenuItem.Text = play.IsPlaying ? "Stop" : "Start";
 
                 #endregion
@@ -3124,6 +3124,9 @@ namespace PictureViewer
         }
         private void RightMenu_Play_Forward(object sender, EventArgs e)
         {
+            bool only = play.Forward && !play.Backward && !play.Rand;
+            if (only) { return; }
+
             this.forwardToolStripMenuItem.Checked = !this.forwardToolStripMenuItem.Checked;
             if (this.forwardToolStripMenuItem.Checked)
             {
@@ -3139,6 +3142,9 @@ namespace PictureViewer
         }
         private void RightMenu_Play_Backward(object sender, EventArgs e)
         {
+            bool only = !play.Forward && play.Backward && !play.Rand;
+            if (only) { return; }
+
             this.backwardToolStripMenuItem.Checked = !this.backwardToolStripMenuItem.Checked;
             if (this.backwardToolStripMenuItem.Checked)
             {
@@ -3154,6 +3160,9 @@ namespace PictureViewer
         }
         private void RightMenu_Play_Order(object sender, EventArgs e)
         {
+            bool only = play.Order && !play.Single && !play.Circle;
+            if (only) { return; }
+
             this.orderToolStripMenuItem.Checked = !this.orderToolStripMenuItem.Checked;
             if (this.orderToolStripMenuItem.Checked)
             {
@@ -3169,6 +3178,9 @@ namespace PictureViewer
         }
         private void RightMenu_Play_Circle(object sender, EventArgs e)
         {
+            bool only = !play.Order && !play.Single && play.Circle;
+            if (only) { return; }
+
             this.circleToolStripMenuItem.Checked = !this.circleToolStripMenuItem.Checked;
             if (this.circleToolStripMenuItem.Checked)
             {
@@ -3184,6 +3196,9 @@ namespace PictureViewer
         }
         private void RightMenu_Play_Single(object sender, EventArgs e)
         {
+            bool only = !play.Order && play.Single && !play.Circle;
+            if (only) { return; }
+
             this.singleToolStripMenuItem.Checked = !this.singleToolStripMenuItem.Checked;
             if (this.singleToolStripMenuItem.Checked)
             {
@@ -3199,6 +3214,9 @@ namespace PictureViewer
         }
         private void RightMenu_Play_Rand(object sender, EventArgs e)
         {
+            bool only = !play.Forward && !play.Backward && play.Rand;
+            if (only) { return; }
+
             this.randToolStripMenuItem.Checked = !this.randToolStripMenuItem.Checked;
             if (this.randToolStripMenuItem.Checked)
             {
@@ -3214,6 +3232,9 @@ namespace PictureViewer
         }
         private void RightMenu_Play_TotalRoots(object sender, EventArgs e)
         {
+            bool only = play.TotalRoots && !play.Root && !play.Subroot;
+            if (only) { return; }
+
             this.totalRootsToolStripMenuItem.Checked = !this.totalRootsToolStripMenuItem.Checked;
             if (this.totalRootsToolStripMenuItem.Checked)
             {
@@ -3229,6 +3250,9 @@ namespace PictureViewer
         }
         private void RightMenu_Play_Root(object sender, EventArgs e)
         {
+            bool only = !play.TotalRoots && play.Root && !play.Subroot;
+            if (only) { return; }
+
             this.rootToolStripMenuItem.Checked = !this.rootToolStripMenuItem.Checked;
             if (this.rootToolStripMenuItem.Checked)
             {
@@ -3244,6 +3268,9 @@ namespace PictureViewer
         }
         private void RightMenu_Play_Subroot(object sender, EventArgs e)
         {
+            bool only = !play.TotalRoots && !play.Root && play.Subroot;
+            if (only) { return; }
+
             this.subrootToolStripMenuItem.Checked = !this.subrootToolStripMenuItem.Checked;
             if (this.subrootToolStripMenuItem.Checked)
             {
@@ -3346,6 +3373,11 @@ namespace PictureViewer
                 else if (play.Type == 4) { this.musicToolStripMenuItem.Checked = true; }
                 else if (play.Type == 5) { this.videoToolStripMenuItem.Checked = true; }
                 else { this.pictureToolStripMenuItem.Checked = true; }
+
+                play.Picture = play.Type == 2;
+                play.Gif = play.Type == 3;
+                play.Music = play.Type == 4;
+                play.Video = play.Type == 5;
             }
             if (!play.Single && !play.Order && !play.Circle)
             {

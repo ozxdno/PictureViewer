@@ -346,8 +346,8 @@ namespace PictureViewer
             string file = FileOperate.ExistFile(SelectedFolder - 1, SelectedFile) ?
                 FileOperate.getIndexName(SelectedFolder - 1, SelectedFile) :
                 "Not Select File";
-            string sub = (IsSub && SelectedSub >= 0 && SelectedSub < FileNames.Count) ?
-                FileNames[SelectedSub] :
+            string sub = (IsSub && FileNames.Count != 0 && this.listBox1.SelectedIndex != -1) ?
+                FileNames[this.listBox1.SelectedIndex] :
                 "Not Select File";
 
             this.toolTip1.ToolTipTitle = IsSub ? folder + "\\" + file : folder;
