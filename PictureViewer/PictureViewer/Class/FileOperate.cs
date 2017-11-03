@@ -33,12 +33,131 @@ namespace PictureViewer.Class
             public List<string> Name;
         } 
 
+        /// <summary>
+        /// 文件属性
+        /// </summary>
+        public struct FILE
+        {
+            public int FolderIndex;
+            public int FileIndex;
+            public int SubIndex;
+            public bool ExistFolder;
+            public bool ExistFile;
+            public bool ExistSub;
+            public bool Exist;
+
+            public bool Fit;
+
+            public int FitFolderIndex;
+            public int FitFileIndex;
+            public int FitSubIndex;
+            public bool ExistFitFolder;
+            public bool ExistFitFile;
+            public bool ExistFitSub;
+            public bool ExistFit;
+
+            public int Type;
+            public bool IsMusic;
+            public bool IsVideo;
+            public string Path;
+            public string Name;
+            public string Extension;
+            public bool Hide;
+
+            public bool IsSub;
+            public List<string> SubFiles;
+            public int SubType;
+            public bool SubIsMusic;
+            public bool SubIsVideo;
+            public string SubPath { get { return Path + "\\" + Name; } }
+            public string SubName;
+            public string SubExtension;
+            public bool SubHide;
+        }
+
         ///////////////////////////////////////////////////// private attribute ///////////////////////////////////////////////
 
-        
+
 
         ///////////////////////////////////////////////////// public method ///////////////////////////////////////////////
-    
+
+        /// <summary>
+        /// 用索引号创建文件信息结构体
+        /// </summary>
+        /// <param name="FolderIndex">根目录号</param>
+        /// <param name="FileIndex">文件号</param>
+        /// <param name="SubIndex">子文件号</param>
+        /// <param name="Fit">是否自动调整序号</param>
+        /// <returns></returns>
+        public static FILE getFile(int FolderIndex, int FileIndex, int SubIndex = -1, bool Fit = true)
+        {
+            FILE file = new FILE();
+
+            #region Index
+
+            file.FolderIndex = FolderIndex;
+            file.FileIndex = FileIndex;
+            file.ExistFolder = file.FolderIndex >= 0 && file.FolderIndex < RootFiles.Count;
+            file.ExistFile = file.ExistFolder && file.FileIndex >= 0 && file.FileIndex < RootFiles[file.FolderIndex].Name.Count;
+
+
+            file.Fit = Fit;
+            file.FitFolderIndex = file.FolderIndex;
+            file.FitFileIndex = file.FileIndex;
+            if (Fit)
+            {
+                if (file.FitFolderIndex < 0) { file.FitFolderIndex = 0; }
+                if (file.FitFolderIndex >= RootFiles.Count) { file.FitFolderIndex = RootFiles.Count - 1; }
+                if (file.FitFileIndex < 0) { file.FitFileIndex = 0; }
+                if (file.FitFolderIndex != -1 && file.FitFileIndex >= RootFiles[file.FitFolderIndex].Name.Count) { file.FitFileIndex = RootFiles[file.FitFolderIndex].Name.Count - 1; }
+            }
+            file.ExistFitFolder = file.FitFolderIndex >= 0 && file.FitFolderIndex < RootFiles.Count;
+            file.ExistFitFile = file.ExistFitFolder && file.FitFileIndex >= 0 && file.FitFileIndex < RootFiles[file.FitFolderIndex].Name.Count;
+
+            #endregion
+
+            #region Attribute
+
+            file.Path = file.ExistFitFolder ? RootFiles[file.FitFolderIndex].Path : null;
+            file.Name = file.ExistFitFile ? RootFiles[file.FitFolderIndex].Name[file.FitFileIndex] : null;
+            file.Extension = getExtension(file.Name);
+            file.Type = getFileType(file.Extension);
+            file.IsMusic = IsMusic(file.Extension);
+            file.IsVideo = IsVideo(file.Extension);
+            file.Hide = IsSupportHide(file.Extension);
+
+            #endregion
+
+            #region Sub
+
+            file.SubIndex = SubIndex;
+            file.IsSub =
+                (file.Type == 1 && Directory.Exists(file.Path + "\\" + file.Name)) ||
+                (file.Type == 5 && File.Exists(file.Path + "\\" + file.Name));
+
+            if (file.IsSub)
+            {
+
+            }
+
+            #endregion
+
+            return file;
+        }
+        /// <summary>
+        /// 用文件名来创建文件信息结构体
+        /// </summary>
+        /// <param name="Path">根目录路径</param>
+        /// <param name="Name">文件名称</param>
+        /// <param name="SubName">子文件名称</param>
+        /// <returns></returns>
+        public static FILE getFile(string Path, string Name, string SubName = null)
+        {
+            FILE file = new FILE();
+
+            return file;
+        }
+
         /// <summary>
         /// 获取当前 EXE 文件所在路径。
         /// </summary>
@@ -119,6 +238,24 @@ namespace PictureViewer.Class
             return -1;
         }
         
+        /// <summary>
+        /// 搜索下一个文件
+        /// </summary>
+        public static void SearchNextFile()
+        {
+
+        }
+
+        /// <summary>
+        /// 从完整的文件名中获取文件名称
+        /// </summary>
+        /// <param name="fullname">文件的完整文件名</param>
+        public static string getName(string fullname)
+        {
+            if (fullname == null || fullname.Length == 0) { return ""; }
+            int cut = fullname.LastIndexOf('\\'); if (cut == -1) { return fullname; }
+            return fullname.Substring(cut);
+        }
         /// <summary>
         /// 获取文件后缀
         /// </summary>

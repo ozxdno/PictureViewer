@@ -3186,6 +3186,11 @@ namespace PictureViewer
             config.SubIndex = nextSub;
             ShowCurrent();
         }
+        private void RightMenu_Play(object sender, EventArgs e)
+        {
+            this.contextMenuStrip1.Hide();
+            RightMenu_Play_Start(null, null);
+        }
         private void RightMenu_Play_Order(object sender, EventArgs e)
         {
             this.orderToolStripMenuItem.Checked = !this.orderToolStripMenuItem.Checked;
