@@ -173,20 +173,21 @@ namespace PictureViewer
             IsSub = false;
             if (this.comboBox1.SelectedIndex != -1) { return; }
 
-
+            SelectedFile = -1;
+            
             string path = "", name = "";
             FileOperate.getPathName(this.comboBox1.Text, ref path, ref name);
             int type = FileOperate.getFileType(FileOperate.getExtension(name));
-            if (type != 1 && type != 5) { return; }
+            if (type != 1 && type != 5) { MessageBox.Show("路径或文件不存在！", "提示"); ShowToolTip(); return; }
 
             int folderindex = -1;
             for (int i = 0; i < this.comboBox1.Items.Count; i++)
             {
                 if (this.comboBox1.Items[i].ToString() == path) { folderindex = i - 1; break; }
             }
-            if (folderindex == -1) { return; }
+            if (folderindex == -1) { MessageBox.Show("路径或文件不存在！", "提示"); ShowToolTip(); return; }
             int fileindex = FileOperate.Search(FileNames, name);
-            if (fileindex == -1) { return; }
+            if (fileindex == -1) { MessageBox.Show("路径或文件不存在！", "提示"); ShowToolTip(); return; }
 
             IsSub = true;
             SelectedFolder = folderindex + 1;

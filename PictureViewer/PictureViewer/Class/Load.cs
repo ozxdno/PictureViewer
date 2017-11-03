@@ -47,6 +47,9 @@ namespace PictureViewer.Class
             public int Form_Main_MaxWindowSize;
             public int Form_Main_MinWindowSize;
             public bool Form_Main_Tip;
+            public bool Form_Main_Play_Forward;
+            public bool Form_Main_Play_Backward;
+            public bool Form_Main_Play_TotalRoots;
             public bool Form_Main_Play_Root;
             public bool Form_Main_Play_Subroot;
             public bool Form_Main_Play_Picture;
@@ -56,6 +59,7 @@ namespace PictureViewer.Class
             public bool Form_Main_Play_Single;
             public bool Form_Main_Play_Order;
             public bool Form_Main_Play_Circle;
+            public bool Form_Main_Play_Rand;
             public int Form_Main_Play_ShowTime;
 
             public int Form_Find_Degree;
@@ -89,6 +93,9 @@ namespace PictureViewer.Class
             public bool Form_Main_MaxWindowSize;
             public bool Form_Main_MinWindowSize;
             public bool Form_Main_Tip;
+            public bool Form_Main_Play_Forward;
+            public bool Form_Main_Play_Backward;
+            public bool Form_Main_Play_TotalRoots;
             public bool Form_Main_Play_Root;
             public bool Form_Main_Play_Subroot;
             public bool Form_Main_Play_Picture;
@@ -98,6 +105,7 @@ namespace PictureViewer.Class
             public bool Form_Main_Play_Single;
             public bool Form_Main_Play_Order;
             public bool Form_Main_Play_Circle;
+            public bool Form_Main_Play_Rand;
             public bool Form_Main_Play_ShowTime;
 
             public bool Form_Find_Degree;
@@ -177,6 +185,9 @@ namespace PictureViewer.Class
                         case "Form_Main_MaxWindowSize": settings.Form_Main_MaxWindowSize = int.Parse(Item[1]); Found.Form_Main_MaxWindowSize = true; break;
                         case "Form_Main_MinWindowSize": settings.Form_Main_MinWindowSize = int.Parse(Item[1]); Found.Form_Main_MinWindowSize = true; break;
                         case "Form_Main_Tip": settings.Form_Main_Tip = int.Parse(Item[1]) != 0; Found.Form_Main_Tip = true; break;
+                        case "Form_Main_Play_Forward": settings.Form_Main_Play_Forward = int.Parse(Item[1]) != 0; Found.Form_Main_Play_Forward = true; break;
+                        case "Form_Main_Play_Backward": settings.Form_Main_Play_Backward = int.Parse(Item[1]) != 0; Found.Form_Main_Play_Backward = true; break;
+                        case "Form_Main_Play_TotalRoots": settings.Form_Main_Play_TotalRoots = int.Parse(Item[1]) != 0; Found.Form_Main_Play_TotalRoots = true; break;
                         case "Form_Main_Play_Root": settings.Form_Main_Play_Root = int.Parse(Item[1]) != 0; Found.Form_Main_Play_Root = true; break;
                         case "Form_Main_Play_Subroot": settings.Form_Main_Play_Subroot = int.Parse(Item[1]) != 0; Found.Form_Main_Play_Subroot = true; break;
                         case "Form_Main_Play_Picture": settings.Form_Main_Play_Picture = int.Parse(Item[1]) != 0; Found.Form_Main_Play_Picture = true; break;
@@ -186,6 +197,7 @@ namespace PictureViewer.Class
                         case "Form_Main_Play_Single": settings.Form_Main_Play_Single = int.Parse(Item[1]) != 0; Found.Form_Main_Play_Single = true; break;
                         case "Form_Main_Play_Order": settings.Form_Main_Play_Order = int.Parse(Item[1]) != 0; Found.Form_Main_Play_Order = true; break;
                         case "Form_Main_Play_Circle": settings.Form_Main_Play_Circle = int.Parse(Item[1]) != 0; Found.Form_Main_Play_Circle = true; break;
+                        case "Form_Main_Play_Rand": settings.Form_Main_Play_Rand = int.Parse(Item[1]) != 0; Found.Form_Main_Play_Rand = true; break;
                         case "Form_Main_Play_ShowTime": settings.Form_Main_Play_ShowTime = int.Parse(Item[1]); Found.Form_Main_Play_ShowTime = true; break;
                         default: break;
                     }
@@ -293,15 +305,27 @@ namespace PictureViewer.Class
 
             if (!Found.Form_Main_Tip) { settings.Form_Main_Tip = !settings.Form_Main_UseBoard; }
 
-            if (!Found.Form_Main_Play_Root) { settings.Form_Main_Play_Root = true; }
+            bool existOrder = settings.Form_Main_Play_Forward || settings.Form_Main_Play_Backward || settings.Form_Main_Play_Rand;
+            if (!Found.Form_Main_Play_Forward) { settings.Form_Main_Play_Forward = existOrder ? false : true; }
+            if (!Found.Form_Main_Play_Backward) { settings.Form_Main_Play_Backward = false; }
+            if (!Found.Form_Main_Play_Rand) { settings.Form_Main_Play_Rand = false; }
+            
+            bool existPlayFolder = Found.Form_Main_Play_TotalRoots || Found.Form_Main_Play_Root || Found.Form_Main_Play_Subroot;
+            if (!Found.Form_Main_Play_TotalRoots) { settings.Form_Main_Play_TotalRoots = false; }
+            if (!Found.Form_Main_Play_Root) { settings.Form_Main_Play_Root = existPlayFolder ? false : true; }
             if (!Found.Form_Main_Play_Subroot) { settings.Form_Main_Play_Subroot = false; }
-            if (!Found.Form_Main_Play_Picture) { settings.Form_Main_Play_Picture = true; }
+            
+            bool existPlayType = settings.Form_Main_Play_Picture || settings.Form_Main_Play_Gif || settings.Form_Main_Play_Music || settings.Form_Main_Play_Video;
+            if (!Found.Form_Main_Play_Picture) { settings.Form_Main_Play_Picture = existPlayType ? false : true; }
             if (!Found.Form_Main_Play_Gif) { settings.Form_Main_Play_Gif = false; }
             if (!Found.Form_Main_Play_Music) { settings.Form_Main_Play_Music = false; }
             if (!Found.Form_Main_Play_Video) { settings.Form_Main_Play_Video = false; }
+            
+            bool existPlayMode = settings.Form_Main_Play_Single || settings.Form_Main_Play_Order || settings.Form_Main_Play_Circle;
             if (!Found.Form_Main_Play_Single) { settings.Form_Main_Play_Single = false; }
             if (!Found.Form_Main_Play_Order) { settings.Form_Main_Play_Order = false; }
-            if (!Found.Form_Main_Play_Circle) { settings.Form_Main_Play_Circle = true; }
+            if (!Found.Form_Main_Play_Circle) { settings.Form_Main_Play_Circle = existPlayType ? false : true; }
+            
             if (!Found.Form_Main_Play_ShowTime) { settings.Form_Main_Play_ShowTime = 50; }
 
             #endregion

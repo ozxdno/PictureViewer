@@ -33,140 +33,19 @@ namespace PictureViewer.Class
             public List<string> Name;
         } 
 
-        /// <summary>
-        /// 文件属性
-        /// </summary>
-        public struct FILE
-        {
-            public int FolderIndex;
-            public int FileIndex;
-            public int SubIndex;
-            public bool ExistFolder;
-            public bool ExistFile;
-            public bool ExistSub;
-            public bool Exist;
-
-            public bool Fit;
-
-            public int FitFolderIndex;
-            public int FitFileIndex;
-            public int FitSubIndex;
-            public bool ExistFitFolder;
-            public bool ExistFitFile;
-            public bool ExistFitSub;
-            public bool ExistFit;
-
-            public int Type;
-            public bool IsMusic;
-            public bool IsVideo;
-            public string Path;
-            public string Name;
-            public string Extension;
-            public bool Hide;
-
-            public bool IsSub;
-            public List<string> SubFiles;
-            public int SubType;
-            public bool SubIsMusic;
-            public bool SubIsVideo;
-            public string SubPath { get { return Path + "\\" + Name; } }
-            public string SubName;
-            public string SubExtension;
-            public bool SubHide;
-        }
-
         ///////////////////////////////////////////////////// private attribute ///////////////////////////////////////////////
 
 
 
         ///////////////////////////////////////////////////// public method ///////////////////////////////////////////////
-
-        /// <summary>
-        /// 用索引号创建文件信息结构体
-        /// </summary>
-        /// <param name="FolderIndex">根目录号</param>
-        /// <param name="FileIndex">文件号</param>
-        /// <param name="SubIndex">子文件号</param>
-        /// <param name="Fit">是否自动调整序号</param>
-        /// <returns></returns>
-        public static FILE getFile(int FolderIndex, int FileIndex, int SubIndex = -1, bool Fit = true)
-        {
-            FILE file = new FILE();
-
-            #region Index
-
-            file.FolderIndex = FolderIndex;
-            file.FileIndex = FileIndex;
-            file.ExistFolder = file.FolderIndex >= 0 && file.FolderIndex < RootFiles.Count;
-            file.ExistFile = file.ExistFolder && file.FileIndex >= 0 && file.FileIndex < RootFiles[file.FolderIndex].Name.Count;
-
-
-            file.Fit = Fit;
-            file.FitFolderIndex = file.FolderIndex;
-            file.FitFileIndex = file.FileIndex;
-            if (Fit)
-            {
-                if (file.FitFolderIndex < 0) { file.FitFolderIndex = 0; }
-                if (file.FitFolderIndex >= RootFiles.Count) { file.FitFolderIndex = RootFiles.Count - 1; }
-                if (file.FitFileIndex < 0) { file.FitFileIndex = 0; }
-                if (file.FitFolderIndex != -1 && file.FitFileIndex >= RootFiles[file.FitFolderIndex].Name.Count) { file.FitFileIndex = RootFiles[file.FitFolderIndex].Name.Count - 1; }
-            }
-            file.ExistFitFolder = file.FitFolderIndex >= 0 && file.FitFolderIndex < RootFiles.Count;
-            file.ExistFitFile = file.ExistFitFolder && file.FitFileIndex >= 0 && file.FitFileIndex < RootFiles[file.FitFolderIndex].Name.Count;
-
-            #endregion
-
-            #region Attribute
-
-            file.Path = file.ExistFitFolder ? RootFiles[file.FitFolderIndex].Path : null;
-            file.Name = file.ExistFitFile ? RootFiles[file.FitFolderIndex].Name[file.FitFileIndex] : null;
-            file.Extension = getExtension(file.Name);
-            file.Type = getFileType(file.Extension);
-            file.IsMusic = IsMusic(file.Extension);
-            file.IsVideo = IsVideo(file.Extension);
-            file.Hide = IsSupportHide(file.Extension);
-
-            #endregion
-
-            #region Sub
-
-            file.SubIndex = SubIndex;
-            file.IsSub =
-                (file.Type == 1 && Directory.Exists(file.Path + "\\" + file.Name)) ||
-                (file.Type == 5 && File.Exists(file.Path + "\\" + file.Name));
-
-            if (file.IsSub)
-            {
-
-            }
-
-            #endregion
-
-            return file;
-        }
-        /// <summary>
-        /// 用文件名来创建文件信息结构体
-        /// </summary>
-        /// <param name="Path">根目录路径</param>
-        /// <param name="Name">文件名称</param>
-        /// <param name="SubName">子文件名称</param>
-        /// <returns></returns>
-        public static FILE getFile(string Path, string Name, string SubName = null)
-        {
-            FILE file = new FILE();
-
-            return file;
-        }
-
+        
         /// <summary>
         /// 获取当前 EXE 文件所在路径。
         /// </summary>
         /// <returns></returns>
         public static string getExePath()
         {
-            string exe_path = Application.ExecutablePath;
-            int indexofmark = exe_path.LastIndexOf('\\');
-            return exe_path.Substring(0, indexofmark);
+            return Application.StartupPath;
         }
         /// <summary>
         /// 对一个完整的文件进行分割，分别获取文件路径和文件名
@@ -237,13 +116,82 @@ namespace PictureViewer.Class
             for (int i = 0; i < source.Count; i++) { if (source[i] == target) { return i; } }
             return -1;
         }
-        
-        /// <summary>
-        /// 搜索下一个文件
-        /// </summary>
-        public static void SearchNextFile()
-        {
 
+        /// <summary>
+        /// 用类型搜索文件。Type （类型）值如下：
+        /// 1 - Folder；
+        /// 2 - PIC；
+        /// 3 - GIF；
+        /// 4 - MUSIC；
+        /// 5 - VIDEO；
+        /// 6 - ZIP；
+        /// </summary>
+        /// <param name="Types">类型集合</param>
+        /// <param name="FolderIndexes">结果的根目录索引号</param>
+        /// <param name="FileIndexes">结果的文件索引号</param>
+        /// <param name="SubIndexes">结果的子文件索引号</param>
+        public static void SearchFileByType(List<int> Types, ref List<int> FolderIndexes, ref List<int> FileIndexes, ref List<int> SubIndexes)
+        {
+            FolderIndexes = new List<int>();
+            FileIndexes = new List<int>();
+            SubIndexes = new List<int>();
+            if (Types == null || Types.Count == 0) { return; }
+
+            bool addfolder = false, addpic = false, addgif = false, addmusic = false, addvideo = false, addzip = false;
+            for (int i = 0; i < Types.Count; i++)
+            {
+                if (Types[i] == 1) { addfolder = true; }
+                if (Types[i] == 2) { addpic = true; }
+                if (Types[i] == 3) { addgif = true; }
+                if (Types[i] == 4) { addmusic = true; }
+                if (Types[i] == 5) { addvideo = true; }
+                if (Types[i] == 6) { addzip = true; }
+            }
+
+            for (int i = 0; i < RootFiles.Count; i++)
+            {
+                for (int j = 0; j < RootFiles[i].Name.Count; j++)
+                {
+                    string path = RootFiles[i].Path;
+                    string name = RootFiles[i].Name[j];
+                    string extension = getExtension(name);
+                    int type = getFileType(extension);
+                    bool isMusic = IsMusic(extension);
+                    bool isVideo = IsVideo(extension);
+
+                    bool found =
+                        (addfolder && type == 1) ||
+                        (addpic && type == 2) ||
+                        (addgif && type == 3) ||
+                        (addmusic && isMusic) ||
+                        (addvideo && isVideo) ||
+                        (addzip && type == 5);
+                    if (found) { FolderIndexes.Add(i); FileIndexes.Add(j); SubIndexes.Add(-1); continue; }
+                    if (!IsComic(type)) { continue; }
+
+                    List<string> subfiles = null;
+                    if (type == 1) { subfiles = getSubFiles(path + "\\" + name); }
+                    if (type == 5) { subfiles = ZipOperate.getZipFileEX(path + "\\" + name); }
+                    if (subfiles == null || subfiles.Count == 0) { continue; }
+
+                    for (int k = 0; k < subfiles.Count; k++)
+                    {
+                        name = subfiles[k];
+                        extension = getExtension(name);
+                        type = getFileType(extension);
+                        isMusic = IsMusic(extension);
+                        isVideo = IsVideo(extension);
+
+                        found =
+                            (addpic && type == 2) ||
+                            (addgif && type == 3) ||
+                            (addmusic && isMusic) ||
+                            (addvideo && isVideo);
+
+                        if (found) { FolderIndexes.Add(i); FileIndexes.Add(j); SubIndexes.Add(k); }
+                    }
+                }
+            }
         }
 
         /// <summary>

@@ -117,6 +117,8 @@ namespace PictureViewer.Class
         /// <param name="fullpath">ZIP 文件绝对路径</param>
         public static List<string> getZipFile(string fullpath)
         {
+            if (!File.Exists(fullpath)) { return new List<string>(); }
+
             zip = System.IO.Compression.ZipFile.OpenRead(fullpath);
             List<string> files = new List<string>();
 

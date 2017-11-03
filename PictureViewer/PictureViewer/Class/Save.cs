@@ -50,6 +50,9 @@ namespace PictureViewer.Class
             public int Form_Main_ShapeWindowRate { set { Load.settings.Form_Main_ShapeWindowRate = value; } }
             public bool Form_Main_Tip { set { Load.settings.Form_Main_Tip = value; } }
 
+            public bool Form_Main_Play_Forward { set { Load.settings.Form_Main_Play_Forward = value; } }
+            public bool Form_Main_Play_Backward { set { Load.settings.Form_Main_Play_Backward = value; } }
+            public bool Form_Main_Play_TotalRoots { set { Load.settings.Form_Main_Play_TotalRoots = value; } }
             public bool Form_Main_Play_Root { set { Load.settings.Form_Main_Play_Root = value; } }
             public bool Form_Main_Play_Subroot { set { Load.settings.Form_Main_Play_Subroot = value; } }
             public bool Form_Main_Play_Picture { set { Load.settings.Form_Main_Play_Picture = value; } }
@@ -59,6 +62,7 @@ namespace PictureViewer.Class
             public bool Form_Main_Play_Single { set { Load.settings.Form_Main_Play_Single = value; } }
             public bool Form_Main_Play_Order { set { Load.settings.Form_Main_Play_Order = value; } }
             public bool Form_Main_Play_Circle { set { Load.settings.Form_Main_Play_Circle = value; } }
+            public bool Form_Main_Play_Rand { set { Load.settings.Form_Main_Play_Rand = value; } }
             public int Form_Main_Play_ShowTime { set { Load.settings.Form_Main_Play_ShowTime = value; } }
         }
 
@@ -133,6 +137,9 @@ namespace PictureViewer.Class
                 swCFG.WriteLine("Form_Main_Tip=" + (Load.settings.Form_Main_Tip ? "1" : "0"));
                 swCFG.WriteLine("");
 
+                swCFG.WriteLine("Form_Main_Play_Forward=" + (Load.settings.Form_Main_Play_Forward ? "1" : "0"));
+                swCFG.WriteLine("Form_Main_Play_Backward=" + (Load.settings.Form_Main_Play_Backward ? "1" : "0"));
+                swCFG.WriteLine("Form_Main_Play_TotalRoots=" + (Load.settings.Form_Main_Play_TotalRoots ? "1" : "0"));
                 swCFG.WriteLine("Form_Main_Play_Root=" + (Load.settings.Form_Main_Play_Root ? "1" : "0"));
                 swCFG.WriteLine("Form_Main_Play_Subroot=" + (Load.settings.Form_Main_Play_Subroot ? "1" : "0"));
                 swCFG.WriteLine("Form_Main_Play_Picture=" + (Load.settings.Form_Main_Play_Picture ? "1" : "0"));
@@ -142,7 +149,9 @@ namespace PictureViewer.Class
                 swCFG.WriteLine("Form_Main_Play_Single=" + (Load.settings.Form_Main_Play_Single ? "1" : "0"));
                 swCFG.WriteLine("Form_Main_Play_Order=" + (Load.settings.Form_Main_Play_Order ? "1" : "0"));
                 swCFG.WriteLine("Form_Main_Play_Circle=" + (Load.settings.Form_Main_Play_Circle ? "1" : "0"));
+                swCFG.WriteLine("Form_Main_Play_Rand=" + (Load.settings.Form_Main_Play_Rand ? "1" : "0"));
                 swCFG.WriteLine("Form_Main_Play_ShowTime=" + Load.settings.Form_Main_Play_ShowTime.ToString());
+                swCFG.WriteLine("");
             }
             catch { swCFG.Close(); return false; } swCFG.Close(); return true;
         }
