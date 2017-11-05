@@ -1315,7 +1315,7 @@ namespace PictureViewer
                     if (playNext && (play.Type == 2 || play.Type == 3))
                     {
                         ulong showtime = play.ShowTime;
-                        if (showtime < 10) { showtime = 10; }
+                        if (showtime < 4) { showtime = 4; }
                         playNext = TimeCount - play.Begin > showtime;
                     }
                     if (playNext && (play.Type == 4 || play.Type == 5))
@@ -2601,21 +2601,6 @@ namespace PictureViewer
             try { index = int.Parse(indexStr); } catch { MessageBox.Show("输入错误位置！","提示"); return; }
             try { subindex = int.Parse(subindexStr); } catch { MessageBox.Show("输入错误位置！", "提示"); return; }
             
-            if (config.FolderIndex < 0 || config.FolderIndex >= FileOperate.RootFiles.Count) { return; }
-            if (index < 1) { index = 1; }
-            if (index > FileOperate.RootFiles[config.FolderIndex].Name.Count) { index = FileOperate.RootFiles[config.FolderIndex].Name.Count; }
-
-            string path = FileOperate.RootFiles[config.FolderIndex].Path;
-            string name = FileOperate.RootFiles[config.FolderIndex].Name[index - 1];
-            List<string> subfiles = FileOperate.getSubFiles(path + "\\" + name);
-            if (subfiles.Count == 0) { subfiles = ZipOperate.getZipFileEX(path + "\\" + name); }
-
-            if (subindex < 1) { subindex = 1; }
-            if (subindex > subfiles.Count) { subindex = subfiles.Count; }
-
-            if (index - 1 == config.FileIndex && config.SubIndex == subindex - 1) { return; }
-            if (index - 1 == config.FileIndex && config.SubFiles.Count == 0) { return; }
-
             config.FileIndex = index - 1; config.SubIndex = subindex - 1;
             ShowCurrent();
         }
@@ -2669,13 +2654,20 @@ namespace PictureViewer
             // 获取输出文件进行输出
             string path = config.Type == 1 ? config.Path + "\\" + config.Name : config.Path;
             string name = config.Type == 1 ? config.SubName : config.Name;
-
+            
             // 是否已经存在文件或文件夹
             string expath = config.ExportFolder;
             if (File.Exists(expath + "\\" + name)) { MessageBox.Show("本文件已经存在于输出文件夹中：" + expath, "提示"); return; }
 
+            // zip 文件不能导出内部文件
+            if (config.Type == 5)
+            {
+                if (DialogResult.Cancel == MessageBox.Show("只能导出整个 ZIP 文件，是否导出？", "确认导出", MessageBoxButtons.OKCancel))
+                { return; }
+            }
+
             // 确认是否输出
-            if (DialogResult.Cancel == MessageBox.Show("把 “" + name + "” 导出？", "确认导出", MessageBoxButtons.OKCancel))
+            if (config.Type != 5 && DialogResult.Cancel == MessageBox.Show("把 “" + name + "” 导出？", "确认导出", MessageBoxButtons.OKCancel))
             { return; }
 
             // 释放资源
@@ -3316,7 +3308,7 @@ namespace PictureViewer
 
             int showtime = 0;
             try { showtime = int.Parse(input.Input); } catch { return; }
-            if (showtime <= 0 || showtime > 0x0FFFFFFF) { return; }
+            if (showtime < 0 || showtime > 0x0FFFFFFF) { return; }
 
             play.ShowTime = (ulong)showtime;
             this.showTimeToolStripMenuItem.Text = "Time: " + play.ShowTime.ToString();
