@@ -399,6 +399,12 @@ namespace PictureViewer
             this.likeToolStripMenuItem.Checked = Class.Load.settings.Form_Main_Find_Like;
             this.turnToolStripMenuItem.Checked = Class.Load.settings.Form_Main_Find_Turn;
 
+            this.fullToolStripMenuItem.Visible = false;
+            this.partToolStripMenuItem.Visible = false;
+            this.sameToolStripMenuItem.Visible = false;
+            this.likeToolStripMenuItem.Visible = false;
+            this.turnToolStripMenuItem.Visible = false;
+
             #endregion
 
             #region 边框，缩放
@@ -2939,18 +2945,18 @@ namespace PictureViewer
         }
         private void RightMenu_Find(object sender, EventArgs e)
         {
-            this.contextMenuStrip1.Hide();
+            //this.contextMenuStrip1.Hide();
 
-            // 文件不存在
-            if (!config.ExistFolder || !config.ExistFile || (config.IsSub && !config.ExistSub))
-            { MessageBox.Show("文件不存在！", "提示"); return; }
+            //// 文件不存在
+            //if (!config.ExistFolder || !config.ExistFile || (config.IsSub && !config.ExistSub))
+            //{ MessageBox.Show("文件不存在！", "提示"); return; }
 
-            // 只能匹配图片文件（包括GIF）
-            string fullpath = config.Path + "\\" + config.Name;
-            if (config.IsSub) { fullpath += "\\" + config.SubName; }
-            int type = config.IsSub ? config.SubType : config.Type;
-            if (type != 2 && type != 3)
-            { MessageBox.Show("不能匹配图片之外的文件", "提示"); return; }
+            //// 只能匹配图片文件（包括GIF）
+            //string fullpath = config.Path + "\\" + config.Name;
+            //if (config.IsSub) { fullpath += "\\" + config.SubName; }
+            //int type = config.IsSub ? config.SubType : config.Type;
+            //if (type != 2 && type != 3)
+            //{ MessageBox.Show("不能匹配图片之外的文件", "提示"); return; }
             
             // 不能匹配隐藏文件
             //bool hide = config.IsSub ? config.SubHide : config.Hide;
@@ -2974,7 +2980,7 @@ namespace PictureViewer
             if (this.likeToolStripMenuItem.Checked) { mode += (ushort)Form_Find.MODE.LIKE; }
             if (this.turnToolStripMenuItem.Checked) { mode += (ushort)Form_Find.MODE.TURN; }
 
-            Form_Find find = new Form_Find(config.SourPicture, fullpath, (Form_Find.MODE)mode);
+            Form_Find find = new Form_Find((Form_Find.MODE)mode);
             find.ShowDialog();
 
             // 更新主界面
