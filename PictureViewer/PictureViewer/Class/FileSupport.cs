@@ -17,16 +17,23 @@ namespace PictureViewer.Class
         /// 是否允许导入隐藏文件
         /// </summary>
         public static bool SupportHide = false;
+        /// <summary>
+        /// 除默认的支持文件外，还支持的文件扩展名
+        /// </summary>
+        public static List<string> ExtraExtensions = new List<string>();
+        public static List<int> ExtraTypes = new List<int>();
+        public static List<bool> ExtraIsMusic = new List<bool>();
+        public static List<bool> ExtraIsVideo = new List<bool>();
 
         ///////////////////////////////////////////////////// private attribute ///////////////////////////////////////////////
-        
+
         private static List<string> ShowExtensions = new List<string>();
         private static List<string> HideExtensions = new List<string>();
         private static List<int> Types = new List<int>();
 
         private static List<string> MusicExtensions = new List<string>();
         private static List<string> VideoExtensions = new List<string>();
-
+        
         ///////////////////////////////////////////////////// public method ///////////////////////////////////////////////
         
         /// <summary>
@@ -42,6 +49,7 @@ namespace PictureViewer.Class
             // 4 - 音频 / 视频
             // 5 - ZIP
 
+            // 系统默认的支持文件
             ShowExtensions.Add(""); HideExtensions.Add(""); Types.Add(1);
             ShowExtensions.Add(".jpg"); HideExtensions.Add(".pv1"); Types.Add(2);
             ShowExtensions.Add(".jpeg"); HideExtensions.Add(".pv2"); Types.Add(2);
@@ -56,6 +64,25 @@ namespace PictureViewer.Class
             ShowExtensions.Add(".wav"); HideExtensions.Add(".pv11"); Types.Add(4); MusicExtensions.Add(".wav");
             ShowExtensions.Add(".m4a"); HideExtensions.Add(".pv12"); Types.Add(4); MusicExtensions.Add(".m4a");
             ShowExtensions.Add(".flac"); HideExtensions.Add(".pv13"); Types.Add(4); MusicExtensions.Add(".flac");
+
+            // 扩展的支持文件
+            for (int i = ExtraExtensions.Count - 1; i >= 0; i--)
+            {
+                bool found = false;
+                for (int j = 0; j < ShowExtensions.Count; j++)
+                {
+                    found = ExtraExtensions[i] == ShowExtensions[j];
+                    if (found) { break; }
+                }
+                if (!found)
+                {
+                    ShowExtensions.Add(ExtraExtensions[i]);
+                    HideExtensions.Add("");
+                    Types.Add(ExtraTypes[i]);
+                    if (ExtraIsMusic[i]) { MusicExtensions.Add(ExtraExtensions[i]); }
+                    if (ExtraIsVideo[i]) { VideoExtensions.Add(ExtraExtensions[i]); }
+                }
+            }
         }
         
         /// <summary>

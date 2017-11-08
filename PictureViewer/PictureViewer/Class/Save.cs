@@ -97,13 +97,20 @@ namespace PictureViewer.Class
                 { swCFG.WriteLine("RootPath=" + FileOperate.RootFiles[i].Path); }
                 swCFG.WriteLine("");
 
-                //swCFG.WriteLine("FileType0=" + FileSupport.O_FileType(0));
-                //swCFG.WriteLine("FileType1=" + FileSupport.O_FileType(1));
-                //swCFG.WriteLine("FileType2=" + FileSupport.O_FileType(2));
-                //swCFG.WriteLine("FileType3=" + FileSupport.O_FileType(3));
-                //swCFG.WriteLine("FileType4=" + FileSupport.O_FileType(4));
-                //swCFG.WriteLine("FileType5=" + FileSupport.O_FileType(5));
-                //swCFG.WriteLine("");
+                for (int i = 0; i < FileSupport.ExtraExtensions.Count; i++)
+                {
+                    string extenison = FileSupport.ExtraExtensions[i];
+                    int type = FileSupport.ExtraTypes[i];
+                    bool isMusic = FileSupport.ExtraIsMusic[i];
+                    bool isVideo = FileSupport.ExtraIsVideo[i];
+
+                    if (type == 2) { swCFG.WriteLine("SupportPicture=" + extenison); }
+                    if (type == 3) { swCFG.WriteLine("SupportGif=" + extenison); }
+                    if (type == 4 && isMusic) { swCFG.WriteLine("SupportMusic=" + extenison); }
+                    if (type == 4 && isVideo) { swCFG.WriteLine("SupportVideo=" + extenison); }
+                    if (type == 5) { swCFG.WriteLine("SupportZip=" + extenison); }
+                }
+                swCFG.WriteLine("");
 
                 swCFG.WriteLine("Form_Main_Hide=" + (Load.settings.Form_Main_Hide ? "1" : "0"));
                 swCFG.WriteLine("Form_Main_Hide_L=" + (Load.settings.Form_Main_Hide_L ? "1" : "0"));

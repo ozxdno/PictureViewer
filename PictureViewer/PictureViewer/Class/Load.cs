@@ -128,129 +128,189 @@ namespace PictureViewer.Class
             Form_Main.config.SubIndex = -1;
 
             FileOperate.RootFiles = new List<FileOperate.ROOT>();
-            FileSupport.Initialize();
+            List<string> RootPath = new List<string>();
 
+            List<string> SupportPicture = new List<string>();
+            List<string> SupportGif = new List<string>();
+            List<string> SupportMusic = new List<string>();
+            List<string> SupportVideo = new List<string>();
+            List<string> SupportZip = new List<string>();
+            
             #endregion
 
             #region 读取配置文件
 
             string fullpath = Form_Main.config.ConfigPath + "\\" + Form_Main.config.ConfigName;
-            if (!File.Exists(fullpath)) { SetDefault(); return false; }
-            
-            try
+            bool existCFG = File.Exists(fullpath);
+            if (existCFG) { srCFG = new StreamReader(fullpath); }
+
+            string Line;
+            string[] Item = new string[2];
+
+            while (existCFG && !srCFG.EndOfStream)
             {
-                string Line; string[] Item, RootPath = new string[0]; srCFG = new StreamReader(fullpath);
-                
-                while (!srCFG.EndOfStream)
+                Line = srCFG.ReadLine(); if (Line == "") { continue; }
+                int cut = Line.IndexOf('=');
+                Item[0] = cut == -1 ? Line : Line.Substring(0, cut);
+                Item[1] = cut == -1 ? "" : Line.Substring(cut + 1);
+
+                #region 文本
+
+                switch (Item[0])
                 {
-                    Line = srCFG.ReadLine(); if (Line == "") { continue; }
-                    Item = Line.Split('=');
-
-                    #region 文本
-
-                    switch (Item[0])
-                    {
-                        case "ExportFolder": Form_Main.config.ExportFolder = Item.Length == 1 ? "" : Item[1]; break;
-                        case "FolderIndex": Form_Main.config.FolderIndex = int.Parse(Item[1]); break;
-                        case "FileIndex": Form_Main.config.FileIndex = int.Parse(Item[1]); break;
-                        case "SubIndex": Form_Main.config.SubIndex = int.Parse(Item[1]); break;
-                        case "RootPath": RootPath = Item.Length == 1 ? new string[0] : Item[1].Split('|'); break;
-                        //case "FileType0": FileSupport.I_FileType(0, Item[1]); break;
-                        //case "FileType1": FileSupport.I_FileType(1, Item[1]); break;
-                        //case "FileType2": FileSupport.I_FileType(2, Item[1]); break;
-                        //case "FileType3": FileSupport.I_FileType(3, Item[1]); break;
-                        //case "FileType4": FileSupport.I_FileType(4, Item[1]); break;
-                        //case "FileType5": FileSupport.I_FileType(5, Item[1]); break;
-                        case "Form_Main_Hide":settings.Form_Main_Hide = int.Parse(Item[1]) != 0; Found.Form_Main_Hide = true; break;
-                        case "Form_Main_Hide_L": settings.Form_Main_Hide_L = int.Parse(Item[1]) != 0; Found.Form_Main_Hide_L = true; break;
-                        case "Form_Main_Hide_R": settings.Form_Main_Hide_R = int.Parse(Item[1]) != 0; Found.Form_Main_Hide_R = true; break;
-                        case "Form_Main_Hide_U": settings.Form_Main_Hide_U = int.Parse(Item[1]) != 0; Found.Form_Main_Hide_U = true; break;
-                        case "Form_Main_Hide_D": settings.Form_Main_Hide_D = int.Parse(Item[1]) != 0; Found.Form_Main_Hide_D = true; break;
-                        case "Form_Main_Find_Full": settings.Form_Main_Find_Full = int.Parse(Item[1]) != 0; Found.Form_Main_Find_Full = true; break;
-                        case "Form_Main_Find_Part": settings.Form_Main_Find_Part = int.Parse(Item[1]) != 0; Found.Form_Main_Find_Part = true; break;
-                        case "Form_Main_Find_Same": settings.Form_Main_Find_Same = int.Parse(Item[1]) != 0; Found.Form_Main_Find_Same = true; break;
-                        case "Form_Main_Find_Like": settings.Form_Main_Find_Like = int.Parse(Item[1]) != 0; Found.Form_Main_Find_Like = true; break;
-                        case "Form_Main_Find_Turn": settings.Form_Main_Find_Turn = int.Parse(Item[1]) != 0; Found.Form_Main_Find_Turn = true; break;
-                        case "Form_Find_Degree": settings.Form_Find_Degree = int.Parse(Item[1]); Found.Form_Find_Degree = true; break;
-                        case "Form_Find_Pixes": settings.Form_Find_Pixes = int.Parse(Item[1]); Found.Form_Find_Pixes = true; break;
-                        case "Form_Main_UseSmallWindowOpen": settings.Form_Main_UseSmallWindowOpen = int.Parse(Item[1]) != 0; Found.Form_Main_UseSmallWindowOpen = true; break;
-                        case "Form_Main_Height": settings.Form_Main_Height = int.Parse(Item[1]); Found.Form_Main_Height = true; break;
-                        case "Form_Main_Width": settings.Form_Main_Width = int.Parse(Item[1]); Found.Form_Main_Width = true; break;
-                        case "Form_Main_Location_X": settings.Form_Main_Location_X = int.Parse(Item[1]); Found.Form_Main_Location_X = true; break;
-                        case "Form_Main_Location_Y": settings.Form_Main_Location_Y = int.Parse(Item[1]); Found.Form_Main_Location_Y = true; break;
-                        case "Form_Main_UseBoard": settings.Form_Main_UseBoard = int.Parse(Item[1]) != 0; Found.Form_Main_UseBoard = true; break;
-                        case "Form_Main_ShapeWindow": settings.Form_Main_ShapeWindow = int.Parse(Item[1]) != 0; Found.Form_Main_ShapeWindow = true; break;
-                        case "Form_Main_ShapeWindowRate":settings.Form_Main_ShapeWindowRate = int.Parse(Item[1]); Found.Form_Main_ShapeWindowRate = true; break;
-                        case "Form_Main_Lock": settings.Form_Main_Lock = int.Parse(Item[1]) != 0; Found.Form_Main_Lock = true; break;
-                        case "Form_Main_MaxWindowSize": settings.Form_Main_MaxWindowSize = int.Parse(Item[1]); Found.Form_Main_MaxWindowSize = true; break;
-                        case "Form_Main_MinWindowSize": settings.Form_Main_MinWindowSize = int.Parse(Item[1]); Found.Form_Main_MinWindowSize = true; break;
-                        case "Form_Main_Tip": settings.Form_Main_Tip = int.Parse(Item[1]) != 0; Found.Form_Main_Tip = true; break;
-                        case "Form_Main_Play_Forward": settings.Form_Main_Play_Forward = int.Parse(Item[1]) != 0; Found.Form_Main_Play_Forward = true; break;
-                        case "Form_Main_Play_Backward": settings.Form_Main_Play_Backward = int.Parse(Item[1]) != 0; Found.Form_Main_Play_Backward = true; break;
-                        case "Form_Main_Play_TotalRoots": settings.Form_Main_Play_TotalRoots = int.Parse(Item[1]) != 0; Found.Form_Main_Play_TotalRoots = true; break;
-                        case "Form_Main_Play_Root": settings.Form_Main_Play_Root = int.Parse(Item[1]) != 0; Found.Form_Main_Play_Root = true; break;
-                        case "Form_Main_Play_Subroot": settings.Form_Main_Play_Subroot = int.Parse(Item[1]) != 0; Found.Form_Main_Play_Subroot = true; break;
-                        case "Form_Main_Play_Picture": settings.Form_Main_Play_Picture = int.Parse(Item[1]) != 0; Found.Form_Main_Play_Picture = true; break;
-                        case "Form_Main_Play_Gif": settings.Form_Main_Play_Gif = int.Parse(Item[1]) != 0; Found.Form_Main_Play_Gif = true; break;
-                        case "Form_Main_Play_Music": settings.Form_Main_Play_Music = int.Parse(Item[1]) != 0; Found.Form_Main_Play_Music = true; break;
-                        case "Form_Main_Play_Video": settings.Form_Main_Play_Video = int.Parse(Item[1]) != 0; Found.Form_Main_Play_Video = true; break;
-                        case "Form_Main_Play_Single": settings.Form_Main_Play_Single = int.Parse(Item[1]) != 0; Found.Form_Main_Play_Single = true; break;
-                        case "Form_Main_Play_Order": settings.Form_Main_Play_Order = int.Parse(Item[1]) != 0; Found.Form_Main_Play_Order = true; break;
-                        case "Form_Main_Play_Circle": settings.Form_Main_Play_Circle = int.Parse(Item[1]) != 0; Found.Form_Main_Play_Circle = true; break;
-                        case "Form_Main_Play_Rand": settings.Form_Main_Play_Rand = int.Parse(Item[1]) != 0; Found.Form_Main_Play_Rand = true; break;
-                        case "Form_Main_Play_ShowTime": settings.Form_Main_Play_ShowTime = int.Parse(Item[1]); Found.Form_Main_Play_ShowTime = true; break;
-                        default: break;
-                    }
-
-                    #endregion
-
-                    #region 根目录
-
-                    for (int i = 0; i < RootPath.Length; i++)
-                    {
-                        FileOperate.ROOT root = new FileOperate.ROOT();
-                        root.Path = RootPath[i];
-                        root.Name = new List<string>();
-                        if (!Directory.Exists(root.Path)) { continue; }
-
-                        DirectoryInfo dir = new DirectoryInfo(root.Path);
-                        FileInfo[] files = dir.GetFiles();
-                        DirectoryInfo[] folders = dir.GetDirectories();
-
-                        foreach (DirectoryInfo folder in folders) { root.Name.Add(folder.Name); }
-                        foreach (FileInfo file in files)
-                        { if (FileOperate.IsSupport(FileOperate.getExtension(file.Name))) { root.Name.Add(file.Name); } }
-
-                        FileOperate.RootFiles.Add(root);
-                    }
-                    RootPath = new string[0];
-
-                    #endregion
-                }
-
-                #region 去除重复根目录
-
-                for (int i = FileOperate.RootFiles.Count - 1; i >= 0; i--)
-                {
-                    for (int j = 0; j < i; j++)
-                    {
-                        if (FileOperate.RootFiles[i].Path != FileOperate.RootFiles[j].Path) { continue; }
-                        FileOperate.RootFiles.RemoveAt(i); break;
-                    }
+                    case "ExportFolder": ToDirectory(Item[1], ref Form_Main.config.ExportFolder); break;
+                    case "FolderIndex": ToInt(Item[1], ref Form_Main.config.FolderIndex); break;
+                    case "FileIndex": ToInt(Item[1], ref Form_Main.config.FileIndex); break;
+                    case "SubIndex": ToInt(Item[1], ref Form_Main.config.SubIndex); break;
+                    case "RootPath": ToStringEx(Item[1], ref RootPath); break;
+                    case "SupportPicture": ToStringEx(Item[1], ref SupportPicture); break;
+                    case "SupportGif": ToStringEx(Item[1], ref SupportGif); break;
+                    case "SupportMusic": ToStringEx(Item[1], ref SupportMusic); break;
+                    case "SupportVideo": ToStringEx(Item[1], ref SupportVideo); break;
+                    case "SupportZip": ToStringEx(Item[1], ref SupportZip); break;
+                    case "Form_Main_Hide": Found.Form_Main_Hide = ToBool(Item[1], ref settings.Form_Main_Hide); break;
+                    case "Form_Main_Hide_L": Found.Form_Main_Hide_L = ToBool(Item[1], ref settings.Form_Main_Hide_L); break;
+                    case "Form_Main_Hide_R": Found.Form_Main_Hide_R = ToBool(Item[1], ref settings.Form_Main_Hide_R); break;
+                    case "Form_Main_Hide_U": Found.Form_Main_Hide_U = ToBool(Item[1], ref settings.Form_Main_Hide_U); break;
+                    case "Form_Main_Hide_D": Found.Form_Main_Hide_D = ToBool(Item[1], ref settings.Form_Main_Hide_D); break;
+                    case "Form_Main_Find_Full": Found.Form_Main_Find_Full = ToBool(Item[1], ref settings.Form_Main_Find_Full); break;
+                    case "Form_Main_Find_Part": Found.Form_Main_Find_Part = ToBool(Item[1], ref settings.Form_Main_Find_Part); break;
+                    case "Form_Main_Find_Same": Found.Form_Main_Find_Same = ToBool(Item[1], ref settings.Form_Main_Find_Same); break;
+                    case "Form_Main_Find_Like": Found.Form_Main_Find_Like = ToBool(Item[1], ref settings.Form_Main_Find_Like); break;
+                    case "Form_Main_Find_Turn": Found.Form_Main_Find_Turn = ToBool(Item[1], ref settings.Form_Main_Find_Turn); break;
+                    case "Form_Find_Degree": Found.Form_Find_Degree = ToInt(Item[1], ref settings.Form_Find_Degree); break;
+                    case "Form_Find_Pixes": Found.Form_Find_Pixes = ToInt(Item[1], ref settings.Form_Find_Pixes); break;
+                    case "Form_Main_UseSmallWindowOpen": Found.Form_Main_UseSmallWindowOpen = ToBool(Item[1], ref settings.Form_Main_UseSmallWindowOpen); break;
+                    case "Form_Main_Height": Found.Form_Main_Height = ToInt(Item[1], ref settings.Form_Main_Height); break;
+                    case "Form_Main_Width": Found.Form_Main_Width = ToInt(Item[1], ref settings.Form_Main_Width); break;
+                    case "Form_Main_Location_X": Found.Form_Main_Location_X = ToInt(Item[1], ref settings.Form_Main_Location_X); break;
+                    case "Form_Main_Location_Y": Found.Form_Main_Location_Y = ToInt(Item[1], ref settings.Form_Main_Location_Y); break;
+                    case "Form_Main_UseBoard": Found.Form_Main_UseBoard = ToBool(Item[1], ref settings.Form_Main_UseBoard); break;
+                    case "Form_Main_ShapeWindow": Found.Form_Main_ShapeWindow = ToBool(Item[1], ref settings.Form_Main_ShapeWindow); break;
+                    case "Form_Main_ShapeWindowRate": Found.Form_Main_ShapeWindowRate = ToInt(Item[1], ref settings.Form_Main_ShapeWindowRate); break;
+                    case "Form_Main_Lock": Found.Form_Main_Lock = ToBool(Item[1], ref settings.Form_Main_Lock); break;
+                    case "Form_Main_MaxWindowSize": Found.Form_Main_MaxWindowSize = ToInt(Item[1], ref settings.Form_Main_MaxWindowSize); break;
+                    case "Form_Main_MinWindowSize": Found.Form_Main_MinWindowSize = ToInt(Item[1], ref settings.Form_Main_MinWindowSize); break;
+                    case "Form_Main_Tip": Found.Form_Main_Tip = ToBool(Item[1], ref settings.Form_Main_Tip); break;
+                    case "Form_Main_Play_Forward": Found.Form_Main_Play_Forward = ToBool(Item[1], ref settings.Form_Main_Play_Forward); break;
+                    case "Form_Main_Play_Backward": Found.Form_Main_Play_Backward = ToBool(Item[1], ref settings.Form_Main_Play_Backward); break;
+                    case "Form_Main_Play_TotalRoots": Found.Form_Main_Play_TotalRoots = ToBool(Item[1], ref settings.Form_Main_Play_TotalRoots); break;
+                    case "Form_Main_Play_Root": Found.Form_Main_Play_Root = ToBool(Item[1], ref settings.Form_Main_Play_Root); break;
+                    case "Form_Main_Play_Subroot": Found.Form_Main_Play_Subroot = ToBool(Item[1], ref settings.Form_Main_Play_Subroot); break;
+                    case "Form_Main_Play_Picture": Found.Form_Main_Play_Picture = ToBool(Item[1], ref settings.Form_Main_Play_Picture); break;
+                    case "Form_Main_Play_Gif": Found.Form_Main_Play_Gif = ToBool(Item[1], ref settings.Form_Main_Play_Gif); break;
+                    case "Form_Main_Play_Music": Found.Form_Main_Play_Music = ToBool(Item[1], ref settings.Form_Main_Play_Music); break;
+                    case "Form_Main_Play_Video": Found.Form_Main_Play_Video = ToBool(Item[1], ref settings.Form_Main_Play_Video); break;
+                    case "Form_Main_Play_Single": Found.Form_Main_Play_Single = ToBool(Item[1], ref settings.Form_Main_Play_Single); break;
+                    case "Form_Main_Play_Order": Found.Form_Main_Play_Order = ToBool(Item[1], ref settings.Form_Main_Play_Order); break;
+                    case "Form_Main_Play_Circle": Found.Form_Main_Play_Circle = ToBool(Item[1], ref settings.Form_Main_Play_Circle); break;
+                    case "Form_Main_Play_Rand": Found.Form_Main_Play_Rand = ToBool(Item[1], ref settings.Form_Main_Play_Rand); break;
+                    case "Form_Main_Play_ShowTime": Found.Form_Main_Play_ShowTime = ToInt(Item[1], ref settings.Form_Main_Play_ShowTime); break;
+                    default: break;
                 }
 
                 #endregion
             }
-            catch
+
+            #endregion
+
+            #region 额外支持的文件
+
+            for (int i = 0; i < SupportPicture.Count; i++)
             {
-                SetDefault();
-                srCFG.Close();
-                //System.Windows.Forms.MessageBox.Show("文件（pv.ini）已损坏！", "提示");
-                return false;
+                string extension = SupportPicture[i];
+                if (extension.Length == 0) { continue; }
+                if (extension[0] != '.') { extension = "." + extension; }
+
+                FileSupport.ExtraExtensions.Add(extension);
+                FileSupport.ExtraTypes.Add(2);
+                FileSupport.ExtraIsMusic.Add(false);
+                FileSupport.ExtraIsVideo.Add(false);
+            }
+            for (int i = 0; i < SupportGif.Count; i++)
+            {
+                string extension = SupportGif[i];
+                if (extension.Length == 0) { continue; }
+                if (extension[0] != '.') { extension = "." + extension; }
+
+                FileSupport.ExtraExtensions.Add(extension);
+                FileSupport.ExtraTypes.Add(3);
+                FileSupport.ExtraIsMusic.Add(false);
+                FileSupport.ExtraIsVideo.Add(false);
+            }
+            for (int i = 0; i < SupportMusic.Count; i++)
+            {
+                string extension = SupportMusic[i];
+                if (extension.Length == 0) { continue; }
+                if (extension[0] != '.') { extension = "." + extension; }
+
+                FileSupport.ExtraExtensions.Add(extension);
+                FileSupport.ExtraTypes.Add(4);
+                FileSupport.ExtraIsMusic.Add(true);
+                FileSupport.ExtraIsVideo.Add(false);
+            }
+            for (int i = 0; i < SupportVideo.Count; i++)
+            {
+                string extension = SupportVideo[i];
+                if (extension.Length == 0) { continue; }
+                if (extension[0] != '.') { extension = "." + extension; }
+
+                FileSupport.ExtraExtensions.Add(extension);
+                FileSupport.ExtraTypes.Add(4);
+                FileSupport.ExtraIsMusic.Add(false);
+                FileSupport.ExtraIsVideo.Add(true);
+            }
+            for (int i = 0; i < SupportZip.Count; i++)
+            {
+                string extension = SupportZip[i];
+                if (extension.Length == 0) { continue; }
+                if (extension[0] != '.') { extension = "." + extension; }
+
+                FileSupport.ExtraExtensions.Add(extension);
+                FileSupport.ExtraTypes.Add(5);
+                FileSupport.ExtraIsMusic.Add(false);
+                FileSupport.ExtraIsVideo.Add(false);
+            }
+
+            FileSupport.Initialize();
+
+            #endregion
+
+            #region 根目录
+
+            for (int i = 0; i < RootPath.Count; i++)
+            {
+                FileOperate.ROOT root = new FileOperate.ROOT();
+                root.Path = RootPath[i];
+                root.Name = new List<string>();
+                if (!Directory.Exists(root.Path)) { continue; }
+
+                DirectoryInfo dir = new DirectoryInfo(root.Path);
+                FileInfo[] files = dir.GetFiles();
+                DirectoryInfo[] folders = dir.GetDirectories();
+
+                foreach (DirectoryInfo folder in folders) { root.Name.Add(folder.Name); }
+                foreach (FileInfo file in files)
+                { if (FileOperate.IsSupport(FileOperate.getExtension(file.Name))) { root.Name.Add(file.Name); } }
+
+                FileOperate.RootFiles.Add(root);
             }
 
             #endregion
 
+            #region 去除重复根目录
+
+            for (int i = FileOperate.RootFiles.Count - 1; i >= 0; i--)
+            {
+                for (int j = 0; j < i; j++)
+                {
+                    if (FileOperate.RootFiles[i].Path != FileOperate.RootFiles[j].Path) { continue; }
+                    FileOperate.RootFiles.RemoveAt(i); break;
+                }
+            }
+
+            #endregion
+            
             #region 设置默认值，关闭文件流
 
             SetDefault(); srCFG.Close();
@@ -329,6 +389,64 @@ namespace PictureViewer.Class
             if (!Found.Form_Main_Play_ShowTime) { settings.Form_Main_Play_ShowTime = 50; }
 
             #endregion
+        }
+        private static bool ToDirectory(string str, ref string ret)
+        {
+            bool exist = Directory.Exists(str);
+            ret = exist ? str : "";
+            return exist;
+        }
+        private static bool ToFile(string str, ref string ret)
+        {
+            bool exist = File.Exists(str);
+            ret = exist ? str : "";
+            return exist;
+        }
+        private static bool ToBool(string str, ref bool ret)
+        {
+            try { ret = int.Parse(str) != 0; return true; } catch { return false; }
+        }
+        private static bool ToInt(string str, ref int ret)
+        {
+            try { ret = int.Parse(str); return true; } catch { return false; }
+        }
+        private static bool ToDouble(string str, ref double ret)
+        {
+            try { ret = double.Parse(str); return true; } catch { return false; }
+        }
+        private static bool ToString(string str, ref List<string> ret)
+        {
+            try { ret = str.Split(new char[] { '|' }, StringSplitOptions.RemoveEmptyEntries).ToList(); return true; }
+            catch { return false; }
+        }
+        private static bool ToString(string str, ref string[] ret)
+        {
+            try { ret = str.Split(new char[] { '|' }, StringSplitOptions.RemoveEmptyEntries); return true; }
+            catch { return false; }
+        }
+        private static bool ToStringEx(string str, ref List<string> ret)
+        {
+            List<string> temp = new List<string>();
+            try {
+                temp = str.Split(new char[] { '|' }, StringSplitOptions.RemoveEmptyEntries).ToList();
+                if (ret == null) { ret = new List<string>(); }
+                ret.InsertRange(ret.Count, temp);
+                return true;
+            }
+            catch { return false; }
+        }
+        private static bool ToStringEx(string str, ref string[] ret)
+        {
+            string[] temp = new string[0];
+            try {
+                temp = str.Split(new char[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
+                if (ret == null) { ret = new string[0]; }
+                List<string> temp2 = ret.ToList();
+                temp2.InsertRange(temp.Length, temp.ToList());
+                ret = temp2.ToArray();
+                return true;
+            }
+            catch { return false; }
         }
     }
 }

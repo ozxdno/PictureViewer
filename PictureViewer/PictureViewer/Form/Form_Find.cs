@@ -30,8 +30,72 @@ namespace PictureViewer
         /// 查找是否已经结束
         /// </summary>
         public static bool IsFinish = false;
+        /// <summary>
+        /// 是否转到选择图片
+        /// </summary>
         public static bool IsSwitch = false;
 
+        /// <summary>
+        /// 源文件
+        /// </summary>
+        public static List<PICTURE> PictureFiles;
+
+        /// <summary>
+        /// 图片的文件信息
+        /// </summary>
+        public struct PICTURE
+        {
+            /// <summary>
+            /// 路径
+            /// </summary>
+            public string Path;
+            /// <summary>
+            /// 名称
+            /// </summary>
+            public string Name;
+
+            /// <summary>
+            /// 文件所在根目录序号
+            /// </summary>
+            public int FolderIndex;
+            /// <summary>
+            /// 文件序号
+            /// </summary>
+            public int FileIndex;
+            /// <summary>
+            /// 子文件序号
+            /// </summary>
+            public int SubIndex;
+
+            /// <summary>
+            /// 高，单位：像素
+            /// </summary>
+            public int Height;
+            /// <summary>
+            /// 宽，单位：像素
+            /// </summary>
+            public int Width;
+            /// <summary>
+            /// 大小，单位：KB
+            /// </summary>
+            public long Length;
+            /// <summary>
+            /// 比较行
+            /// </summary>
+            public int Row;
+            /// <summary>
+            /// 比较列
+            /// </summary>
+            public int Col;
+            /// <summary>
+            /// 行灰度值
+            /// </summary>
+            public int[] GraysR;
+            /// <summary>
+            /// 列灰度值
+            /// </summary>
+            public int[] GraysC;
+        }
         /// <summary>
         /// 查找模式
         /// </summary>
@@ -585,6 +649,51 @@ namespace PictureViewer
             this.turnToolStripMenuItem.Checked = !this.turnToolStripMenuItem.Checked;
 
             SetMode();
+        }
+        private void RightMenu_Scan(object sender, EventArgs e)
+        {
+            PICTURE sour = new PICTURE();
+            PICTURE dest = new PICTURE();
+            PictureFiles = new List<PICTURE>();
+
+            if (SourPic != null)
+            {
+                sour.Path = "";
+                sour.Name = "";
+                sour.Height = SourPic.Height;
+                sour.Width = SourPic.Width;
+                sour.Row = sour.Width / 2;
+                sour.Col = sour.Height / 2;
+                sour.GraysR = new int[sour.Width];
+                sour.GraysC = new int[sour.Height];
+
+                for (int i = 0; i < sour.Width; i++) { sour.GraysR[i] = ToGray(SourPic.GetPixel(i, sour.Row)); }
+                for (int i = 0; i < sour.Height; i++) { sour.GraysC[i] = ToGray(SourPic.GetPixel(sour.Col, i)); }
+            }
+            for (int i = 0; i < Names.Count; i++)
+            {
+                DestPic = (Bitmap)Image.FromFile(Paths[i] + "\\" + Names[i]);
+
+                dest.Path = Paths[i];
+                dest.Name = Names[i];
+                dest.Height = DestPic.Height;
+                dest.Width = DestPic.Width;
+                dest.Row = dest.Width / 2;
+                dest.Col = dest.Height / 2;
+                dest.GraysR = new int[dest.Width];
+                dest.GraysC = new int[dest.Height];
+
+                for (int j = 0; j < dest.Width; j++) { dest.GraysR[j] = ToGray(DestPic.GetPixel(j, dest.Row)); }
+                for (int j = 0; j < dest.Height; j++) { dest.GraysC[j] = ToGray(DestPic.GetPixel(dest.Col, j)); }
+
+                PictureFiles.Add(dest);
+                DestPic.Dispose();
+            }
+
+            PicMatch pm = new PicMatch();
+            pm.Initialize(config.Mode, 0, PictureFiles.Count - 1, sour);
+            Thread t = new Thread(pm.Start);
+            t.Start();
         }
 
         private void ShowSourPic()
