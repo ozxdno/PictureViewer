@@ -410,6 +410,47 @@ namespace PictureViewer.Class
         }
 
         /// <summary>
+        /// 输出单个文件，失败时返回 FALSE。
+        /// </summary>
+        /// <param name="fullname">文件的全称</param>
+        /// <param name="reason">失败的原因</param>
+        /// <returns></returns>
+        public static bool Export(string fullname, ref string reason)
+        {
+            if (!File.Exists(fullname)) { reason = "源文件不存在！"; return false; }
+
+            string exportpath = Form_Main.config.ExportFolder;
+            if (!Directory.Exists(exportpath)) { exportpath = getExePath(); }
+            
+            string destpath = exportpath + "\\" + getName(fullname);
+            if (File.Exists(destpath)) { reason = "目标文件已存在！"; return false; }
+
+            try { File.Move(fullname, destpath); } catch { reason = "移动失败！"; return false; }
+            reason = ""; return true;
+        }
+        /// <summary>
+        /// 输出复数文件
+        /// </summary>
+        /// <param name="files">源文件的全称</param>
+        /// <param name="indexes">移动失败文件索引号</param>
+        /// <param name="reasons">移动失败的原因</param>
+        public static void Export(List<string> files, ref List<int> indexes, ref List<string> reasons)
+        {
+            string reason = "";
+            bool success;
+
+            indexes = new List<int>();
+            reasons = new List<string>();
+            if (files == null || files.Count == 0) { return; }
+
+            for (int i = 0; i < files.Count; i++)
+            {
+                success = Export(files[i], ref reason);
+                if (!success) { indexes.Add(i); reasons.Add(reason); }
+            }
+        }
+
+        /// <summary>
         /// 获取文件夹路径下的图片文件
         /// </summary>
         /// <param name="path">指定路径</param>

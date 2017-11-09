@@ -294,7 +294,7 @@ namespace PictureViewer
             Timer.AutoReset = true;
             Timer.Start();
 
-            Start();
+            //Start();
         }
         private void Form_Close(object sender, FormClosedEventArgs e)
         {
@@ -397,7 +397,7 @@ namespace PictureViewer
         private void ListIndexChanged(object sender, EventArgs e)
         {
             int sel = this.listBox1.SelectedIndex;
-            if (sel == prevIndexD) { return; }
+            //if (sel == prevIndexD) { if (sel != -1) { ShowDestPic(); } return; }
             if (sel != -1) { DestFile = PictureFiles[config.Current[sel]]; }
             ShowDestPic();
             prevIndexD = sel;
@@ -415,6 +415,21 @@ namespace PictureViewer
         }
         private void DoubleClickedToSwitch(object sender, EventArgs e)
         {
+            int indexS = this.comboBox1.SelectedIndex;
+            int indexD = this.listBox1.SelectedIndex;
+            if (indexS == -1 || indexD == -1) { return; }
+            if (Results.Count <= indexS || Results[indexS].Count <= indexD) { return; }
+
+            PICTURE p = PictureFiles[config.Current[indexD]];
+            if (DialogResult.Cancel == MessageBox.Show("转到 “" + p.Name + "” ？", "确认", MessageBoxButtons.OKCancel))
+            { return; }
+            
+            Stop();
+            Form_Main.config.FolderIndex = p.FolderIndex;
+            Form_Main.config.FileIndex = p.FileIndex;
+            Form_Main.config.SubIndex = p.SubIndex;
+            IsSwitch = true;
+            this.Close();
         }
 
         private void RightMenu_Start(object sender, EventArgs e)
@@ -426,85 +441,92 @@ namespace PictureViewer
         }
         private void RightMenu_Export(object sender, EventArgs e)
         {
-            //if (!IsFinish) { MessageBox.Show("正在搜索，请勿操作！", "提示"); return; }
-            //if (config.Index < 0 || config.Index >= config.Current.Count) { MessageBox.Show("文件不存在！", "提示"); return; }
-            //int index = config.Current[config.Index];
-            //if (index < 0 || index >= Names.Count) { MessageBox.Show("文件不存在！", "提示"); return; }
+            int indexS = this.comboBox1.SelectedIndex;
+            int indexD = this.listBox1.SelectedIndex;
+            if (indexS == -1 || indexD == -1) { MessageBox.Show("文件不存在！", "提示"); return; }
+            if (Results.Count <= indexS || Results[indexS].Count <= indexD) { MessageBox.Show("文件不存在！", "提示"); return; }
+            
+            PICTURE p = PictureFiles[config.Current[indexD]];
 
-            //string sourpath = Paths[index];
-            //string sourname = Names[index];
-            //string destpath = Form_Main.config.ExportFolder;
-            //string destname = sourname;
+            string sourpath = p.Path;
+            string sourname = p.Name;
+            string destpath = Form_Main.config.ExportFolder;
+            string destname = sourname;
 
-            //if (!Directory.Exists(destpath)) { destpath = FileOperate.getExePath(); }
+            if (!Directory.Exists(destpath)) { destpath = FileOperate.getExePath(); }
 
-            //string sour = sourpath + "\\" + sourname;
-            //string dest = destpath + "\\" + destname;
+            string sour = sourpath + "\\" + sourname;
+            string dest = destpath + "\\" + destname;
 
-            ////if (!Directory.Exists(destpath)) { MessageBox.Show("输出路径不存在！", "提示"); return; }
-            //if ( File.Exists(dest)) { MessageBox.Show("目标文件夹存在同名文件！", "提示"); return; }
-            //if (!File.Exists(sour)) { MessageBox.Show("该文件不存在！", "提示"); return; }
+            //if (!Directory.Exists(destpath)) { MessageBox.Show("输出路径不存在！", "提示"); return; }
+            if (File.Exists(dest)) { MessageBox.Show("目标文件夹存在同名文件！", "提示"); return; }
+            if (!File.Exists(sour)) { MessageBox.Show("该文件不存在！", "提示"); return; }
 
-            //if (DialogResult.Cancel == MessageBox.Show("把 “" + sour  + "” 导出到：\n" + dest  + "？", "确认导出", MessageBoxButtons.OKCancel))
-            //{ return; }
+            if (DialogResult.Cancel == MessageBox.Show("把当前文件导出？", "确认", MessageBoxButtons.OKCancel))
+            { return; }
 
-            //try { DestPic.Dispose(); } catch {  }
-            //try { File.Move(sour, dest); } catch { MessageBox.Show("移动失败！", "提示"); return; }
-            //RemoveCurrent(config.Index);
+            Stop();
+            
+            try { SourPic.Dispose(); } catch { }
+            try { DestPic.Dispose(); } catch { }
+            try { File.Move(sour, dest); } catch { MessageBox.Show("移动失败！", "提示"); return; }
+            Results[indexS].RemoveAt(indexD);
         }
         private void RightMenu_Export2(object sender, EventArgs e)
         {
-            //if (!IsFinish) { MessageBox.Show("正在搜索，请勿操作！", "提示"); return; }
-            //if (config.Current.Count == 0) { MessageBox.Show("文件不存在！", "提示"); return; }
+            int indexS = this.comboBox1.SelectedIndex;
+            if (indexS == -1) { MessageBox.Show("文件不存在！", "提示"); return; }
+            if (Results.Count <= indexS || Results[indexS].Count == 0) { MessageBox.Show("文件不存在！", "提示"); return; }
+            if (DialogResult.Cancel == MessageBox.Show("把当前所有文件导出？", "确认", MessageBoxButtons.OKCancel)) { return; }
 
-            //string sourpath;
-            //string sourname;
-            //string sour;
-            //string destpath = Form_Main.config.ExportFolder; if (!Directory.Exists(destpath)) { destpath = FileOperate.getExePath(); }
-            //string destname;
-            //string dest;
+            Stop();
+            try { SourPic.Dispose(); } catch { }
+            try { DestPic.Dispose(); } catch { }
 
-            //if (DialogResult.Cancel == MessageBox.Show("把所有重复文件导出到：\n" + destpath + "？", "确认导出", MessageBoxButtons.OKCancel))
-            //{ return; }
+            string export = Form_Main.config.ExportFolder;
+            if (!Directory.Exists(export)) { export = FileOperate.getExePath(); }
+            string reason = "";
 
-            //List<string> fails = new List<string>();
-            //List<string> reasons = new List<string>();
-            
-            //for (int i = config.Current.Count - 1; i >= 0; i--)
-            //{
-            //    int index = config.Current[i];
-            //    sourpath = Paths[index];
-            //    sourname = Names[index];
-            //    destname = sourname;
+            for (int i = Results[indexS].Count - 1; i >= 0; i--)
+            {
+                PICTURE p = PictureFiles[Results[indexS][i]];
+                string sequ = "[" + (i + 1).ToString() + "] ";
+                string sour = p.Full;
+                string dest = export + "\\" + p.Name;
+                
+                if (!File.Exists(sour)) { reason += sequ + "文件不存在！\n"; continue; }
+                if (File.Exists(dest)) { reason += sequ + "文件已经存在于输出文件夹中！\n"; continue; }
+                try { File.Move(sour, dest); } catch { reason += sequ + "移动失败！\n"; continue; }
 
-            //    sour = sourpath + "\\" + sourname;
-            //    dest = destpath + "\\" + destname;
-            //    if (!File.Exists(sour)) { fails.Add(sour); reasons.Add("源文件不存在！"); continue; }
-            //    if (File.Exists(dest)) { fails.Add(sour); reasons.Add("目标文件已存在！"); continue; }
+                Results[indexS].RemoveAt(i);
+            }
 
-            //    try { DestPic.Dispose(); } catch { }
-            //    try { File.Move(sour, dest); } catch { fails.Add(sour); reasons.Add("移动失败！"); continue; }
-            //    RemoveCurrent(i);
-            //}
-            
-            //if (fails.Count == 0) { return; }
-            //string msg = "错误列表：";
-            //for (int i = 0; i < fails.Count; i++) { msg += "\n[" + i.ToString() + "] " + reasons[i] + " " + fails[i]; }
-            //MessageBox.Show(msg, "错误");
+            if (reason.Length != 0) { MessageBox.Show(reason, "移动失败！"); }
+        }
+        private void RightMenu_Remove(object sender, EventArgs e)
+        {
+            int indexS = this.comboBox1.SelectedIndex;
+            int indexD = this.listBox1.SelectedIndex;
+            if (indexS == -1 || indexD == -1) { MessageBox.Show("文件不存在！", "提示"); return; }
+            if (Results.Count <= indexS || Results[indexS].Count <= indexD) { MessageBox.Show("文件不存在！", "提示"); return; }
+
+            PICTURE p = PictureFiles[config.Current[indexD]];
+            if (DialogResult.Cancel == MessageBox.Show("把 “" + p.Name  + "” 从结果中移除？", "确认", MessageBoxButtons.OKCancel))
+            { return; }
+
+            Results[indexS].RemoveAt(indexD);
         }
         private void RightMenu_Open(object sender, EventArgs e)
         {
-            //if (config.Index < 0 || config.Index >= config.Current.Count) { MessageBox.Show("文件不存在！", "提示"); return; }
-            //int index = config.Current[config.Index];
-            //if (index < 0 || index >= Names.Count) { MessageBox.Show("文件不存在！", "提示"); return; }
+            int indexS = this.comboBox1.SelectedIndex;
+            int indexD = this.listBox1.SelectedIndex;
+            if (indexS == -1 || indexD == -1) { MessageBox.Show("文件不存在！", "提示"); return; }
+            if (Results.Count <= indexS || Results[indexS].Count <= indexD) { MessageBox.Show("文件不存在！", "提示"); return; }
 
-            //string sourpath = Paths[index];
-            //string sourname = Names[index];
-            //string sour = sourpath + "\\" + sourname;
+            PICTURE p = PictureFiles[config.Current[indexD]];
 
-            //if (!File.Exists(sour)) { MessageBox.Show("该文件不存在！", "提示"); return; }
-
-            //System.Diagnostics.Process.Start("Explorer", "/select," + sour);
+            if (!File.Exists(p.Full)) { MessageBox.Show("该文件不存在！", "提示"); return; }
+            System.Diagnostics.Process.Start("Explorer", "/select," + p.Full);
         }
         private void RightMenu_Pixes(object sender, EventArgs e)
         {
@@ -522,69 +544,28 @@ namespace PictureViewer
             if (config.MinCmpPix == MinCmpPixes) { return; }
             if (IsFinish) { config.MinCmpPix = MinCmpPixes; return; }
 
-            Stop();
+            //Stop();
             config.MinCmpPix = MinCmpPixes;
-            Continue();
+            //Continue();
         }
         private void RightMenu_Switch(object sender, EventArgs e)
         {
-            //if (!IsFinish) { MessageBox.Show("正在搜索，请勿操作！", "提示"); return; }
+            int indexS = this.comboBox1.SelectedIndex;
+            int indexD = this.listBox1.SelectedIndex;
+            if (indexS == -1 || indexD == -1) { MessageBox.Show("文件不存在！", "提示"); return; }
+            if (Results.Count <= indexS || Results[indexS].Count <= indexD) { MessageBox.Show("文件不存在！", "提示"); return; }
 
-            //if (config.Current.Count == 0) { MessageBox.Show("文件不存在，无法转到！", "提示"); return; }
-            //int index = config.Index;
-            //if (index < 0 || index >= config.Current.Count) { MessageBox.Show("文件不存在，无法转到！", "提示"); return; }
-
-            //Stop();
-
-            //string path = Paths[config.Current[index]];
-            //string name = Names[config.Current[index]];
-
-            //for (int i = 0; i < FileOperate.RootFiles.Count; i++)
-            //{
-            //    string ipath = FileOperate.RootFiles[i].Path;
-            //    for (int j = 0; j < FileOperate.RootFiles[i].Name.Count; j++)
-            //    {
-            //        string jname = FileOperate.RootFiles[i].Name[j];
-            //        int type = FileOperate.getFileType(FileOperate.getExtension(jname));
-
-            //        if (type == 1)
-            //        {
-            //            string newpath = ipath + "\\" + jname;
-            //            List<string> subnames = FileOperate.getSubFiles(newpath);
-
-            //            for (int k = 0; k < subnames.Count; k++)
-            //            {
-            //                jname = subnames[k];
-            //                if (newpath == path && jname == name)
-            //                {
-            //                    Form_Main.config.FolderIndex = i;
-            //                    Form_Main.config.FileIndex = j;
-            //                    Form_Main.config.SubIndex = k;
-
-            //                    IsSwitch = true; this.Close(); return;
-            //                }
-            //            }
-            //        }
-            //        else
-            //        {
-            //            if (ipath == path && jname == name)
-            //            {
-            //                Form_Main.config.FolderIndex = i;
-            //                Form_Main.config.FileIndex = j;
-            //                Form_Main.config.SubIndex = 0;
-
-            //                IsSwitch = true; this.Close(); return;
-            //            }
-            //        }
-            //    }
-            //}
-
-            //MessageBox.Show("未找到该文件！", "提示");
+            PICTURE p = PictureFiles[config.Current[indexD]];
+            Stop();
+            Form_Main.config.FolderIndex = p.FolderIndex;
+            Form_Main.config.FileIndex = p.FileIndex;
+            Form_Main.config.SubIndex = p.SubIndex;
+            IsSwitch = true;
+            this.Close();
         }
         private void RightMenu_Degree(object sender, EventArgs e)
         {
             //if (!IsFinish) { MessageBox.Show("正在搜索，请勿操作！", "提示"); return; }
-
             Form_Input input = new Form_Input(config.Degree.ToString());
             input.Location = MousePosition;
             input.ShowDialog();
@@ -594,13 +575,13 @@ namespace PictureViewer
             if (Degree < 0) { MessageBox.Show("必须输入 0-100 之间的数！", "提示"); return; }
             if (Degree > 100) { MessageBox.Show("必须输入 0-100 之间的数！", "提示"); return; }
 
-            if (!IsFinish) { MessageBox.Show("正在搜索，请勿操作！", "提示"); return; }
+            //if (!IsFinish) { MessageBox.Show("正在搜索，请勿操作！", "提示"); return; }
             if (config.Degree == (int)Degree) { return; }
             if (IsFinish) { config.Degree = (int)Degree; return; }
 
-            Stop();
+            //Stop();
             config.Degree = (int)Degree;
-            Continue();
+            //Continue();
         }
         private void RightMenu_Restart(object sender, EventArgs e)
         {
@@ -765,38 +746,66 @@ namespace PictureViewer
             int sel = prevIndexS;
             int cnt = Results.Count;
             if (sel < 0 || sel >= cnt) { this.listBox1.Items.Clear(); return; }
-            cnt = Results[sel].Count;
-            if (config.Current.Count == cnt) { return; }
 
+            int cntR = Results[sel].Count;
             int cntC = config.Current.Count;
-            int cntR = cnt;
-
-            for (int i = cntC; i < cntR; i++) { config.Current.Add(Results[sel][i]); }
-            for (int i = cntC; i < cntR; i++)
+            if (cntR == cntC && cntC == 0) { return; }
+            List<int> newCurrent = new List<int>();
+            for (int i = 0; i < cntR; i++) { newCurrent.Add(Results[sel][i]); }
+            int nLoop = Math.Max(cntC, cntR);
+            for (int i = 0; i < nLoop; i++)
             {
-                string sequence = "[" + (i + 1).ToString() + "] ";
-                string name = PictureFiles[config.Current[i]].Name;
-                if (name.Length > 24) { name = "." + name.Substring(name.Length - 24); }
-                this.listBox1.Items.Add(sequence + name);
+                if (i >= cntC) // result 多，current 少
+                {
+                    string sequence = "[" + (i + 1).ToString() + "] ";
+                    string name = PictureFiles[newCurrent[i]].Name;
+                    if (name.Length > 24) { name = "." + name.Substring(name.Length - 24); }
+                    config.Current.Add(newCurrent[i]);
+                    this.listBox1.Items.Add(sequence + name);
+                    continue;
+                }
+                if (i >= cntR) // result 少，current 多
+                {
+                    this.listBox1.Items.RemoveAt(this.listBox1.Items.Count - 1);
+                    config.Current.RemoveAt(config.Current.Count - 1);
+                    continue;
+                }
+
+                if (config.Current[i] != newCurrent[i])
+                {
+                    config.Current[i] = newCurrent[i];
+                    string sequence = "[" + (i + 1).ToString() + "] ";
+                    string name = PictureFiles[newCurrent[i]].Name;
+                    if (name.Length > 24) { name = "." + name.Substring(name.Length - 24); }
+                    this.listBox1.Items[i] = sequence + name;
+                    continue;
+                }
             }
         }
         private void ShowCombo()
         {
-            int cnt = Results.Count;
-            if (this.comboBox1.Items.Count == cnt) { return; }
-            if (this.comboBox1.Items.Count > cnt)
+            int cntS = config.Standard.Count;
+            int cntC = this.comboBox1.Items.Count;
+            if (cntC == cntS && cntS == 0) { return; }
+            int nLoop = Math.Max(cntC, cntS);
+            for (int i = 0; i < nLoop; i++)
             {
-                for (int i = this.comboBox1.Items.Count - 1; i >= cnt; i--)
+                if (i >= cntS) // standard 少 combo 多
                 {
-                    this.comboBox1.Items.RemoveAt(i);
+                    this.comboBox1.Items.RemoveAt(this.comboBox1.Items.Count - 1);
+                    continue;
                 }
-            }
-            if (this.comboBox1.Items.Count < cnt)
-            {
-                for (int i = this.comboBox1.Items.Count; i < cnt; i++)
+                if (i >= cntC) // standard 多 combo 少
                 {
-                    this.comboBox1.Items.Add((i + 1).ToString());
+                    this.comboBox1.Items.Add(
+                        "[" + (i + 1).ToString() + "] " +
+                        PictureFiles[config.Standard[i]].Name);
+                    continue;
                 }
+
+                this.comboBox1.Items[i] =
+                    "[" + (i + 1).ToString() + "] " +
+                    PictureFiles[config.Standard[i]].Name;
             }
             
             if (this.comboBox1.Items.Count != 0 && this.comboBox1.SelectedIndex == -1)
@@ -850,6 +859,12 @@ namespace PictureViewer
         
         private void InitializeForm()
         {
+            IsFinish = false;
+            IsSwitch = false;
+            Results.Clear();
+            IndexS = 0;
+            IndexD = 0;
+
             #region 填充 config
 
             config.Standard = new List<int>();
@@ -985,12 +1000,8 @@ namespace PictureViewer
             if (this.sameToolStripMenuItem.Checked) { mode |= (ushort)MODE.SAME; }
             if (this.likeToolStripMenuItem.Checked) { mode |= (ushort)MODE.LIKE; }
             if (this.turnToolStripMenuItem.Checked) { mode |= (ushort)MODE.TURN; }
-
-            if (IsFinish) { config.Mode = (MODE)mode; return; }
-
-            Stop();
+            
             config.Mode = (MODE)mode;
-            Continue();
         }
         private int GetFileIndex(int folder, int file, int sub = -1)
         {
@@ -1006,16 +1017,27 @@ namespace PictureViewer
             }
             return index;
         }
+        private int GetFileIndex(string path, string name = null)
+        {
+            if (path == null) { return -1; }
+            string full = name == null ? path : path + "\\" + name;
+
+            for (int i = 0; i < PictureFiles.Count; i++)
+            {
+                if (full == PictureFiles[i].Full) { return i; }
+            }
+            return -1;
+        }
         private void GetSourList()
         {
             config.Sour = new List<int>();
             
             if (config.Method == 0)
             {
-                int folder = Form_Main.config.FolderIndex;
-                int file = Form_Main.config.FileIndex;
-                int sub = Form_Main.config.SubIndex;
-                int index = GetFileIndex(folder, file, sub);
+                string full = Form_Main.config.IsSub ?
+                    Form_Main.config.Path + "\\" + Form_Main.config.Name + "\\" + Form_Main.config.SubName :
+                    Form_Main.config.Path + "\\" + Form_Main.config.Name;
+                int index = GetFileIndex(full);
                 if (index != -1) { config.Sour.Add(index); }
                 return;
             }

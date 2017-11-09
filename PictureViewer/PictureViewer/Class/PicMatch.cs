@@ -16,6 +16,9 @@ namespace PictureViewer.Class
     {
         ///////////////////////////////////////////////////// public attribute ///////////////////////////////////////////////
         
+        /// <summary>
+        /// 结束循环
+        /// </summary>
         public bool Abort;
         
         ///////////////////////////////////////////////////// private attribute ///////////////////////////////////////////////
@@ -53,7 +56,7 @@ namespace PictureViewer.Class
             if (Form_Find.config.Method == 1) { Cmp1(); }
             if (Form_Find.config.Method == 2) { Cmp2(); }
 
-            if (!Abort) { Form_Find.IndexD = Form_Find.config.Dest.Count; }
+            if (!Abort && Form_Find.config.Dest != null) { Form_Find.IndexD = Form_Find.config.Dest.Count; }
             Form_Find.IsFinish = true;
         }
 
@@ -139,12 +142,11 @@ namespace PictureViewer.Class
                     compared[Form_Find.IndexD] = true;
                 }
 
-                if (!Abort) { Form_Find.IndexD = Form_Find.IndexS + 2; } else { break; }
                 if (result.Count != 0) {
                     Form_Find.Results.Add(result);
                     Form_Find.config.Standard.Add(Form_Find.config.Sour[Form_Find.IndexS]);
                 }
-                
+                if (!Abort) { Form_Find.IndexD = Form_Find.IndexS + 2; } else { break; }
             }
         }
         private void Cmp2()
@@ -185,10 +187,9 @@ namespace PictureViewer.Class
             {
                 if (sour.Height != dest.Height || sour.Width != dest.Width) { return false; }
 
-                double pace = sour.Width > pixes ? (double)sour.Width / pixes : 1;
-                int permitcnterr = sour.Width > pixes ?
-                    pixes * (100 - degree) / 100 :
-                    sour.Width * (100 - degree) / 100;
+                int cmpixes = sour.Width < pixes ? sour.Width : pixes;
+                double pace = (double)sour.Width / cmpixes;
+                int permitcnterr = cmpixes * (100 - degree) / 100;
                 int permiterr = 10;
                 int cnterr = 0;
 
@@ -197,7 +198,7 @@ namespace PictureViewer.Class
                     int sgray = sour.GraysR[(int)p];
                     int dgray = dest.GraysR[(int)p];
 
-                    int ierr = (sgray - dgray) / 3;
+                    int ierr = sgray - dgray;
                     if (ierr < 0) { ierr = -ierr; }
                     if (ierr > permiterr) { ++cnterr; }
                     if (cnterr > permitcnterr) { break; }
@@ -212,7 +213,95 @@ namespace PictureViewer.Class
 
             if (mode == Form_Find.MODE.FULL_SAME_TURN)
             {
+                bool isForm1 = sour.Height == dest.Height && sour.Width == dest.Width;
+                bool isForm2 = sour.Height == dest.Width && sour.Width == dest.Height;
+                if (!isForm1 && !isForm2) { return false; }
                 
+                #region 旋转 0 或 180 度
+
+                if (isForm1)
+                {
+                    int cmpixes = sour.Width < pixes ? sour.Width : pixes;
+                    double pace = (double)sour.Width / cmpixes;
+                    int permitcnterr = cmpixes * (100 - degree) / 100;
+                    int permiterr = 10;
+                    int cnterr = 0;
+
+                    // 0
+                    for (double p = 0; p < sour.Width; p += pace)
+                    {
+                        int sgray = sour.GraysR[(int)p];
+                        int dgray = dest.GraysR[(int)p];
+
+                        int ierr = sgray - dgray;
+                        if (ierr < 0) { ierr = -ierr; }
+                        if (ierr > permiterr) { ++cnterr; }
+                        if (cnterr > permitcnterr) { break; }
+                    }
+
+                    if (cnterr <= permitcnterr) { return true; }
+                    cnterr = 0;
+
+                    // 180
+                    for (double p = 0; p < sour.Width; p += pace)
+                    {
+                        int sgray = sour.GraysR[(int)p];
+                        int dgray = dest.GraysR[sour.Width - 1 - (int)p];
+
+                        int ierr = sgray - dgray;
+                        if (ierr < 0) { ierr = -ierr; }
+                        if (ierr > permiterr) { ++cnterr; }
+                        if (cnterr > permitcnterr) { break; }
+                    }
+
+                    if (cnterr <= permitcnterr) { return true; }
+                }
+
+                #endregion
+
+                #region 旋转 90 或 270 度
+
+                if (isForm2)
+                {
+                    int cmpixes = sour.Width < pixes ? sour.Width : pixes;
+                    double pace = (double)sour.Width / cmpixes;
+                    int permitcnterr = cmpixes * (100 - degree) / 100;
+                    int permiterr = 10;
+                    int cnterr = 0;
+
+                    // 90
+                    for (double p = 0; p < sour.Width; p += pace)
+                    {
+                        int sgray = sour.GraysR[(int)p];
+                        int dgray = dest.GraysC[(int)p];
+
+                        int ierr = sgray - dgray;
+                        if (ierr < 0) { ierr = -ierr; }
+                        if (ierr > permiterr) { ++cnterr; }
+                        if (cnterr > permitcnterr) { break; }
+                    }
+
+                    if (cnterr <= permitcnterr) { return true; }
+                    cnterr = 0;
+
+                    // 270
+                    for (double p = 0; p < sour.Width; p += pace)
+                    {
+                        int sgray = sour.GraysR[(int)p];
+                        int dgray = dest.GraysC[sour.Width - 1 - (int)p];
+
+                        int ierr = sgray - dgray;
+                        if (ierr < 0) { ierr = -ierr; }
+                        if (ierr > permiterr) { ++cnterr; }
+                        if (cnterr > permitcnterr) { break; }
+                    }
+
+                    if (cnterr <= permitcnterr) { return true; }
+                }
+
+                #endregion
+
+                return false;
             }
 
             #endregion
@@ -239,15 +328,10 @@ namespace PictureViewer.Class
 
             if (mode == Form_Find.MODE.PART_SAME_NOTURN)
             {
-                double rate = sour.Height > dest.Height ?
-                    (double)sour.Height / dest.Height :
-                    (double)dest.Height / sour.Height;
-                int errsize = sour.Height > dest.Height ?
-                    (int)(sour.Width / rate) - dest.Width :
-                    (int)(dest.Width / rate) - sour.Width;
-
-                if (errsize < 0) { errsize = -errsize; }
-                if (errsize > 1) { return false; }
+                double rate = (double)sour.Height / dest.Height;
+                double expw = sour.Width / rate;
+                bool isSame = dest.Width - expw < 3 && expw - dest.Width < 3;
+                if (!isSame) { return false; }
 
                 int cmpixes = sour.Width < dest.Width ?
                     (sour.Width < pixes ? sour.Width : pixes) :
@@ -278,7 +362,103 @@ namespace PictureViewer.Class
 
             if (mode == Form_Find.MODE.PART_SAME_TURN)
             {
+                double rate1 = (double)sour.Height / dest.Height;
+                double expw1 = sour.Width / rate1;
+                double rate2 = (double)sour.Width / dest.Height;
+                double expw2 = sour.Height / rate2;
+
+                bool isForm1 = dest.Width - expw1 < 3 && expw1 - dest.Width < 3;
+                bool isForm2 = dest.Width - expw2 < 3 && expw2 - dest.Width < 3;
                 
+                #region 旋转 0 或 180 度
+
+                if (isForm1)
+                {
+                    int cmpixes = sour.Width < dest.Width ?
+                        (sour.Width < pixes ? sour.Width : pixes) :
+                        (dest.Width < pixes ? dest.Width : pixes);
+                    double space = (double)sour.Width / cmpixes;
+                    double dpace = (double)dest.Width / cmpixes;
+                    int permitcnterr = cmpixes * (100 - degree) / 100;
+                    int permiterr = 10;
+                    int cnterr = 0;
+
+                    // 0
+                    for (double s = 0, d = 0; s < sour.Width && d < dest.Width; s += space, d += dpace)
+                    {
+                        int sgray = sour.GraysR[(int)s];
+                        int dgray = dest.GraysR[(int)d];
+
+                        int ierr = sgray - dgray;
+                        if (ierr < 0) { ierr = -ierr; }
+                        if (ierr > permiterr) { ++cnterr; }
+                        if (cnterr > permitcnterr) { break; }
+                    }
+
+                    if (cnterr <= permitcnterr) { return true; }
+                    cnterr = 0;
+
+                    // 180
+                    for (double s = 0, d = 0; s < sour.Width && d < dest.Width; s += space, d += dpace)
+                    {
+                        int sgray = sour.GraysR[(int)s];
+                        int dgray = dest.GraysR[dest.Width - 1 - (int)d];
+
+                        int ierr = sgray - dgray;
+                        if (ierr < 0) { ierr = -ierr; }
+                        if (ierr > permiterr) { ++cnterr; }
+                        if (cnterr > permitcnterr) { break; }
+                    }
+                    if (cnterr <= permitcnterr) { return true; }
+                }
+
+                #endregion
+
+                #region 旋转 90 或 270 度
+
+                if (isForm2)
+                {
+                    int cmpixes = sour.Width < dest.Height ?
+                        (sour.Width < pixes ? sour.Width : pixes) :
+                        (dest.Height < pixes ? dest.Height : pixes);
+                    double space = (double)sour.Width / cmpixes;
+                    double dpace = (double)dest.Height / cmpixes;
+                    int permitcnterr = cmpixes * (100 - degree) / 100;
+                    int permiterr = 10;
+                    int cnterr = 0;
+
+                    // 90
+                    for (double s = 0, d = 0; s < sour.Width && d < dest.Height; s += space, d += dpace)
+                    {
+                        int sgray = sour.GraysR[(int)s];
+                        int dgray = dest.GraysC[(int)d];
+
+                        int ierr = sgray - dgray;
+                        if (ierr < 0) { ierr = -ierr; }
+                        if (ierr > permiterr) { ++cnterr; }
+                        if (cnterr > permitcnterr) { break; }
+                    }
+
+                    if (cnterr <= permitcnterr) { return true; }
+                    cnterr = 0;
+
+                    // 270
+                    for (double s = 0, d = 0; s < sour.Width && d < dest.Height; s += space, d += dpace)
+                    {
+                        int sgray = sour.GraysR[(int)s];
+                        int dgray = dest.GraysC[dest.Height - 1 - (int)d];
+
+                        int ierr = sgray - dgray;
+                        if (ierr < 0) { ierr = -ierr; }
+                        if (ierr > permiterr) { ++cnterr; }
+                        if (cnterr > permitcnterr) { break; }
+                    }
+                    if (cnterr <= permitcnterr) { return true; }
+                }
+
+                #endregion
+
+                return false;
             }
 
             #endregion
@@ -311,19 +491,18 @@ namespace PictureViewer.Class
             {
                 if (sour.Height != dest.Height || sour.Width != dest.Width) { return false; }
 
-                double pace = sour.Width > pixes ? (double)sour.Width / pixes : 1;
-                int permitcnterr = sour.Width > pixes ?
-                    pixes * (100 - degree) / 100 :
-                    sour.Width * (100 - degree) / 100;
+                int cmpixes = sour.Height < pixes ? sour.Height : pixes;
+                double pace = (double)sour.Height / cmpixes;
+                int permitcnterr = cmpixes * (100 - degree) / 100;
                 int permiterr = 10;
                 int cnterr = 0;
 
-                for (double p = 0; p < sour.Width; p += pace)
+                for (double p = 0; p < sour.Height; p += pace)
                 {
-                    int sgray = sour.GraysR[(int)p];
-                    int dgray = dest.GraysR[(int)p];
+                    int sgray = sour.GraysC[(int)p];
+                    int dgray = dest.GraysC[(int)p];
 
-                    int ierr = (sgray - dgray) / 3;
+                    int ierr = sgray - dgray;
                     if (ierr < 0) { ierr = -ierr; }
                     if (ierr > permiterr) { ++cnterr; }
                     if (cnterr > permitcnterr) { break; }
@@ -338,7 +517,95 @@ namespace PictureViewer.Class
 
             if (mode == Form_Find.MODE.FULL_SAME_TURN)
             {
+                bool isForm1 = sour.Height == dest.Height && sour.Width == dest.Width;
+                bool isForm2 = sour.Height == dest.Width && sour.Width == dest.Height;
+                if (!isForm1 && !isForm2) { return false; }
 
+                #region 旋转 0 或 180 度
+
+                if (isForm1)
+                {
+                    int cmpixes = sour.Height < pixes ? sour.Height : pixes;
+                    double pace = (double)sour.Height / cmpixes;
+                    int permitcnterr = cmpixes * (100 - degree) / 100;
+                    int permiterr = 10;
+                    int cnterr = 0;
+
+                    // 0
+                    for (double p = 0; p < sour.Height; p += pace)
+                    {
+                        int sgray = sour.GraysC[(int)p];
+                        int dgray = dest.GraysC[(int)p];
+
+                        int ierr = sgray - dgray;
+                        if (ierr < 0) { ierr = -ierr; }
+                        if (ierr > permiterr) { ++cnterr; }
+                        if (cnterr > permitcnterr) { break; }
+                    }
+
+                    if (cnterr <= permitcnterr) { return true; }
+                    cnterr = 0;
+
+                    // 180
+                    for (double p = 0; p < sour.Height; p += pace)
+                    {
+                        int sgray = sour.GraysC[(int)p];
+                        int dgray = dest.GraysC[sour.Height - 1 - (int)p];
+
+                        int ierr = sgray - dgray;
+                        if (ierr < 0) { ierr = -ierr; }
+                        if (ierr > permiterr) { ++cnterr; }
+                        if (cnterr > permitcnterr) { break; }
+                    }
+
+                    return cnterr <= permitcnterr;
+                }
+
+                #endregion
+
+                #region 旋转 90 或 270 度
+
+                if (isForm2)
+                {
+                    int cmpixes = sour.Height < pixes ? sour.Height : pixes;
+                    double pace = (double)sour.Height / cmpixes;
+                    int permitcnterr = cmpixes * (100 - degree) / 100;
+                    int permiterr = 10;
+                    int cnterr = 0;
+
+                    // 90
+                    for (double p = 0; p < sour.Height; p += pace)
+                    {
+                        int sgray = sour.GraysC[(int)p];
+                        int dgray = dest.GraysR[(int)p];
+
+                        int ierr = sgray - dgray;
+                        if (ierr < 0) { ierr = -ierr; }
+                        if (ierr > permiterr) { ++cnterr; }
+                        if (cnterr > permitcnterr) { break; }
+                    }
+
+                    if (cnterr <= permitcnterr) { return true; }
+                    cnterr = 0;
+
+                    // 270
+                    for (double p = 0; p < sour.Height; p += pace)
+                    {
+                        int sgray = sour.GraysC[(int)p];
+                        int dgray = dest.GraysR[sour.Height - 1 - (int)p];
+
+                        int ierr = sgray - dgray;
+                        if (ierr < 0) { ierr = -ierr; }
+                        if (ierr > permiterr) { ++cnterr; }
+                        if (cnterr > permitcnterr) { break; }
+                    }
+
+                    return cnterr <= permitcnterr;
+                }
+
+                #endregion
+
+                return false;
             }
 
             #endregion
@@ -365,15 +632,10 @@ namespace PictureViewer.Class
 
             if (mode == Form_Find.MODE.PART_SAME_NOTURN)
             {
-                double rate = sour.Height > dest.Height ?
-                    (double)sour.Height / dest.Height :
-                    (double)dest.Height / sour.Height;
-                int errsize = sour.Height > dest.Height ?
-                    (int)(sour.Width / rate) - dest.Width :
-                    (int)(dest.Width / rate) - sour.Width;
-
-                if (errsize < 0) { errsize = -errsize; }
-                if (errsize > 1) { return false; }
+                double rate = (double)sour.Height / dest.Height;
+                double expw = sour.Width / rate;
+                bool isSame = dest.Width - expw < 3 && expw - dest.Width < 3;
+                if (!isSame) { return false; }
 
                 int cmpixes = sour.Height < dest.Height ?
                     (sour.Height < pixes ? sour.Height : pixes) :
@@ -404,7 +666,103 @@ namespace PictureViewer.Class
 
             if (mode == Form_Find.MODE.PART_SAME_TURN)
             {
+                double rate1 = (double)sour.Height / dest.Height;
+                double expw1 = sour.Width / rate1;
+                double rate2 = (double)sour.Width / dest.Height;
+                double expw2 = sour.Height / rate2;
 
+                bool isForm1 = dest.Width - expw1 < 3 && expw1 - dest.Width < 3;
+                bool isForm2 = dest.Width - expw2 < 3 && expw2 - dest.Width < 3;
+
+                #region 旋转 0 或 180 度
+
+                if (isForm1)
+                {
+                    int cmpixes = sour.Height < dest.Height ?
+                        (sour.Height < pixes ? sour.Height : pixes) :
+                        (dest.Height < pixes ? dest.Height : pixes);
+                    double space = (double)sour.Height / cmpixes;
+                    double dpace = (double)dest.Height / cmpixes;
+                    int permitcnterr = cmpixes * (100 - degree) / 100;
+                    int permiterr = 10;
+                    int cnterr = 0;
+
+                    // 0
+                    for (double s = 0, d = 0; s < sour.Height && d < dest.Height; s += space, d += dpace)
+                    {
+                        int sgray = sour.GraysC[(int)s];
+                        int dgray = dest.GraysC[(int)d];
+
+                        int ierr = sgray - dgray;
+                        if (ierr < 0) { ierr = -ierr; }
+                        if (ierr > permiterr) { ++cnterr; }
+                        if (cnterr > permitcnterr) { break; }
+                    }
+
+                    if (cnterr <= permitcnterr) { return true; }
+                    cnterr = 0;
+
+                    // 180
+                    for (double s = 0, d = 0; s < sour.Height && d < dest.Height; s += space, d += dpace)
+                    {
+                        int sgray = sour.GraysC[(int)s];
+                        int dgray = dest.GraysC[dest.Height - 1 - (int)d];
+
+                        int ierr = sgray - dgray;
+                        if (ierr < 0) { ierr = -ierr; }
+                        if (ierr > permiterr) { ++cnterr; }
+                        if (cnterr > permitcnterr) { break; }
+                    }
+                    if (cnterr <= permitcnterr) { return true; }
+                }
+
+                #endregion
+
+                #region 旋转 90 或 270 度
+
+                if (isForm2)
+                {
+                    int cmpixes = sour.Height < dest.Width ?
+                        (sour.Height < pixes ? sour.Height : pixes) :
+                        (dest.Width < pixes ? dest.Width : pixes);
+                    double space = (double)sour.Height / cmpixes;
+                    double dpace = (double)dest.Width / cmpixes;
+                    int permitcnterr = cmpixes * (100 - degree) / 100;
+                    int permiterr = 10;
+                    int cnterr = 0;
+
+                    // 90
+                    for (double s = 0, d = 0; s < sour.Height && d < dest.Width; s += space, d += dpace)
+                    {
+                        int sgray = sour.GraysC[(int)s];
+                        int dgray = dest.GraysR[(int)d];
+
+                        int ierr = sgray - dgray;
+                        if (ierr < 0) { ierr = -ierr; }
+                        if (ierr > permiterr) { ++cnterr; }
+                        if (cnterr > permitcnterr) { break; }
+                    }
+
+                    if (cnterr <= permitcnterr) { return true; }
+                    cnterr = 0;
+
+                    // 270
+                    for (double s = 0, d = 0; s < sour.Height && d < dest.Width; s += space, d += dpace)
+                    {
+                        int sgray = sour.GraysC[(int)s];
+                        int dgray = dest.GraysR[dest.Width - 1 - (int)d];
+
+                        int ierr = sgray - dgray;
+                        if (ierr < 0) { ierr = -ierr; }
+                        if (ierr > permiterr) { ++cnterr; }
+                        if (cnterr > permitcnterr) { break; }
+                    }
+                    if (cnterr <= permitcnterr) { return true; }
+                }
+
+                #endregion
+
+                return false;
             }
 
             #endregion
