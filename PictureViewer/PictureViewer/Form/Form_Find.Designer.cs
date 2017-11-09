@@ -60,6 +60,8 @@
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.comboBox1 = new System.Windows.Forms.ComboBox();
+            this.label3 = new System.Windows.Forms.Label();
+            this.label6 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.contextMenuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox2)).BeginInit();
@@ -208,6 +210,7 @@
             this.pixesToolStripMenuItem.Name = "pixesToolStripMenuItem";
             this.pixesToolStripMenuItem.Size = new System.Drawing.Size(123, 22);
             this.pixesToolStripMenuItem.Text = "Pixes";
+            this.pixesToolStripMenuItem.Visible = false;
             this.pixesToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Pixes);
             // 
             // switchToolStripMenuItem
@@ -321,11 +324,37 @@
             this.comboBox1.TabIndex = 23;
             this.comboBox1.SelectedIndexChanged += new System.EventHandler(this.ComboIndexChanged);
             // 
+            // label3
+            // 
+            this.label3.Font = new System.Drawing.Font("宋体", 20F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.label3.Location = new System.Drawing.Point(67, 128);
+            this.label3.Name = "label3";
+            this.label3.Size = new System.Drawing.Size(69, 24);
+            this.label3.TabIndex = 24;
+            this.label3.Text = "↓";
+            this.label3.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.label3.Visible = false;
+            this.label3.Click += new System.EventHandler(this.NextSour);
+            // 
+            // label6
+            // 
+            this.label6.Font = new System.Drawing.Font("宋体", 20F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.label6.Location = new System.Drawing.Point(67, 1);
+            this.label6.Name = "label6";
+            this.label6.Size = new System.Drawing.Size(69, 24);
+            this.label6.TabIndex = 25;
+            this.label6.Text = "↑";
+            this.label6.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.label6.Visible = false;
+            this.label6.Click += new System.EventHandler(this.PreviousSour);
+            // 
             // Form_Find
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(525, 326);
+            this.Controls.Add(this.label6);
+            this.Controls.Add(this.label3);
             this.Controls.Add(this.comboBox1);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
@@ -384,5 +413,7 @@
         private System.Windows.Forms.ToolStripMenuItem source1ToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem source2ToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem removeToolStripMenuItem;
+        private System.Windows.Forms.Label label3;
+        private System.Windows.Forms.Label label6;
     }
 }

@@ -389,6 +389,12 @@ namespace PictureViewer.Class
             if (!Found.Form_Main_Play_ShowTime) { settings.Form_Main_Play_ShowTime = 50; }
 
             #endregion
+
+            #region 有历史信息，但需要修改
+
+            settings.Form_Find_Pixes = settings.Form_Find_Pixes / 2 * 2;
+
+            #endregion
         }
         private static bool ToDirectory(string str, ref string ret)
         {

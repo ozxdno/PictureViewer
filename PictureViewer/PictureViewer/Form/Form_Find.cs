@@ -147,6 +147,11 @@ namespace PictureViewer
         public struct CONFIG
         {
             /// <summary>
+            /// 初始化中
+            /// </summary>
+            public bool Initializing;
+
+            /// <summary>
             /// 比对图
             /// </summary>
             public List<int> Standard;
@@ -260,25 +265,6 @@ namespace PictureViewer
         public Form_Find(MODE mode = MODE.DEFAULT)
         {
             InitializeComponent();
-
-            //SourPic = CopyPicture((Bitmap)pic, 1);
-            //SourFile.Loaded = true;
-            //SourFile.Full = fullname;
-            //FileOperate.getPathName(fullname, ref SourFile.Path, ref SourFile.Name);
-            //SourFile.FolderIndex = Form_Main.config.FolderIndex;
-            //SourFile.FileIndex = Form_Main.config.FileIndex;
-            //SourFile.SubIndex = Form_Main.config.SubIndex;
-            //SourFile.Height = SourPic.Height;
-            //SourFile.Width = SourPic.Width;
-            //SourFile.Length = 0;
-            //SourFile.Row = SourFile.Height / 2;
-            //SourFile.Col = SourFile.Width / 2;
-            //SourFile.GraysR = new int[SourFile.Width];
-            //SourFile.GraysC = new int[SourFile.Height];
-            //for (int i = 0; i < SourFile.Width; i++) { SourFile.GraysR[i] = ToGray(SourPic.GetPixel(i, SourFile.Row)); }
-            //for (int i = 0; i < SourFile.Height; i++) { SourFile.GraysC[i] = ToGray(SourPic.GetPixel(SourFile.Col, i)); }
-            //if (File.Exists(SourFile.Full)) { FileInfo f = new FileInfo(SourFile.Full); SourFile.Length = f.Length; }
-            
             config.Mode = mode;
         }
         
@@ -317,6 +303,15 @@ namespace PictureViewer
                 
                 if (!IsFinish) { config.CountTime++; config.TimeED = config.CountTime; }
 
+                if (config.Initializing)
+                {
+                    this.Text = "[Preparing Files]: " + IndexS.ToString();
+                }
+                if (!config.Initializing && config.Method == -1)
+                {
+                    this.Text = "[Prepared Files]: " + PictureFiles.Count.ToString();
+                }
+
                 bool s1 = false;
                 foreach (ToolStripMenuItem i in this.source1ToolStripMenuItem.DropDownItems)
                 { if (i.Checked) { s1 = true; break; } }
@@ -327,7 +322,7 @@ namespace PictureViewer
                 { if (i.Checked) { s2 = true; break; } }
                 this.source2ToolStripMenuItem.Checked = s2;
 
-                if (config.Method != -1)
+                if (config.Method != -1 && !config.Initializing)
                 {
                     double usedTime = (double)(config.TimeED - config.TimeBG) / 10;
                     string usedtime = usedTime.ToString();
@@ -354,26 +349,27 @@ namespace PictureViewer
                     }
                 }
 
-                int ptX = MousePosition.X - this.Location.X;
-                int ptY = MousePosition.Y - this.Location.Y;
-                int xbg, xed;
-                int ybg, yed;
-
-                xbg = this.label4.Location.X; xed = xbg + this.label4.Width;
-                ybg = this.label4.Location.Y; yed = ybg + this.label4.Height;
-                this.label4.Visible = xbg <= ptX && ptX <= xed && ybg <= ptY && ptY <= yed && config.Current.Count > 1;
-
-                xbg = this.label5.Location.X; xed = xbg + this.label5.Width;
-                ybg = this.label5.Location.Y; yed = ybg + this.label5.Height;
-                this.label5.Visible = xbg <= ptX && ptX <= xed&& ybg <= ptY && ptY <= yed && config.Current.Count > 1;
-
-                xbg = this.label1.Location.X + 10; xed = xbg + this.label1.Width;
-                ybg = this.label1.Location.Y + 30; yed = ybg + this.label1.Height;
-                this.label1.Visible = false;// xbg <= ptX && ptX <= xed && ybg <= ptY && ptY <= yed && config.Current.Count > 0;
-
-                xbg = this.label2.Location.X + 10; xed = xbg + this.label2.Width;
-                ybg = this.label2.Location.Y + 30; yed = ybg + this.label2.Height;
-                this.label2.Visible = false;// xbg <= ptX && ptX <= xed && ybg <= ptY && ptY <= yed && config.Current.Count > 0;
+                Point ptMouse;
+                ptMouse = this.label6.PointToClient(MousePosition);
+                this.label6.Visible =
+                    config.Standard.Count > 1 &&
+                    ptMouse.X >= 0 && ptMouse.X < this.label6.Width &&
+                    ptMouse.Y >= 0 && ptMouse.Y < this.label6.Height;
+                ptMouse = this.label3.PointToClient(MousePosition);
+                this.label3.Visible =
+                    config.Standard.Count > 1 &&
+                    ptMouse.X >= 0 && ptMouse.X < this.label3.Width &&
+                    ptMouse.Y >= 0 && ptMouse.Y < this.label3.Height;
+                ptMouse = this.label4.PointToClient(MousePosition);
+                this.label4.Visible =
+                    config.Current.Count > 1 &&
+                    ptMouse.X >= 0 && ptMouse.X < this.label4.Width &&
+                    ptMouse.Y >= 0 && ptMouse.Y < this.label4.Height;
+                ptMouse = this.label5.PointToClient(MousePosition);
+                this.label5.Visible =
+                    config.Current.Count > 1 &&
+                    ptMouse.X >= 0 && ptMouse.X < this.label5.Width &&
+                    ptMouse.Y >= 0 && ptMouse.Y < this.label5.Height;
             });
         }
         private void Form_KeyUp(object sender, KeyEventArgs e)
@@ -383,19 +379,43 @@ namespace PictureViewer
         
         private void Previous(object sender, EventArgs e)
         {
+            if (config.Initializing) { return; }
+
             int index = this.listBox1.SelectedIndex - 1;
             if (index < 0) { index = this.listBox1.Items.Count - 1; }
             this.listBox1.SelectedIndex = index;
         }
         private void Next(object sender, EventArgs e)
         {
+            if (config.Initializing) { return; }
+
             if (this.listBox1.Items.Count == 0) { return; }
             int index = this.listBox1.SelectedIndex + 1;
             if (index >= this.listBox1.Items.Count) { index = 0; }
             this.listBox1.SelectedIndex = index;
         }
+        private void PreviousSour(object sender, EventArgs e)
+        {
+            if (config.Initializing) { return; }
+            if (config.Standard.Count == 0) { return; }
+
+            int sel = this.comboBox1.SelectedIndex;
+            int next = sel - 1; if (next < 0) { next = config.Standard.Count - 1; }
+            this.comboBox1.SelectedIndex = next;
+        }
+        private void NextSour(object sender, EventArgs e)
+        {
+            if (config.Initializing) { return; }
+            if (config.Standard.Count == 0) { return; }
+
+            int sel = this.comboBox1.SelectedIndex;
+            int next = sel + 1; if (next >= config.Standard.Count) { next = 0; }
+            this.comboBox1.SelectedIndex = next;
+        }
         private void ListIndexChanged(object sender, EventArgs e)
         {
+            if (config.Initializing) { return; }
+
             int sel = this.listBox1.SelectedIndex;
             //if (sel == prevIndexD) { if (sel != -1) { ShowDestPic(); } return; }
             if (sel != -1) { DestFile = PictureFiles[config.Current[sel]]; }
@@ -404,6 +424,8 @@ namespace PictureViewer
         }
         private void ComboIndexChanged(object sender, EventArgs e)
         {
+            if (config.Initializing) { return; }
+
             int sel = this.comboBox1.SelectedIndex;
             if (prevIndexS == sel) { return; }
             if (sel != -1) { SourFile = PictureFiles[config.Standard[sel]]; }
@@ -415,6 +437,8 @@ namespace PictureViewer
         }
         private void DoubleClickedToSwitch(object sender, EventArgs e)
         {
+            if (config.Initializing) { return; }
+
             int indexS = this.comboBox1.SelectedIndex;
             int indexD = this.listBox1.SelectedIndex;
             if (indexS == -1 || indexD == -1) { return; }
@@ -434,6 +458,8 @@ namespace PictureViewer
 
         private void RightMenu_Start(object sender, EventArgs e)
         {
+            if (config.Initializing) { return; }
+
             if (this.startToolStripMenuItem.Text == "Start") { Start(); return; }
             if (this.startToolStripMenuItem.Text == "Continue") { Continue(); return; }
             if (this.startToolStripMenuItem.Text == "Stop") { Stop(); return; }
@@ -441,6 +467,8 @@ namespace PictureViewer
         }
         private void RightMenu_Export(object sender, EventArgs e)
         {
+            if (config.Initializing) { return; }
+
             int indexS = this.comboBox1.SelectedIndex;
             int indexD = this.listBox1.SelectedIndex;
             if (indexS == -1 || indexD == -1) { MessageBox.Show("文件不存在！", "提示"); return; }
@@ -482,6 +510,8 @@ namespace PictureViewer
         }
         private void RightMenu_Export2(object sender, EventArgs e)
         {
+            if (config.Initializing) { return; }
+
             int indexS = this.comboBox1.SelectedIndex;
             if (indexS == -1) { MessageBox.Show("文件不存在！", "提示"); return; }
             if (Results.Count <= indexS || Results[indexS].Count == 0) { MessageBox.Show("文件不存在！", "提示"); return; }
@@ -517,6 +547,8 @@ namespace PictureViewer
         }
         private void RightMenu_Remove(object sender, EventArgs e)
         {
+            if (config.Initializing) { return; }
+
             int indexS = this.comboBox1.SelectedIndex;
             int indexD = this.listBox1.SelectedIndex;
             if (indexS == -1 || indexD == -1) { MessageBox.Show("文件不存在！", "提示"); return; }
@@ -530,6 +562,8 @@ namespace PictureViewer
         }
         private void RightMenu_Open(object sender, EventArgs e)
         {
+            if (config.Initializing) { return; }
+
             int indexS = this.comboBox1.SelectedIndex;
             int indexD = this.listBox1.SelectedIndex;
             if (indexS == -1 || indexD == -1) { MessageBox.Show("文件不存在！", "提示"); return; }
@@ -542,6 +576,8 @@ namespace PictureViewer
         }
         private void RightMenu_Pixes(object sender, EventArgs e)
         {
+            if (config.Initializing) { return; }
+
             //if (!IsFinish) { MessageBox.Show("正在搜索，请勿操作！", "提示"); return; }
 
             Form_Input input = new Form_Input(config.MinCmpPix.ToString());
@@ -562,6 +598,8 @@ namespace PictureViewer
         }
         private void RightMenu_Switch(object sender, EventArgs e)
         {
+            if (config.Initializing) { return; }
+
             int indexS = this.comboBox1.SelectedIndex;
             int indexD = this.listBox1.SelectedIndex;
             if (indexS == -1 || indexD == -1) { MessageBox.Show("文件不存在！", "提示"); return; }
@@ -577,6 +615,8 @@ namespace PictureViewer
         }
         private void RightMenu_Degree(object sender, EventArgs e)
         {
+            if (config.Initializing) { return; }
+
             //if (!IsFinish) { MessageBox.Show("正在搜索，请勿操作！", "提示"); return; }
             Form_Input input = new Form_Input(config.Degree.ToString());
             input.Location = MousePosition;
@@ -597,15 +637,19 @@ namespace PictureViewer
         }
         private void RightMenu_Restart(object sender, EventArgs e)
         {
+            if (config.Initializing) { return; }
+
             Stop();
             Start();
         }
         private void RightMenu_Mode(object sender, EventArgs e)
         {
-
+            if (config.Initializing) { return; }
         }
         private void RightMenu_Mode_Full(object sender, EventArgs e)
         {
+            if (config.Initializing) { return; }
+
             this.fullToolStripMenuItem.Checked = !this.fullToolStripMenuItem.Checked;
             this.partToolStripMenuItem.Checked = !this.fullToolStripMenuItem.Checked;
 
@@ -613,6 +657,8 @@ namespace PictureViewer
         }
         private void RightMenu_Mode_Part(object sender, EventArgs e)
         {
+            if (config.Initializing) { return; }
+
             this.partToolStripMenuItem.Checked = !this.partToolStripMenuItem.Checked;
             this.fullToolStripMenuItem.Checked = !this.partToolStripMenuItem.Checked;
 
@@ -620,6 +666,8 @@ namespace PictureViewer
         }
         private void RightMenu_Mode_Same(object sender, EventArgs e)
         {
+            if (config.Initializing) { return; }
+
             this.sameToolStripMenuItem.Checked = !this.sameToolStripMenuItem.Checked;
             this.likeToolStripMenuItem.Checked = !this.sameToolStripMenuItem.Checked;
 
@@ -627,6 +675,8 @@ namespace PictureViewer
         }
         private void RightMenu_Mode_Like(object sender, EventArgs e)
         {
+            if (config.Initializing) { return; }
+
             this.likeToolStripMenuItem.Checked = !this.likeToolStripMenuItem.Checked;
             this.sameToolStripMenuItem.Checked = !this.likeToolStripMenuItem.Checked;
 
@@ -634,12 +684,16 @@ namespace PictureViewer
         }
         private void RightMenu_Mode_Turn(object sender, EventArgs e)
         {
+            if (config.Initializing) { return; }
+
             this.turnToolStripMenuItem.Checked = !this.turnToolStripMenuItem.Checked;
 
             SetMode();
         }
         private void RightMenu_Source1(object sender, EventArgs e)
         {
+            if (config.Initializing) { return; }
+
             this.contextMenuStrip1.Hide();
 
             bool next = !this.source1ToolStripMenuItem.Checked;
@@ -650,6 +704,8 @@ namespace PictureViewer
         }
         private void RightMenu_Source2(object sender, EventArgs e)
         {
+            if (config.Initializing) { return; }
+
             this.contextMenuStrip1.Hide();
 
             bool next = !this.source2ToolStripMenuItem.Checked;
@@ -775,10 +831,10 @@ namespace PictureViewer
                 if (i >= cntC) // result 多，current 少
                 {
                     string sequence = "[" + (i + 1).ToString() + "] ";
+                    string size = "[" + (PictureFiles[newCurrent[i]].Length / 1000).ToString() + " KB] ";
                     string name = PictureFiles[newCurrent[i]].Name;
-                    if (name.Length > 24) { name = "." + name.Substring(name.Length - 24); }
                     config.Current.Add(newCurrent[i]);
-                    this.listBox1.Items.Add(sequence + name);
+                    this.listBox1.Items.Add(sequence + size + name);
                     continue;
                 }
                 if (i >= cntR) // result 少，current 多
@@ -792,9 +848,9 @@ namespace PictureViewer
                 {
                     config.Current[i] = newCurrent[i];
                     string sequence = "[" + (i + 1).ToString() + "] ";
+                    string size = "[" + (PictureFiles[newCurrent[i]].Length / 1000).ToString() + " KB] ";
                     string name = PictureFiles[newCurrent[i]].Name;
-                    if (name.Length > 24) { name = "." + name.Substring(name.Length - 24); }
-                    this.listBox1.Items[i] = sequence + name;
+                    this.listBox1.Items[i] = sequence + size + name;
                     continue;
                 }
             }
@@ -876,6 +932,8 @@ namespace PictureViewer
         
         private void InitializeForm()
         {
+            config.Initializing = true;
+
             IsFinish = false;
             IsSwitch = false;
             Results.Clear();
@@ -883,7 +941,7 @@ namespace PictureViewer
             IndexD = 0;
 
             #region 填充 config
-
+            
             config.Standard = new List<int>();
             config.Current = new List<int>();
             
@@ -909,7 +967,7 @@ namespace PictureViewer
             #endregion
 
             #region 填充可选路径
-
+            
             for (int i = 0; i < FileOperate.RootFiles.Count; i++)
             {
                 ToolStripMenuItem iMenu = new ToolStripMenuItem(FileOperate.RootFiles[i].Path);
@@ -932,6 +990,13 @@ namespace PictureViewer
 
             #region 初始化填充文件内容
 
+            TH = new Thread(GetFiles);
+            TH.Start();
+            
+            #endregion
+        }
+        private void GetFiles()
+        {
             PictureFiles.Clear();
 
             for (int i = 0; i < FileOperate.RootFiles.Count; i++)
@@ -958,6 +1023,7 @@ namespace PictureViewer
                             p.FileIndex = j;
                             p.SubIndex = k;
                             PictureFiles.Add(p);
+                            IndexS++;
                         }
                         continue;
                     }
@@ -972,12 +1038,15 @@ namespace PictureViewer
                         p.FileIndex = j;
                         p.SubIndex = -1;
                         PictureFiles.Add(p);
+                        IndexS++;
                         continue;
                     }
                 }
             }
 
-            for (int i = PictureFiles.Count - 1; i >= 0; i--)
+            IndexS = 0;
+
+            for (int i = PictureFiles.Count - 1; i >= 0; i--, IndexS++)
             {
                 if (!File.Exists(PictureFiles[i].Path + "\\" + PictureFiles[i].Name))
                 { PictureFiles.RemoveAt(i); continue; }
@@ -1000,7 +1069,8 @@ namespace PictureViewer
                 PictureFiles[i] = p;
             }
 
-            #endregion
+            config.Initializing = false;
+            IndexS = 0;
         }
         private void SetMode()
         {
@@ -1113,16 +1183,6 @@ namespace PictureViewer
             try { g.Dispose(); } catch { }
 
             return dest;
-        }
-        private int ToGray(Color c)
-        {
-            return (c.R + c.G + c.B) / 3;
-            //return (int)(0.3 * c.R + 0.59 * c.G + 0.11 * c.B);
-        }
-        private int ToGray(int R, int G, int B)
-        {
-            return (R + B + G) / 3;
-            //return (int)(0.3 * R + 0.59 * G + 0.11 * B);
         }
     }
 }
