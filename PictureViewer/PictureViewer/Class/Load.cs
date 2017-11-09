@@ -64,6 +64,31 @@ namespace PictureViewer.Class
 
             public int Form_Find_Degree;
             public int Form_Find_Pixes;
+
+            public int FastKey_Main_U;
+            public int FastKey_Main_D;
+            public int FastKey_Main_L;
+            public int FastKey_Main_R;
+            public int FastKey_Main_PageU;
+            public int FastKey_Main_PageD;
+            public int FastKey_Main_Enter;
+            public int FastKey_Main_Export;
+            public int FastKey_Main_OpenExport;
+            public int FastKey_Main_OpenRoot;
+            public int FastKey_Main_OpenComic;
+            public int FastKey_Main_OpenCurrent;
+            public int FastKey_Main_Password;
+            public int FastKey_Main_Esc;
+            public int FastKey_Main_Board;
+            public int FastKey_Find_Esc;
+            public int FastKey_Find_U;
+            public int FastKey_Find_D;
+            public int FastKey_Find_L;
+            public int FastKey_Find_R;
+            public int FastKey_Find_Export;
+            public int FastKey_Search_Esc;
+            public int FastKey_Search_Enter;
+            public int FastKey_Input_Enter;
         }
 
         ///////////////////////////////////////////////////// private attribute ///////////////////////////////////////////////
@@ -110,6 +135,31 @@ namespace PictureViewer.Class
 
             public bool Form_Find_Degree;
             public bool Form_Find_Pixes;
+
+            public bool FastKey_Main_U;
+            public bool FastKey_Main_D;
+            public bool FastKey_Main_L;
+            public bool FastKey_Main_R;
+            public bool FastKey_Main_PageU;
+            public bool FastKey_Main_PageD;
+            public bool FastKey_Main_Enter;
+            public bool FastKey_Main_Export;
+            public bool FastKey_Main_OpenExport;
+            public bool FastKey_Main_OpenRoot;
+            public bool FastKey_Main_OpenComic;
+            public bool FastKey_Main_OpenCurrent;
+            public bool FastKey_Main_Password;
+            public bool FastKey_Main_Esc;
+            public bool FastKey_Main_Board;
+            public bool FastKey_Find_Esc;
+            public bool FastKey_Find_U;
+            public bool FastKey_Find_D;
+            public bool FastKey_Find_L;
+            public bool FastKey_Find_R;
+            public bool FastKey_Find_Export;
+            public bool FastKey_Search_Esc;
+            public bool FastKey_Search_Enter;
+            public bool FastKey_Input_Enter;
         }
 
         ///////////////////////////////////////////////////// public method ///////////////////////////////////////////////
@@ -206,6 +256,27 @@ namespace PictureViewer.Class
                     case "Form_Main_Play_Circle": Found.Form_Main_Play_Circle = ToBool(Item[1], ref settings.Form_Main_Play_Circle); break;
                     case "Form_Main_Play_Rand": Found.Form_Main_Play_Rand = ToBool(Item[1], ref settings.Form_Main_Play_Rand); break;
                     case "Form_Main_Play_ShowTime": Found.Form_Main_Play_ShowTime = ToInt(Item[1], ref settings.Form_Main_Play_ShowTime); break;
+                    case "FastKey_Find_Esc": Found.FastKey_Find_Esc = ToInt(Item[1], ref settings.FastKey_Find_Esc); break;
+                    case "FastKey_Find_Export": Found.FastKey_Find_Export = ToInt(Item[1], ref settings.FastKey_Find_Export); break;
+                    case "FastKey_Find_L": Found.FastKey_Find_L = ToInt(Item[1], ref settings.FastKey_Find_L); break;
+                    case "FastKey_Find_R": Found.FastKey_Find_R = ToInt(Item[1], ref settings.FastKey_Find_R); break;
+                    case "FastKey_Find_U": Found.FastKey_Find_U = ToInt(Item[1], ref settings.FastKey_Find_U); break;
+                    case "FastKey_Find_D": Found.FastKey_Find_D = ToInt(Item[1], ref settings.FastKey_Find_D); break;
+                    case "FastKey_Main_D": Found.FastKey_Main_D = ToInt(Item[1], ref settings.FastKey_Main_D); break;
+                    case "FastKey_Main_L": Found.FastKey_Main_L = ToInt(Item[1], ref settings.FastKey_Main_L); break;
+                    case "FastKey_Main_PageD": Found.FastKey_Main_PageD = ToInt(Item[1], ref settings.FastKey_Main_PageD); break;
+                    case "FastKey_Main_PageU": Found.FastKey_Main_PageU = ToInt(Item[1], ref settings.FastKey_Main_PageU); break;
+                    case "FastKey_Main_R": Found.FastKey_Main_R = ToInt(Item[1], ref settings.FastKey_Main_R); break;
+                    case "FastKey_Main_U": Found.FastKey_Main_U = ToInt(Item[1], ref settings.FastKey_Main_U); break;
+                    case "FastKey_Main_Board": Found.FastKey_Main_Board = ToInt(Item[1], ref settings.FastKey_Main_Board); break;
+                    case "FastKey_Main_Enter": Found.FastKey_Main_Enter = ToInt(Item[1], ref settings.FastKey_Main_Enter); break;
+                    case "FastKey_Main_Esc": Found.FastKey_Main_Esc = ToInt(Item[1], ref settings.FastKey_Main_Esc); break;
+                    case "FastKey_Main_Export": Found.FastKey_Main_Export = ToInt(Item[1], ref settings.FastKey_Main_Export); break;
+                    case "FastKey_Main_OpenComic": Found.FastKey_Main_OpenComic = ToInt(Item[1], ref settings.FastKey_Main_OpenComic); break;
+                    case "FastKey_Main_OpenCurrent": Found.FastKey_Main_OpenCurrent = ToInt(Item[1], ref settings.FastKey_Main_OpenCurrent); break;
+                    case "FastKey_Main_OpenExport": Found.FastKey_Main_OpenExport = ToInt(Item[1], ref settings.FastKey_Main_OpenExport); break;
+                    case "FastKey_Main_OpenRoot": Found.FastKey_Main_OpenRoot = ToInt(Item[1], ref settings.FastKey_Main_OpenRoot); break;
+                    case "FastKey_Main_Password": Found.FastKey_Main_Password = ToInt(Item[1], ref settings.FastKey_Main_Password); break;
                     default: break;
                 }
 
@@ -388,6 +459,14 @@ namespace PictureViewer.Class
             
             if (!Found.Form_Main_Play_ShowTime) { settings.Form_Main_Play_ShowTime = 50; }
 
+
+            if (!Found.FastKey_Find_Esc) { settings.FastKey_Find_Esc = 27; }
+            if (!Found.FastKey_Find_Export) { settings.FastKey_Find_Export = 46; }
+            if (!Found.FastKey_Find_U) { settings.FastKey_Find_U = 87; }
+            if (!Found.FastKey_Find_D) { settings.FastKey_Find_D = 83; }
+            if (!Found.FastKey_Find_L) { settings.FastKey_Find_L = 65; }
+            if (!Found.FastKey_Find_R) { settings.FastKey_Find_R = 68; }
+
             #endregion
 
             #region 有历史信息，但需要修改
@@ -396,6 +475,7 @@ namespace PictureViewer.Class
 
             #endregion
         }
+
         private static bool ToDirectory(string str, ref string ret)
         {
             bool exist = Directory.Exists(str);

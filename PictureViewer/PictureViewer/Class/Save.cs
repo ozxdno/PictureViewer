@@ -159,6 +159,31 @@ namespace PictureViewer.Class
                 swCFG.WriteLine("Form_Main_Play_Rand=" + (Load.settings.Form_Main_Play_Rand ? "1" : "0"));
                 swCFG.WriteLine("Form_Main_Play_ShowTime=" + Load.settings.Form_Main_Play_ShowTime.ToString());
                 swCFG.WriteLine("");
+
+                swCFG.WriteLine("FastKey_Main_Board=" + Load.settings.FastKey_Main_Board.ToString());
+                swCFG.WriteLine("FastKey_Main_D=" + Load.settings.FastKey_Main_D.ToString());
+                swCFG.WriteLine("FastKey_Main_Enter=" + Load.settings.FastKey_Main_Enter.ToString());
+                swCFG.WriteLine("FastKey_Main_Esc=" + Load.settings.FastKey_Main_Esc.ToString());
+                swCFG.WriteLine("FastKey_Main_Export=" + Load.settings.FastKey_Main_Export.ToString());
+                swCFG.WriteLine("FastKey_Main_L=" + Load.settings.FastKey_Main_L.ToString());
+                swCFG.WriteLine("FastKey_Main_OpenComic=" + Load.settings.FastKey_Main_OpenComic.ToString());
+                swCFG.WriteLine("FastKey_Main_OpenCurrent=" + Load.settings.FastKey_Main_OpenCurrent.ToString());
+                swCFG.WriteLine("FastKey_Main_OpenExport=" + Load.settings.FastKey_Main_OpenExport.ToString());
+                swCFG.WriteLine("FastKey_Main_OpenRoot=" + Load.settings.FastKey_Main_OpenRoot.ToString());
+                swCFG.WriteLine("FastKey_Main_PageD=" + Load.settings.FastKey_Main_PageD.ToString());
+                swCFG.WriteLine("FastKey_Main_PageU=" + Load.settings.FastKey_Main_PageU.ToString());
+                swCFG.WriteLine("FastKey_Main_Password=" + Load.settings.FastKey_Main_Password.ToString());
+                swCFG.WriteLine("FastKey_Main_R=" + Load.settings.FastKey_Main_R.ToString());
+                swCFG.WriteLine("FastKey_Main_U=" + Load.settings.FastKey_Main_U.ToString());
+                swCFG.WriteLine("");
+
+                swCFG.WriteLine("FastKey_Find_Esc=" + Load.settings.FastKey_Find_Esc.ToString());
+                swCFG.WriteLine("FastKey_Find_U=" + Load.settings.FastKey_Find_U.ToString());
+                swCFG.WriteLine("FastKey_Find_D=" + Load.settings.FastKey_Find_D.ToString());
+                swCFG.WriteLine("FastKey_Find_L=" + Load.settings.FastKey_Find_L.ToString());
+                swCFG.WriteLine("FastKey_Find_R=" + Load.settings.FastKey_Find_R.ToString());
+                swCFG.WriteLine("FastKey_Find_Export=" + Load.settings.FastKey_Find_Export.ToString());
+                swCFG.WriteLine("");
             }
             catch { swCFG.Close(); return false; } swCFG.Close(); return true;
         }

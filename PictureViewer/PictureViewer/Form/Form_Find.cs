@@ -374,7 +374,14 @@ namespace PictureViewer
         }
         private void Form_KeyUp(object sender, KeyEventArgs e)
         {
-            if (e.KeyValue == 27) { this.Close(); return; }
+            if (config.Initializing) { return; }
+
+            if (e.KeyValue == Class.Load.settings.FastKey_Find_Esc) { this.Close(); return; }
+            if (e.KeyValue == Class.Load.settings.FastKey_Find_U) { PreviousSour(null, null); return; }
+            if (e.KeyValue == Class.Load.settings.FastKey_Find_D) { NextSour(null, null); return; }
+            if (e.KeyValue == Class.Load.settings.FastKey_Find_L) { Previous(null, null); return; }
+            if (e.KeyValue == Class.Load.settings.FastKey_Find_R) { Next(null, null); return; }
+            if (e.KeyValue == Class.Load.settings.FastKey_Find_Export) { RightMenu_Export(null, null); return; }
         }
         
         private void Previous(object sender, EventArgs e)
