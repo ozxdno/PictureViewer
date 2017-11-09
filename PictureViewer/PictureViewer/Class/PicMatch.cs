@@ -123,7 +123,8 @@ namespace PictureViewer.Class
                 if (compared[Form_Find.IndexS]) { continue; }
                 if (!loadPicture(Form_Find.config.Sour[Form_Find.IndexS])) { continue; }
                 sour = Form_Find.PictureFiles[Form_Find.config.Sour[Form_Find.IndexS]];
-                List<int> result = new List<int>();
+                
+                bool newResultItem = false;
 
                 for (; !Abort && Form_Find.IndexD < Form_Find.config.Sour.Count; Form_Find.IndexD++)
                 {
@@ -138,14 +139,16 @@ namespace PictureViewer.Class
                     if (!cmpRow()) { continue; }
                     if (!cmpCol()) { continue; }
 
-                    result.Add(Form_Find.config.Sour[Form_Find.IndexD]);
+                    if (!newResultItem)
+                    {
+                        newResultItem = true;
+                        Form_Find.Results.Add(new List<int>());
+                        Form_Find.config.Standard.Add(Form_Find.config.Sour[Form_Find.IndexS]);
+                    }
+                    Form_Find.Results[Form_Find.Results.Count - 1].Add(Form_Find.config.Sour[Form_Find.IndexD]);
                     compared[Form_Find.IndexD] = true;
                 }
-
-                if (result.Count != 0) {
-                    Form_Find.Results.Add(result);
-                    Form_Find.config.Standard.Add(Form_Find.config.Sour[Form_Find.IndexS]);
-                }
+                
                 if (!Abort) { Form_Find.IndexD = Form_Find.IndexS + 2; } else { break; }
             }
         }
@@ -155,7 +158,8 @@ namespace PictureViewer.Class
             {
                 if (!loadPicture(Form_Find.config.Sour[Form_Find.IndexS])) { continue; }
                 sour = Form_Find.PictureFiles[Form_Find.config.Sour[Form_Find.IndexS]];
-                List<int> result = new List<int>();
+
+                bool newResultItem = false;
 
                 for (; !Abort && Form_Find.IndexD < Form_Find.config.Dest.Count; Form_Find.IndexD++)
                 {
@@ -167,15 +171,17 @@ namespace PictureViewer.Class
 
                     if (!cmpRow()) { continue; }
                     if (!cmpCol()) { continue; }
-
-                    result.Add(Form_Find.config.Dest[Form_Find.IndexD]);
+                    
+                    if (!newResultItem)
+                    {
+                        newResultItem = true;
+                        Form_Find.Results.Add(new List<int>());
+                        Form_Find.config.Standard.Add(Form_Find.config.Sour[Form_Find.IndexS]);
+                    }
+                    Form_Find.Results[Form_Find.Results.Count - 1].Add(Form_Find.config.Dest[Form_Find.IndexD]);
                 }
 
                 if (!Abort) { Form_Find.IndexD = 0; } else { break; }
-                if (result.Count != 0) {
-                    Form_Find.Results.Add(result);
-                    Form_Find.config.Standard.Add(Form_Find.config.Sour[Form_Find.IndexS]);
-                }
             }
         }
 

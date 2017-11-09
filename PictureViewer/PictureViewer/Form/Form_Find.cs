@@ -469,8 +469,16 @@ namespace PictureViewer
             
             try { SourPic.Dispose(); } catch { }
             try { DestPic.Dispose(); } catch { }
-            try { File.Move(sour, dest); } catch { MessageBox.Show("移动失败！", "提示"); return; }
-            Results[indexS].RemoveAt(indexD);
+            try {
+                File.Move(sour, dest);
+                Results[indexS].RemoveAt(indexD);
+                ShowSourPic();
+                ShowDestPic();
+            } catch {
+                ShowSourPic();
+                ShowDestPic();
+                MessageBox.Show("移动失败！", "提示");
+            }
         }
         private void RightMenu_Export2(object sender, EventArgs e)
         {
@@ -482,6 +490,8 @@ namespace PictureViewer
             Stop();
             try { SourPic.Dispose(); } catch { }
             try { DestPic.Dispose(); } catch { }
+            this.pictureBox1.BackgroundImage = null;
+            this.pictureBox2.BackgroundImage = null;
 
             string export = Form_Main.config.ExportFolder;
             if (!Directory.Exists(export)) { export = FileOperate.getExePath(); }
@@ -501,6 +511,8 @@ namespace PictureViewer
                 Results[indexS].RemoveAt(i);
             }
 
+            ShowSourPic();
+            ShowDestPic();
             if (reason.Length != 0) { MessageBox.Show(reason, "移动失败！"); }
         }
         private void RightMenu_Remove(object sender, EventArgs e)
@@ -736,10 +748,15 @@ namespace PictureViewer
                 temp.Dispose();
             }
 
+            string source = Form_Main.config.IsSub ?
+                Form_Main.config.Path + "\\" + Form_Main.config.Name + "\\" + Form_Main.config.SubName :
+                Form_Main.config.Path + "\\" + Form_Main.config.Name;
+            string sourceTip = source == DestFile.Full ? " [无法输出] " : "";
+
             string size = (DestPic == null || DestFile.Length == 0) ? "?" : (DestFile.Length / 1000).ToString();
             this.pictureBox1.BackgroundImage = DestPic;
             this.toolTip1.ToolTipTitle = DestFile.Path;
-            this.toolTip1.SetToolTip(this.pictureBox1, "[" + size + " KB] " + DestFile.Name);
+            this.toolTip1.SetToolTip(this.pictureBox1, "[" + size + " KB] " + sourceTip + DestFile.Name);
         }
         private void ShowList()
         {

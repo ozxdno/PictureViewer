@@ -227,7 +227,7 @@
             // pictureBox2
             // 
             this.pictureBox2.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.pictureBox2.Location = new System.Drawing.Point(12, 28);
+            this.pictureBox2.Location = new System.Drawing.Point(12, 1);
             this.pictureBox2.Name = "pictureBox2";
             this.pictureBox2.Size = new System.Drawing.Size(178, 151);
             this.pictureBox2.TabIndex = 15;
@@ -279,7 +279,7 @@
             // textBox1
             // 
             this.textBox1.BackColor = System.Drawing.Color.NavajoWhite;
-            this.textBox1.Location = new System.Drawing.Point(11, 27);
+            this.textBox1.Location = new System.Drawing.Point(11, 0);
             this.textBox1.Multiline = true;
             this.textBox1.Name = "textBox1";
             this.textBox1.ReadOnly = true;
@@ -315,9 +315,9 @@
             // comboBox1
             // 
             this.comboBox1.FormattingEnabled = true;
-            this.comboBox1.Location = new System.Drawing.Point(12, 1);
+            this.comboBox1.Location = new System.Drawing.Point(11, 160);
             this.comboBox1.Name = "comboBox1";
-            this.comboBox1.Size = new System.Drawing.Size(178, 20);
+            this.comboBox1.Size = new System.Drawing.Size(180, 20);
             this.comboBox1.TabIndex = 23;
             this.comboBox1.SelectedIndexChanged += new System.EventHandler(this.ComboIndexChanged);
             // 
