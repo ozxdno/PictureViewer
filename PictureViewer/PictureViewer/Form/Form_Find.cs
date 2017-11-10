@@ -256,6 +256,8 @@ namespace PictureViewer
         private static Thread TH = null;
         private static PicMatch PM = new PicMatch();
 
+        private static List<Form_Image> images = new List<Form_Image>();
+
         /////////////////////////////////////////////////////////// public method //////////////////////////////////////////////////
 
         /// <summary>
@@ -280,6 +282,7 @@ namespace PictureViewer
             Timer.AutoReset = true;
             Timer.Start();
 
+            Form_Main.config.Visible = false;
             //Start();
         }
         private void Form_Close(object sender, FormClosedEventArgs e)
@@ -292,17 +295,21 @@ namespace PictureViewer
             Class.Save.settings.Form_Find_Degree = config.Degree;
             Class.Save.settings.Form_Find_Pixes = config.MinCmpPix;
 
+            config.Initializing = false;
             Stop(); Timer.Close();
 
             try { SourPic.Dispose(); } catch { }
             try { DestPic.Dispose(); } catch { }
+
+            for (int i = 0; i < images.Count; i++) { images[i].Close(); }
+            images.Clear();
         }
         private void Form_Updata(object source, System.Timers.ElapsedEventArgs e)
         {
             this.BeginInvoke((EventHandler)delegate{
                 
                 if (!IsFinish) { config.CountTime++; config.TimeED = config.CountTime; }
-
+                
                 if (config.Initializing)
                 {
                     this.Text = "[Preparing Files]: " + IndexS.ToString();
@@ -374,8 +381,6 @@ namespace PictureViewer
         }
         private void Form_KeyUp(object sender, KeyEventArgs e)
         {
-            if (config.Initializing) { return; }
-
             if (e.KeyValue == Class.Load.settings.FastKey_Find_Esc) { this.Close(); return; }
             if (e.KeyValue == Class.Load.settings.FastKey_Find_U) { PreviousSour(null, null); return; }
             if (e.KeyValue == Class.Load.settings.FastKey_Find_D) { NextSour(null, null); return; }
@@ -451,16 +456,17 @@ namespace PictureViewer
             if (indexS == -1 || indexD == -1) { return; }
             if (Results.Count <= indexS || Results[indexS].Count <= indexD) { return; }
 
+            int sh = Screen.PrimaryScreen.Bounds.Height;
+            int sw = Screen.PrimaryScreen.Bounds.Width;
+            int ph = this.pictureBox1.Height; try { ph = DestPic.Height; } catch { }
+            int pw = this.pictureBox1.Width; try { pw = DestPic.Width; } catch { }
+            double rate1 = (double)ph / sh * 100;
+            double rate2 = (double)pw / sw * 100;
+            double rate = Math.Max(rate1, rate2);
+
             PICTURE p = PictureFiles[config.Current[indexD]];
-            if (DialogResult.Cancel == MessageBox.Show("转到 “" + p.Name + "” ？", "确认", MessageBoxButtons.OKCancel))
-            { return; }
-            
-            Stop();
-            Form_Main.config.FolderIndex = p.FolderIndex;
-            Form_Main.config.FileIndex = p.FileIndex;
-            Form_Main.config.SubIndex = p.SubIndex;
-            IsSwitch = true;
-            this.Close();
+            images.Add(new Form_Image(p.Path, p.Name, rate));
+            images[images.Count - 1].Show();
         }
 
         private void RightMenu_Start(object sender, EventArgs e)
@@ -1005,10 +1011,10 @@ namespace PictureViewer
         private void GetFiles()
         {
             PictureFiles.Clear();
-
-            for (int i = 0; i < FileOperate.RootFiles.Count; i++)
+            
+            for (int i = 0; config.Initializing && i < FileOperate.RootFiles.Count; i++)
             {
-                for (int j = 0; j < FileOperate.RootFiles[i].Name.Count; j++)
+                for (int j = 0; config.Initializing && j < FileOperate.RootFiles[i].Name.Count; j++)
                 {
                     string path = FileOperate.RootFiles[i].Path;
                     string name = FileOperate.RootFiles[i].Name[j];
@@ -1016,7 +1022,7 @@ namespace PictureViewer
                     if (type == 1)
                     {
                         List<string> subfiles = FileOperate.getSubFiles(path + "\\" + name);
-                        for (int k = 0; k < subfiles.Count; k++)
+                        for (int k = 0; config.Initializing && k < subfiles.Count; k++)
                         {
                             type = FileOperate.getFileType(FileOperate.getExtension(subfiles[k]));
                             if (type != 2 && type != 3) { continue; }
@@ -1053,7 +1059,7 @@ namespace PictureViewer
 
             IndexS = 0;
 
-            for (int i = PictureFiles.Count - 1; i >= 0; i--, IndexS++)
+            for (int i = PictureFiles.Count - 1; config.Initializing && i >= 0; i--, IndexS++)
             {
                 if (!File.Exists(PictureFiles[i].Path + "\\" + PictureFiles[i].Name))
                 { PictureFiles.RemoveAt(i); continue; }

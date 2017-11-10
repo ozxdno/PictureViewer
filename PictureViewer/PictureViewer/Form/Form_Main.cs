@@ -128,6 +128,10 @@ namespace PictureViewer
             /// 1 - 读取 ZIP 文件时密码错误；
             /// </summary>
             public int Error;
+            /// <summary>
+            /// 是否显示主界面
+            /// </summary>
+            public bool Visible;
         }
 
         ///////////////////////////////////////////////////// private attribute ///////////////////////////////////////////////
@@ -458,6 +462,8 @@ namespace PictureViewer
 
             this.tipToolStripMenuItem.Checked = Class.Load.settings.Form_Main_Tip;
 
+            config.Visible = true;
+
             #endregion
 
             #region play
@@ -763,6 +769,20 @@ namespace PictureViewer
             if (e.KeyValue == 65)
             {
                 ShowBoard(!UseBoard); return;
+            }
+
+            #endregion
+
+            #region 旋转
+
+            if (e.KeyValue == 82)
+            {
+                int type = config.IsSub ? config.SubType : config.Type;
+                if (type != 2) { return; }
+
+                config.SourPicture.RotateFlip(RotateFlipType.Rotate90FlipNone);
+                ShowPicture(null, null, false);
+                return;
             }
 
             #endregion
@@ -1173,6 +1193,12 @@ namespace PictureViewer
                 #region 计数器
 
                 TimeCount++;
+
+                #endregion
+
+                #region 主界面是否开启
+
+                this.Visible = config.Visible;
 
                 #endregion
 
@@ -2982,6 +3008,7 @@ namespace PictureViewer
 
             Form_Find find = new Form_Find((Form_Find.MODE)mode);
             find.ShowDialog();
+            config.Visible = true;
 
             // 更新主界面
             this.fullToolStripMenuItem.Checked = Class.Load.settings.Form_Main_Find_Full;

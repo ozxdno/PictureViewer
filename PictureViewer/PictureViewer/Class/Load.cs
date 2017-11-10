@@ -459,13 +459,28 @@ namespace PictureViewer.Class
             
             if (!Found.Form_Main_Play_ShowTime) { settings.Form_Main_Play_ShowTime = 50; }
 
+            if (!Found.FastKey_Main_Board) { settings.FastKey_Main_Board = (int)ConsoleKey.A; }
+            if (!Found.FastKey_Main_D) { settings.FastKey_Main_D = (int)ConsoleKey.DownArrow; }
+            if (!Found.FastKey_Main_Enter) { settings.FastKey_Main_Enter = (int)ConsoleKey.Enter; }
+            if (!Found.FastKey_Main_Esc) { settings.FastKey_Main_Esc = (int)ConsoleKey.Escape; }
+            if (!Found.FastKey_Main_Export) { settings.FastKey_Main_Export = (int)ConsoleKey.Delete; }
+            if (!Found.FastKey_Main_L) { settings.FastKey_Main_L = (int)ConsoleKey.LeftArrow; }
+            if (!Found.FastKey_Main_OpenComic) { settings.FastKey_Main_OpenComic = (int)ConsoleKey.D4; }
+            if (!Found.FastKey_Main_OpenCurrent) { settings.FastKey_Main_OpenCurrent = (int)ConsoleKey.D3; }
+            if (!Found.FastKey_Main_OpenExport) { settings.FastKey_Main_OpenExport = (int)ConsoleKey.D1; }
+            if (!Found.FastKey_Main_OpenRoot) { settings.FastKey_Main_OpenRoot = (int)ConsoleKey.D2; }
+            if (!Found.FastKey_Main_PageD) { settings.FastKey_Main_PageD = (int)ConsoleKey.PageDown; }
+            if (!Found.FastKey_Main_PageU) { settings.FastKey_Main_PageU = (int)ConsoleKey.PageUp; }
+            if (!Found.FastKey_Main_Password) { settings.FastKey_Main_Password = (int)ConsoleKey.P; }
+            if (!Found.FastKey_Main_R) { settings.FastKey_Main_R = (int)ConsoleKey.RightArrow; }
+            if (!Found.FastKey_Main_U) { settings.FastKey_Main_U = (int)ConsoleKey.UpArrow; }
 
-            if (!Found.FastKey_Find_Esc) { settings.FastKey_Find_Esc = 27; }
-            if (!Found.FastKey_Find_Export) { settings.FastKey_Find_Export = 46; }
-            if (!Found.FastKey_Find_U) { settings.FastKey_Find_U = 87; }
-            if (!Found.FastKey_Find_D) { settings.FastKey_Find_D = 83; }
-            if (!Found.FastKey_Find_L) { settings.FastKey_Find_L = 65; }
-            if (!Found.FastKey_Find_R) { settings.FastKey_Find_R = 68; }
+            if (!Found.FastKey_Find_Esc) { settings.FastKey_Find_Esc = (int)ConsoleKey.Escape; }
+            if (!Found.FastKey_Find_Export) { settings.FastKey_Find_Export = (int)ConsoleKey.Delete; }
+            if (!Found.FastKey_Find_U) { settings.FastKey_Find_U = (int)ConsoleKey.UpArrow; }
+            if (!Found.FastKey_Find_D) { settings.FastKey_Find_D = (int)ConsoleKey.DownArrow; }
+            if (!Found.FastKey_Find_L) { settings.FastKey_Find_L = (int)ConsoleKey.LeftArrow; }
+            if (!Found.FastKey_Find_R) { settings.FastKey_Find_R = (int)ConsoleKey.RightArrow; }
 
             #endregion
 

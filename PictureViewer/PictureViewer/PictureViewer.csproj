@@ -107,10 +107,19 @@
     <Compile Include="Form\Form_Tip.Designer.cs">
       <DependentUpon>Form_Tip.cs</DependentUpon>
     </Compile>
+    <Compile Include="Form\Form_Image.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\Form_Image.Designer.cs">
+      <DependentUpon>Form_Image.cs</DependentUpon>
+    </Compile>
     <Compile Include="PictureViewer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <EmbeddedResource Include="Form\Form_Find.resx">
       <DependentUpon>Form_Find.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\Form_Image.resx">
+      <DependentUpon>Form_Image.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Form\Form_Input.resx">
       <DependentUpon>Form_Input.cs</DependentUpon>
