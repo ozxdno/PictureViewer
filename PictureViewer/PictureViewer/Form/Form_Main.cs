@@ -604,19 +604,19 @@ namespace PictureViewer
         {
             #region 上下左右翻动滚动条
 
-            if (e.KeyValue == 37) { key.L = true; }
-            if (e.KeyValue == 38) { key.U = true; }
-            if (e.KeyValue == 39) { key.R = true; }
-            if (e.KeyValue == 40) { key.D = true; }
+            if (e.KeyValue == Class.Load.settings.FastKey_Main_L) { key.L = true; }
+            if (e.KeyValue == Class.Load.settings.FastKey_Main_U) { key.U = true; }
+            if (e.KeyValue == Class.Load.settings.FastKey_Main_R) { key.R = true; }
+            if (e.KeyValue == Class.Load.settings.FastKey_Main_D) { key.D = true; }
             key.Down = key.L || key.R || key.U || key.D;
-            if (e.KeyValue < 41 && e.KeyValue > 36 && !this.lockToolStripMenuItem.Checked && (this.HorizontalScroll.Visible || this.VerticalScroll.Visible))
+            if (key.Down && !this.lockToolStripMenuItem.Checked && (this.HorizontalScroll.Visible || this.VerticalScroll.Visible))
             { return; }
 
             #endregion
 
             #region 上一项
 
-            if (e.KeyValue == 33)
+            if (e.KeyValue == Class.Load.settings.FastKey_Main_PageU)
             {
                 RightMenu_Previous(null, null); return;
             }
@@ -625,7 +625,7 @@ namespace PictureViewer
 
             #region 下一项
 
-            if (e.KeyValue == 34)
+            if (e.KeyValue == Class.Load.settings.FastKey_Main_PageD)
             {
                 RightMenu_Next(null, null); return;
             }
@@ -634,7 +634,7 @@ namespace PictureViewer
 
             #region 前一个
 
-            if (e.KeyValue == 37)
+            if (e.KeyValue == Class.Load.settings.FastKey_Main_L)
             {
                 Page_L(null, null); return;
             }
@@ -643,7 +643,7 @@ namespace PictureViewer
 
             #region 后一个
 
-            if (e.KeyValue == 39)
+            if (e.KeyValue == Class.Load.settings.FastKey_Main_R)
             {
                 Page_R(null, null); return;
             }
@@ -652,7 +652,7 @@ namespace PictureViewer
 
             #region 向上
 
-            if (e.KeyValue == 38)
+            if (e.KeyValue == Class.Load.settings.FastKey_Main_U)
             {
                 Page_U(null, null); return;
             }
@@ -661,7 +661,7 @@ namespace PictureViewer
 
             #region 向下
 
-            if (e.KeyValue == 40)
+            if (e.KeyValue == Class.Load.settings.FastKey_Main_D)
             {
                 Page_D(null, null); return;
             }
@@ -670,7 +670,7 @@ namespace PictureViewer
 
             #region 回车
 
-            if (e.KeyValue == 13)
+            if (e.KeyValue == Class.Load.settings.FastKey_Main_Enter)
             {
                 Form_Main_DoubleClick(null, null);
             }
@@ -679,7 +679,7 @@ namespace PictureViewer
 
             #region 删除
 
-            if (e.KeyValue == 46)
+            if (e.KeyValue == Class.Load.settings.FastKey_Main_Export)
             {
                 RightMenu_Export(0, null);
             }
@@ -688,7 +688,7 @@ namespace PictureViewer
 
             #region 打开输出目录
 
-            if (e.KeyValue == 49)
+            if (e.KeyValue == Class.Load.settings.FastKey_Main_OpenExport)
             {
                 RightMenu_OpenExport(null, null); return;
             }
@@ -697,7 +697,7 @@ namespace PictureViewer
 
             #region 打开根目录
 
-            if (e.KeyValue == 50)
+            if (e.KeyValue == Class.Load.settings.FastKey_Main_OpenRoot)
             {
                 RightMenu_OpenRoot(null, null); return;
             }
@@ -706,7 +706,7 @@ namespace PictureViewer
 
             #region 打开漫画目录
 
-            if (e.KeyValue == 52)
+            if (e.KeyValue == Class.Load.settings.FastKey_Main_OpenComic)
             {
                 RightMenu_OpenComic(null, null); return;
             }
@@ -715,7 +715,7 @@ namespace PictureViewer
 
             #region 打开当前文件
 
-            if (e.KeyValue == 51)
+            if (e.KeyValue == Class.Load.settings.FastKey_Main_OpenCurrent)
             {
                 RightMenu_OpenCurrent(null, null); return;
             }
@@ -724,7 +724,7 @@ namespace PictureViewer
 
             #region P PASSWORD
 
-            if (e.KeyValue == 80)
+            if (e.KeyValue == Class.Load.settings.FastKey_Main_Password)
             {
                 // 计算输入框位置
                 int X = this.Location.X + this.Width / 2;
@@ -756,7 +756,7 @@ namespace PictureViewer
 
             #region ESC 退出
 
-            if (e.KeyValue == 27)
+            if (e.KeyValue == Class.Load.settings.FastKey_Main_Esc)
             {
                 this.Visible = false; Form_Closed(null, null);
                 Application.ExitThread();
@@ -766,7 +766,7 @@ namespace PictureViewer
 
             #region A 显示/关闭 窗口外框
 
-            if (e.KeyValue == 65)
+            if (e.KeyValue == Class.Load.settings.FastKey_Main_Board)
             {
                 ShowBoard(!UseBoard); return;
             }
@@ -775,7 +775,7 @@ namespace PictureViewer
 
             #region 旋转
 
-            if (e.KeyValue == 82)
+            if (e.KeyValue == Class.Load.settings.FastKey_Main_Rotate)
             {
                 int type = config.IsSub ? config.SubType : config.Type;
                 if (type != 2) { return; }
@@ -789,10 +789,10 @@ namespace PictureViewer
         }
         private void Form_KeyUp(object sender, KeyEventArgs e)
         {
-            if (e.KeyValue == 37) { key.L = false; }
-            if (e.KeyValue == 38) { key.U = false; }
-            if (e.KeyValue == 39) { key.R = false; }
-            if (e.KeyValue == 40) { key.D = false; }
+            if (e.KeyValue == Class.Load.settings.FastKey_Main_L) { key.L = false; }
+            if (e.KeyValue == Class.Load.settings.FastKey_Main_U) { key.U = false; }
+            if (e.KeyValue == Class.Load.settings.FastKey_Main_R) { key.R = false; }
+            if (e.KeyValue == Class.Load.settings.FastKey_Main_D) { key.D = false; }
             key.Down = key.L || key.R || key.U || key.D;
         }
         private void WMP_DoubleClick(object sender, AxWMPLib._WMPOCXEvents_DoubleClickEvent e)
@@ -1283,14 +1283,14 @@ namespace PictureViewer
 
                 if (tip.Form.KeyValue != -1)
                 {
-                    if (tip.Form.KeyValue == 33 ||
-                        tip.Form.KeyValue == 34 ||
-                        tip.Form.KeyValue == 37 ||
-                        tip.Form.KeyValue == 38 ||
-                        tip.Form.KeyValue == 39 ||
-                        tip.Form.KeyValue == 40 ||
-                        tip.Form.KeyValue == 65 ||
-                        tip.Form.KeyValue == 13)
+                    if (tip.Form.KeyValue == Class.Load.settings.FastKey_Main_PageU ||
+                        tip.Form.KeyValue == Class.Load.settings.FastKey_Main_PageD ||
+                        tip.Form.KeyValue == Class.Load.settings.FastKey_Main_U ||
+                        tip.Form.KeyValue == Class.Load.settings.FastKey_Main_D ||
+                        tip.Form.KeyValue == Class.Load.settings.FastKey_Main_L ||
+                        tip.Form.KeyValue == Class.Load.settings.FastKey_Main_R ||
+                        tip.Form.KeyValue == Class.Load.settings.FastKey_Main_Board ||
+                        tip.Form.KeyValue == Class.Load.settings.FastKey_Main_Enter)
                     {
                         KeyEventArgs eKey = new KeyEventArgs((Keys)tip.Form.KeyValue);
                         if (tip.Form.KeyState == 0) { Form_KeyDown(null, eKey); }
@@ -1298,13 +1298,13 @@ namespace PictureViewer
                         tip.Form.KeyValue = -1;
                     }
 
-                    if (tip.Form.KeyValue == 46 ||
-                        tip.Form.KeyValue == 49 ||
-                        tip.Form.KeyValue == 50 ||
-                        tip.Form.KeyValue == 51 ||
-                        tip.Form.KeyValue == 52 ||
-                        tip.Form.KeyValue == 80 ||
-                        tip.Form.KeyValue == 27)
+                    if (tip.Form.KeyValue == Class.Load.settings.FastKey_Main_Export ||
+                        tip.Form.KeyValue == Class.Load.settings.FastKey_Main_OpenComic ||
+                        tip.Form.KeyValue == Class.Load.settings.FastKey_Main_OpenCurrent ||
+                        tip.Form.KeyValue == Class.Load.settings.FastKey_Main_OpenExport ||
+                        tip.Form.KeyValue == Class.Load.settings.FastKey_Main_OpenRoot ||
+                        tip.Form.KeyValue == Class.Load.settings.FastKey_Main_Password ||
+                        tip.Form.KeyValue == Class.Load.settings.FastKey_Main_Esc)
                     {
                         keybd_event((byte)tip.Form.KeyValue, 0, tip.Form.KeyState, 0);
                         tip.Form.KeyValue = -1;
@@ -3091,7 +3091,8 @@ namespace PictureViewer
             if (config.IsSub && currSub > 0) { config.SubIndex--; ShowCurrent(); return; }
             //WheelPageTime = ulong.MaxValue;
             bool emptySub = config.SubFiles.Count == 0;
-            bool outSub = config.IsSub && !emptySub && DialogResult.OK == MessageBox.Show("已经是该文件夹的第一个文件了，是否跳出当前文件夹？\n\n" + config.Name, "请确认", MessageBoxButtons.OKCancel);
+            //bool outSub = config.IsSub && !emptySub && DialogResult.OK == MessageBox.Show("已经是该文件夹的第一个文件了，是否跳出当前文件夹？\n\n" + config.Name, "请确认", MessageBoxButtons.OKCancel);
+            bool outSub = true;
             //WheelPageTime = TimeCount;
             if (config.IsSub && !outSub && !emptySub) { return; }
 
@@ -3100,7 +3101,8 @@ namespace PictureViewer
             if (nextFolder < 0) { nextFolder = int.MaxValue; }
             //WheelPageTime = ulong.MaxValue;
             bool emptyFolder = FileOperate.getIndexName(currFolder, 0) == null;
-            bool outFolder = nextFolder != currFolder && !emptyFolder && DialogResult.OK == MessageBox.Show("已经是该路径的第一个文件了，是否跳出当前路径？\n\n " + config.Path, "请确认", MessageBoxButtons.OKCancel);
+            //bool outFolder = nextFolder != currFolder && !emptyFolder && DialogResult.OK == MessageBox.Show("已经是该路径的第一个文件了，是否跳出当前路径？\n\n " + config.Path, "请确认", MessageBoxButtons.OKCancel);
+            bool outFolder = true;
             //WheelPageTime = TimeCount;
             if (nextFolder != currFolder && !outFolder && !emptyFolder) { return; }
 
@@ -3124,7 +3126,8 @@ namespace PictureViewer
             if (config.IsSub && currSub != config.SubFiles.Count - 1) { config.SubIndex++; ShowCurrent(); return; }
             //WheelPageTime = ulong.MaxValue;
             bool emptySub = config.SubFiles.Count == 0;
-            bool outSub = config.IsSub && !emptySub && DialogResult.OK == MessageBox.Show("已经是该文件夹的最后一个文件了，是否跳出当前文件夹？\n\n" + config.Name, "请确认", MessageBoxButtons.OKCancel);
+            //bool outSub = config.IsSub && !emptySub && DialogResult.OK == MessageBox.Show("已经是该文件夹的最后一个文件了，是否跳出当前文件夹？\n\n" + config.Name, "请确认", MessageBoxButtons.OKCancel);
+            bool outSub = true;
             //WheelPageTime = TimeCount;
             if (config.IsSub && !outSub && !emptySub) { return; }
 
@@ -3133,7 +3136,8 @@ namespace PictureViewer
             if (!FileOperate.ExistFolder(nextFolder)) { nextFolder = 0; }
             //WheelPageTime = ulong.MaxValue;
             bool emptyFolder = FileOperate.getIndexName(currFolder, 0) == null;
-            bool outFolder = nextFolder != currFolder && !emptyFolder && DialogResult.OK == MessageBox.Show("已经是该路径的最后一个文件了，是否跳出当前路径？\n\n" + config.Path, "请确认", MessageBoxButtons.OKCancel);
+            //bool outFolder = nextFolder != currFolder && !emptyFolder && DialogResult.OK == MessageBox.Show("已经是该路径的最后一个文件了，是否跳出当前路径？\n\n" + config.Path, "请确认", MessageBoxButtons.OKCancel);
+            bool outFolder = true;
             //WheelPageTime = TimeCount;
             if (nextFolder != currFolder && !outFolder && !emptyFolder) { return; }
 

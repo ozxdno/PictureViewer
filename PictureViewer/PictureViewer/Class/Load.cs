@@ -80,6 +80,7 @@ namespace PictureViewer.Class
             public int FastKey_Main_Password;
             public int FastKey_Main_Esc;
             public int FastKey_Main_Board;
+            public int FastKey_Main_Rotate;
             public int FastKey_Find_Esc;
             public int FastKey_Find_U;
             public int FastKey_Find_D;
@@ -89,6 +90,9 @@ namespace PictureViewer.Class
             public int FastKey_Search_Esc;
             public int FastKey_Search_Enter;
             public int FastKey_Input_Enter;
+            public int FastKey_Image_Esc;
+            public int FastKey_Image_Enter;
+            public int FastKey_Image_Rotate;
         }
 
         ///////////////////////////////////////////////////// private attribute ///////////////////////////////////////////////
@@ -151,6 +155,7 @@ namespace PictureViewer.Class
             public bool FastKey_Main_Password;
             public bool FastKey_Main_Esc;
             public bool FastKey_Main_Board;
+            public bool FastKey_Main_Rotate;
             public bool FastKey_Find_Esc;
             public bool FastKey_Find_U;
             public bool FastKey_Find_D;
@@ -160,6 +165,9 @@ namespace PictureViewer.Class
             public bool FastKey_Search_Esc;
             public bool FastKey_Search_Enter;
             public bool FastKey_Input_Enter;
+            public bool FastKey_Image_Esc;
+            public bool FastKey_Image_Enter;
+            public bool FastKey_Image_Rotate;
         }
 
         ///////////////////////////////////////////////////// public method ///////////////////////////////////////////////
@@ -277,6 +285,13 @@ namespace PictureViewer.Class
                     case "FastKey_Main_OpenExport": Found.FastKey_Main_OpenExport = ToInt(Item[1], ref settings.FastKey_Main_OpenExport); break;
                     case "FastKey_Main_OpenRoot": Found.FastKey_Main_OpenRoot = ToInt(Item[1], ref settings.FastKey_Main_OpenRoot); break;
                     case "FastKey_Main_Password": Found.FastKey_Main_Password = ToInt(Item[1], ref settings.FastKey_Main_Password); break;
+                    case "FastKey_Main_Rotate": Found.FastKey_Main_Rotate = ToInt(Item[1], ref settings.FastKey_Main_Rotate); break;
+                    case "FastKey_Search_Esc": Found.FastKey_Search_Esc = ToInt(Item[1], ref settings.FastKey_Search_Esc); break;
+                    case "FastKey_Search_Enter": Found.FastKey_Search_Enter = ToInt(Item[1], ref settings.FastKey_Search_Enter); break;
+                    case "FastKey_Input_Enter": Found.FastKey_Input_Enter = ToInt(Item[1], ref settings.FastKey_Input_Enter); break;
+                    case "FastKey_Image_Esc": Found.FastKey_Image_Esc = ToInt(Item[1], ref settings.FastKey_Image_Esc); break;
+                    case "FastKey_Image_Enter": Found.FastKey_Image_Enter = ToInt(Item[1], ref settings.FastKey_Image_Enter); break;
+                    case "FastKey_Image_Rotate": Found.FastKey_Image_Rotate = ToInt(Item[1], ref settings.FastKey_Image_Rotate); break;
                     default: break;
                 }
 
@@ -474,6 +489,7 @@ namespace PictureViewer.Class
             if (!Found.FastKey_Main_Password) { settings.FastKey_Main_Password = (int)ConsoleKey.P; }
             if (!Found.FastKey_Main_R) { settings.FastKey_Main_R = (int)ConsoleKey.RightArrow; }
             if (!Found.FastKey_Main_U) { settings.FastKey_Main_U = (int)ConsoleKey.UpArrow; }
+            if (!Found.FastKey_Main_Rotate) { settings.FastKey_Main_Rotate = (int)ConsoleKey.R; }
 
             if (!Found.FastKey_Find_Esc) { settings.FastKey_Find_Esc = (int)ConsoleKey.Escape; }
             if (!Found.FastKey_Find_Export) { settings.FastKey_Find_Export = (int)ConsoleKey.Delete; }
@@ -481,6 +497,15 @@ namespace PictureViewer.Class
             if (!Found.FastKey_Find_D) { settings.FastKey_Find_D = (int)ConsoleKey.DownArrow; }
             if (!Found.FastKey_Find_L) { settings.FastKey_Find_L = (int)ConsoleKey.LeftArrow; }
             if (!Found.FastKey_Find_R) { settings.FastKey_Find_R = (int)ConsoleKey.RightArrow; }
+
+            if (!Found.FastKey_Search_Esc) { settings.FastKey_Search_Esc = (int)ConsoleKey.Escape; }
+            if (!Found.FastKey_Search_Enter) { settings.FastKey_Search_Enter = (int)ConsoleKey.Enter; }
+
+            if (!Found.FastKey_Input_Enter) { settings.FastKey_Input_Enter = (int)ConsoleKey.Enter; }
+
+            if (!Found.FastKey_Image_Esc) { settings.FastKey_Image_Esc = (int)ConsoleKey.Escape; }
+            if (!Found.FastKey_Image_Enter) { settings.FastKey_Image_Enter = (int)ConsoleKey.Enter; }
+            if (!Found.FastKey_Image_Rotate) { settings.FastKey_Image_Rotate = (int)ConsoleKey.R; }
 
             #endregion
 

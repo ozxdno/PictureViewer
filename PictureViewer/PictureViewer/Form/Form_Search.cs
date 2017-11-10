@@ -166,9 +166,9 @@ namespace PictureViewer
         }
         private void comboBox1_KeyUp(object sender, KeyEventArgs e)
         {
-            if (e.KeyValue == 27) { Cancle = true; this.Close(); return; }
+            if (e.KeyValue == Class.Load.settings.FastKey_Search_Esc) { Cancle = true; this.Close(); return; }
             if (IsInitialize) { return; }
-            if (e.KeyValue != 13) { return; }
+            if (e.KeyValue != Class.Load.settings.FastKey_Search_Enter) { return; }
             
             IsSub = false;
             if (this.comboBox1.SelectedIndex != -1) { return; }
@@ -259,8 +259,8 @@ namespace PictureViewer
         private void Form_Search_KeyDown(object sender, KeyEventArgs e)
         {
             // ESC ENTER
-            if (e.KeyValue == 27) { Cancle = true; this.Close(); return; }
-            if (e.KeyValue != 13) { return; }
+            if (e.KeyValue == Class.Load.settings.FastKey_Search_Esc) { Cancle = true; this.Close(); return; }
+            if (e.KeyValue != Class.Load.settings.FastKey_Search_Enter) { return; }
 
             // 初始化
             if (IsInitialize) { return; }

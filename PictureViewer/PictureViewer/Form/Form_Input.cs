@@ -28,7 +28,8 @@ namespace PictureViewer
 
         private void textBox1_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.KeyValue == 13) { Input = this.textBox1.Text; this.Close(); }
+            if (e.KeyValue == Class.Load.settings.FastKey_Input_Enter)
+            { Input = this.textBox1.Text; this.Close(); return; }
         }
 
         ////////////////////////////////////////////////////// private method //////////////////////////////////////////

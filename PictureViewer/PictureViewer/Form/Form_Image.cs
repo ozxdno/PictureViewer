@@ -163,12 +163,22 @@ namespace PictureViewer
         }
         private void Form_Image_KeyUp(object sender, KeyEventArgs e)
         {
-            if (e.KeyValue == 27) { this.Close(); return; }
-            if (e.KeyValue == 82)
+            if (e.KeyValue == Class.Load.settings.FastKey_Image_Esc)
+            {
+                this.Close();
+                return;
+            }
+            if (e.KeyValue == Class.Load.settings.FastKey_Image_Rotate)
             {
                 if (this.HorizontalScroll.Visible || this.VerticalScroll.Visible) { return; }
                 sour.RotateFlip(RotateFlipType.Rotate90FlipNone);
-                ShowPictureS(); return;
+                ShowPictureS();
+                return;
+            }
+            if (e.KeyValue == Class.Load.settings.FastKey_Image_Enter)
+            {
+                Form_Image_DoubleClicked(null, null);
+                return;
             }
         }
 
