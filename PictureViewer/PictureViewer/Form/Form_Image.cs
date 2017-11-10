@@ -14,9 +14,21 @@ namespace PictureViewer
 {
     public partial class Form_Image : Form
     {
+        /// <summary>
+        /// 文件路径
+        /// </summary>
+        public string Path;
+        /// <summary>
+        /// 文件名
+        /// </summary>
+        public string Name;
+
         public Form_Image(string path, string name, double rate = 80)
         {
             InitializeComponent();
+
+            this.Path = path;
+            this.Name = name;
 
             this.sourpath = path == null ? "" : path;
             this.sourname = name == null ? "" : name;
@@ -84,6 +96,7 @@ namespace PictureViewer
 
             this.toolTip1.ToolTipTitle = tip1;
             this.toolTip1.SetToolTip(this.pictureBox1, tip2);
+            this.Text = tip2;
         }
         private void Form_Image_Close(object sender, FormClosedEventArgs e)
         {

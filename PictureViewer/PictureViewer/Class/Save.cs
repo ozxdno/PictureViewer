@@ -47,7 +47,7 @@ namespace PictureViewer.Class
 
             public bool Form_Main_UseBoard { set { Load.settings.Form_Main_UseBoard = value; } }
             public bool Form_Main_ShapeWindow { set { Load.settings.Form_Main_ShapeWindow = value; } }
-            public int Form_Main_ShapeWindowRate { set { Load.settings.Form_Main_ShapeWindowRate = value; } }
+            public double Form_Main_ShapeWindowRate { set { Load.settings.Form_Main_ShapeWindowRate = value; } }
             public bool Form_Main_Tip { set { Load.settings.Form_Main_Tip = value; } }
 
             public bool Form_Main_Play_Forward { set { Load.settings.Form_Main_Play_Forward = value; } }

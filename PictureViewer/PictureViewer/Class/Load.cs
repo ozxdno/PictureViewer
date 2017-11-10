@@ -42,7 +42,7 @@ namespace PictureViewer.Class
             public int Form_Main_Location_Y;
             public bool Form_Main_UseBoard;
             public bool Form_Main_ShapeWindow;
-            public int Form_Main_ShapeWindowRate;
+            public double Form_Main_ShapeWindowRate;
             public bool Form_Main_Lock;
             public int Form_Main_MaxWindowSize;
             public int Form_Main_MinWindowSize;
@@ -245,7 +245,7 @@ namespace PictureViewer.Class
                     case "Form_Main_Location_Y": Found.Form_Main_Location_Y = ToInt(Item[1], ref settings.Form_Main_Location_Y); break;
                     case "Form_Main_UseBoard": Found.Form_Main_UseBoard = ToBool(Item[1], ref settings.Form_Main_UseBoard); break;
                     case "Form_Main_ShapeWindow": Found.Form_Main_ShapeWindow = ToBool(Item[1], ref settings.Form_Main_ShapeWindow); break;
-                    case "Form_Main_ShapeWindowRate": Found.Form_Main_ShapeWindowRate = ToInt(Item[1], ref settings.Form_Main_ShapeWindowRate); break;
+                    case "Form_Main_ShapeWindowRate": Found.Form_Main_ShapeWindowRate = ToDouble(Item[1], ref settings.Form_Main_ShapeWindowRate); break;
                     case "Form_Main_Lock": Found.Form_Main_Lock = ToBool(Item[1], ref settings.Form_Main_Lock); break;
                     case "Form_Main_MaxWindowSize": Found.Form_Main_MaxWindowSize = ToInt(Item[1], ref settings.Form_Main_MaxWindowSize); break;
                     case "Form_Main_MinWindowSize": Found.Form_Main_MinWindowSize = ToInt(Item[1], ref settings.Form_Main_MinWindowSize); break;
@@ -396,10 +396,11 @@ namespace PictureViewer.Class
             }
 
             #endregion
-            
+
             #region 设置默认值，关闭文件流
 
-            SetDefault(); srCFG.Close();
+            if (existCFG) { srCFG.Close(); }
+            SetDefault();
             return true;
 
             #endregion
@@ -443,8 +444,8 @@ namespace PictureViewer.Class
             if (!Found.Form_Main_ShapeWindowRate) { settings.Form_Main_ShapeWindowRate = 80; }
             if (!Found.Form_Main_Lock) { settings.Form_Main_Lock = false; }
 
-            if (!Found.Form_Main_Location_X) { settings.Form_Main_Location_X = sw * 25 / 100; }
-            if (!Found.Form_Main_Location_Y) { settings.Form_Main_Location_Y = sh * 25 / 100; }
+            if (!Found.Form_Main_Location_X) { settings.Form_Main_Location_X = sw / 2 - settings.Form_Main_Width / 2; }
+            if (!Found.Form_Main_Location_Y) { settings.Form_Main_Location_Y = sh / 2 - settings.Form_Main_Height / 2; }
 
             if (!Found.Form_Main_MaxWindowSize) { settings.Form_Main_MaxWindowSize = 90; }
             if (!Found.Form_Main_MinWindowSize) { settings.Form_Main_MinWindowSize = 10; }

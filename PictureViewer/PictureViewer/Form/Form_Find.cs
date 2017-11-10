@@ -281,8 +281,7 @@ namespace PictureViewer
             Timer.Elapsed += new System.Timers.ElapsedEventHandler(Form_Updata);
             Timer.AutoReset = true;
             Timer.Start();
-
-            Form_Main.config.Visible = false;
+            
             //Start();
         }
         private void Form_Close(object sender, FormClosedEventArgs e)
@@ -506,7 +505,7 @@ namespace PictureViewer
             if (DialogResult.Cancel == MessageBox.Show("把当前文件导出？", "确认", MessageBoxButtons.OKCancel))
             { return; }
 
-            Stop();
+            Stop(); CloseImage(p.Path, p.Name);
             
             try { SourPic.Dispose(); } catch { }
             try { DestPic.Dispose(); } catch { }
@@ -549,6 +548,9 @@ namespace PictureViewer
                 
                 if (!File.Exists(sour)) { reason += sequ + "文件不存在！\n"; continue; }
                 if (File.Exists(dest)) { reason += sequ + "文件已经存在于输出文件夹中！\n"; continue; }
+
+                CloseImage(p.Path, p.Name);
+
                 try { File.Move(sour, dest); } catch { reason += sequ + "移动失败！\n"; continue; }
 
                 Results[indexS].RemoveAt(i);
@@ -734,25 +736,49 @@ namespace PictureViewer
             string path = isSub ? Form_Main.config.Path + "\\" + Form_Main.config.Name : Form_Main.config.Path;
             string name = isSub ? Form_Main.config.SubName : Form_Main.config.Name;
             string full = path + "\\" + name;
-            if (!File.Exists(full)) { return; }
+            if (File.Exists(full))
+            {
+                Bitmap temp = (Bitmap)Image.FromFile(full);
 
-            Bitmap temp = (Bitmap)Image.FromFile(full);
+                int hBox = this.pictureBox2.Height;
+                int wBox = this.pictureBox2.Width;
+                int hPic = temp.Height;
+                int wPic = temp.Width;
 
-            int hBox = this.pictureBox2.Height;
-            int wBox = this.pictureBox2.Width;
-            int hPic = temp.Height;
-            int wPic = temp.Width;
+                double rate = Math.Min((double)hBox / hPic, (double)wBox / wPic);
+                SourPic = CopyPicture(temp, rate);
+                temp.Dispose();
 
-            double rate = Math.Min((double)hBox / hPic, (double)wBox / wPic);
-            SourPic = CopyPicture(temp, rate);
-            temp.Dispose();
+                FileInfo f = new FileInfo(full);
 
-            FileInfo f = new FileInfo(full);
+                string size = (f.Length / 1000).ToString();
+                this.pictureBox2.BackgroundImage = SourPic;
+                this.toolTip2.ToolTipTitle = path;
+                this.toolTip2.SetToolTip(this.pictureBox2, "[" + size + " KB] " + name);
+            }
+            else
+            {
+                string tempName = name; if (tempName.Length == 0) { tempName = "Unselect File"; }
+                path = FileOperate.getExePath();
+                name = "err.tip";
+                full = path + "\\" + name;
+                if (!File.Exists(full)) { return; }
 
-            string size = (f.Length / 1000).ToString();
-            this.pictureBox2.BackgroundImage = SourPic;
-            this.toolTip2.ToolTipTitle = path;
-            this.toolTip2.SetToolTip(this.pictureBox2, "[" + size + " KB] " + name);
+                Bitmap temp = (Bitmap)Image.FromFile(full);
+
+                int hBox = this.pictureBox2.Height;
+                int wBox = this.pictureBox2.Width;
+                int hPic = temp.Height;
+                int wPic = temp.Width;
+
+                double rate = Math.Min((double)hBox / hPic, (double)wBox / wPic);
+                SourPic = CopyPicture(temp, rate);
+                temp.Dispose();
+                
+                this.pictureBox2.BackgroundImage = SourPic;
+                this.toolTip2.ToolTipTitle = "[Error]: Source file is not exist !";
+                this.toolTip2.SetToolTip(this.pictureBox2, tempName);
+            }
         }
         private void ShowSourPic()
         {
@@ -820,7 +846,8 @@ namespace PictureViewer
             string source = Form_Main.config.IsSub ?
                 Form_Main.config.Path + "\\" + Form_Main.config.Name + "\\" + Form_Main.config.SubName :
                 Form_Main.config.Path + "\\" + Form_Main.config.Name;
-            string sourceTip = source == DestFile.Full ? " [无法输出] " : "";
+            //string sourceTip = source == DestFile.Full ? " [无法输出] " : "";
+            string sourceTip = "";
 
             string size = (DestPic == null || DestFile.Length == 0) ? "?" : (DestFile.Length / 1000).ToString();
             this.pictureBox1.BackgroundImage = DestPic;
@@ -1166,6 +1193,17 @@ namespace PictureViewer
                 for (int j = 0; j < PictureFiles.Count; j++)
                 {
                     if (PictureFiles[j].FolderIndex == i) { config.Dest.Add(j); }
+                }
+            }
+        }
+        private void CloseImage(string path, string name)
+        {
+            for (int i = images.Count - 1; i >= 0; i--)
+            {
+                if (images[i].Path == path && images[i].Name == name)
+                {
+                    images[i].Close();
+                    images.RemoveAt(i);
                 }
             }
         }

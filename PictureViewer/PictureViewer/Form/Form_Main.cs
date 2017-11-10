@@ -128,10 +128,6 @@ namespace PictureViewer
             /// 1 - 读取 ZIP 文件时密码错误；
             /// </summary>
             public int Error;
-            /// <summary>
-            /// 是否显示主界面
-            /// </summary>
-            public bool Visible;
         }
 
         ///////////////////////////////////////////////////// private attribute ///////////////////////////////////////////////
@@ -166,7 +162,7 @@ namespace PictureViewer
         /// 该窗口裁剪成与显示 图片/视频 相同比例大小（如果有必要），
         /// 最后调整控件大小。
         /// </summary>
-        private int ShapeWindowRate = 80;
+        private double ShapeWindowRate = 80;
         /// <summary>
         /// 窗体最大大小
         /// </summary>
@@ -461,8 +457,6 @@ namespace PictureViewer
             tip.Visible = false;
 
             this.tipToolStripMenuItem.Checked = Class.Load.settings.Form_Main_Tip;
-
-            config.Visible = true;
 
             #endregion
 
@@ -1155,8 +1149,8 @@ namespace PictureViewer
                 if (ShapeWindowRate >= Class.Load.settings.Form_Main_MaxWindowSize) { ShapeWindowRate = Class.Load.settings.Form_Main_MaxWindowSize; }
 
                 // 不自动裁剪窗体时，显示图片的比例不能大于当前窗口（出现滚动条）
-                int nexth = sh * ShapeWindowRate / 100;
-                int nextw = sw * ShapeWindowRate / 100;
+                int nexth = (int)(sh * ShapeWindowRate / 100);
+                int nextw = (int)(sw * ShapeWindowRate / 100);
                 double h2w = (double)config.SourPicture.Height / config.SourPicture.Width;
                 rate1 = (double)nexth / config.SourPicture.Height;
                 rate2 = (double)nextw / config.SourPicture.Width;
@@ -1170,7 +1164,7 @@ namespace PictureViewer
                     nextw = (int)(Math.Min(rate1, rate2) * config.SourPicture.Width);
                     rate1 = (double)nexth / sh * 100;
                     rate2 = (double)nextw / sw * 100;
-                    ShapeWindowRate = (int)Math.Max(rate1, rate2);
+                    ShapeWindowRate = Math.Max(rate1, rate2);
                 }
 
                 // 显示图片
@@ -1193,12 +1187,6 @@ namespace PictureViewer
                 #region 计数器
 
                 TimeCount++;
-
-                #endregion
-
-                #region 主界面是否开启
-
-                this.Visible = config.Visible;
 
                 #endregion
 
@@ -1939,6 +1927,8 @@ namespace PictureViewer
                 "Not Exist";
             this.textToolStripMenuItem.Text = this.Text;
 
+            this.pictureBox1.Image = null;
+
             this.pictureBox1.Visible = false;
             this.axWindowsMediaPlayer1.Visible = false;
         }
@@ -2067,8 +2057,8 @@ namespace PictureViewer
             int cw = UseBoard ? this.Width - BoardSize.Width : this.Width;
             int sh = Screen.PrimaryScreen.Bounds.Height;
             int sw = Screen.PrimaryScreen.Bounds.Width;
-            int wh = sh * ShapeWindowRate / 100;
-            int ww = sw * ShapeWindowRate / 100; // 虚拟窗口大小
+            int wh = (int)(sh * ShapeWindowRate / 100);
+            int ww = (int)(sw * ShapeWindowRate / 100); // 虚拟窗口大小
 
             // 如果已经是裁剪窗口模式，则不必再虚拟窗口大小
             if (UseShapeWindow && !UseBoard) { ww = cw; wh = ch; }
@@ -2118,9 +2108,8 @@ namespace PictureViewer
 
             if (!show)
             {
-                this.tipToolStripMenuItem.Checked = true;
-                // 当不显示边框时
-                // 音乐文件的窗体大小需要切换
+                // TIP
+                //this.tipToolStripMenuItem.Checked = true;
 
                 int type = config.IsSub ? config.SubType : config.Type;
                 bool isMusic = config.IsSub ? FileOperate.IsMusic(config.SubExtension) : FileOperate.IsMusic(config.Extension);
@@ -2128,10 +2117,8 @@ namespace PictureViewer
             }
             else
             {
-                this.tipToolStripMenuItem.Checked = false;
-                // 当显示边框时
-                // 音乐文件的窗体大小需要切换
-                // 图片文件窗口过小，重新调整窗口
+                // TIP
+                //this.tipToolStripMenuItem.Checked = false;
 
                 int type = config.IsSub ? config.SubType : config.Type;
                 bool isMusic = config.IsSub ? FileOperate.IsMusic(config.SubExtension) : FileOperate.IsMusic(config.Extension);
@@ -2189,8 +2176,8 @@ namespace PictureViewer
 
             if ((type == -1 || type == 0) && config.SourPicture != null)
             {
-                int maxh = sh * ShapeWindowRate / 100;
-                int maxw = sw * ShapeWindowRate / 100;
+                int maxh = (int)(sh * ShapeWindowRate / 100);
+                int maxw = (int)(sw * ShapeWindowRate / 100);
                 int pich = config.SourPicture.Height;
                 int picw = config.SourPicture.Width;
 
@@ -2213,8 +2200,8 @@ namespace PictureViewer
 
             if (type == 2 && config.SourPicture != null)
             {
-                int maxh = sh * ShapeWindowRate / 100;
-                int maxw = sw * ShapeWindowRate / 100;
+                int maxh = (int)(sh * ShapeWindowRate / 100);
+                int maxw = (int)(sw * ShapeWindowRate / 100);
                 int pich = config.SourPicture.Height;
                 int picw = config.SourPicture.Width;
 
@@ -2237,8 +2224,8 @@ namespace PictureViewer
 
             if (type == 3 && config.SourPicture != null)
             {
-                int maxh = sh * ShapeWindowRate / 100;
-                int maxw = sw * ShapeWindowRate / 100;
+                int maxh = (int)(sh * ShapeWindowRate / 100);
+                int maxw = (int)(sw * ShapeWindowRate / 100);
                 int pich = config.SourPicture.Height;
                 int picw = config.SourPicture.Width;
 
@@ -2356,6 +2343,7 @@ namespace PictureViewer
         {
             if (value < this.VerticalScroll.Minimum) { value = this.VerticalScroll.Minimum; }
             if (value > this.VerticalScroll.Maximum) { value = this.VerticalScroll.Maximum; }
+            if (!this.VerticalScroll.Visible) { return; }
 
             int current = this.VerticalScroll.Value;
             int pace = this.VerticalScroll.LargeChange;
@@ -2375,6 +2363,7 @@ namespace PictureViewer
         {
             if (value < this.HorizontalScroll.Minimum) { value = this.HorizontalScroll.Minimum; }
             if (value > this.HorizontalScroll.Maximum) { value = this.HorizontalScroll.Maximum; }
+            if (!this.HorizontalScroll.Visible) { return; }
 
             int current = this.HorizontalScroll.Value;
             int pace = this.HorizontalScroll.LargeChange;
@@ -2998,7 +2987,7 @@ namespace PictureViewer
                 this.sameToolStripMenuItem.Checked = true;
             }
 
-            // 开始寻找
+            // 计算模式
             ushort mode = 0;
             if (this.fullToolStripMenuItem.Checked) { mode += (ushort)Form_Find.MODE.FULL; }
             if (this.partToolStripMenuItem.Checked) { mode += (ushort)Form_Find.MODE.PART; }
@@ -3006,9 +2995,18 @@ namespace PictureViewer
             if (this.likeToolStripMenuItem.Checked) { mode += (ushort)Form_Find.MODE.LIKE; }
             if (this.turnToolStripMenuItem.Checked) { mode += (ushort)Form_Find.MODE.TURN; }
 
+            // 关闭当前窗口，释放资源
+            int xscroll = this.HorizontalScroll.Value;
+            int yscroll = this.VerticalScroll.Value;
+            try { config.SourPicture.Dispose(); } catch { }
+            try { config.DestPicture.Dispose(); } catch { }
+            ShowUnk();
+
+            // 开始查询
+            this.Visible = false;
             Form_Find find = new Form_Find((Form_Find.MODE)mode);
             find.ShowDialog();
-            config.Visible = true;
+            this.Visible = true;
 
             // 更新主界面
             this.fullToolStripMenuItem.Checked = Class.Load.settings.Form_Main_Find_Full;
@@ -3018,7 +3016,8 @@ namespace PictureViewer
             this.turnToolStripMenuItem.Checked = Class.Load.settings.Form_Main_Find_Turn;
 
             // 是否跳转
-            if (Form_Find.IsSwitch) { ShowCurrent(); }
+            ShowCurrent();
+            if (!Form_Find.IsSwitch) { SetScrollW(xscroll); SetScrollH(yscroll); }
         }
         private void RightMenu_Find_Full(object sender, EventArgs e)
         {
