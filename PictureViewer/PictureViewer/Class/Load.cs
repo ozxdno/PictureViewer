@@ -447,7 +447,7 @@ namespace PictureViewer.Class
             if (!Found.Form_Main_Location_X) { settings.Form_Main_Location_X = sw / 2 - settings.Form_Main_Width / 2; }
             if (!Found.Form_Main_Location_Y) { settings.Form_Main_Location_Y = sh / 2 - settings.Form_Main_Height / 2; }
 
-            if (!Found.Form_Main_MaxWindowSize) { settings.Form_Main_MaxWindowSize = 90; }
+            if (!Found.Form_Main_MaxWindowSize) { settings.Form_Main_MaxWindowSize = 100; }
             if (!Found.Form_Main_MinWindowSize) { settings.Form_Main_MinWindowSize = 10; }
 
             if (!Found.Form_Main_Tip) { settings.Form_Main_Tip = !settings.Form_Main_UseBoard; }

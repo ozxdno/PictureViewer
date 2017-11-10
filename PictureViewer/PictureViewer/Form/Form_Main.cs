@@ -2962,22 +2962,6 @@ namespace PictureViewer
         {
             //this.contextMenuStrip1.Hide();
 
-            //// 文件不存在
-            //if (!config.ExistFolder || !config.ExistFile || (config.IsSub && !config.ExistSub))
-            //{ MessageBox.Show("文件不存在！", "提示"); return; }
-
-            //// 只能匹配图片文件（包括GIF）
-            //string fullpath = config.Path + "\\" + config.Name;
-            //if (config.IsSub) { fullpath += "\\" + config.SubName; }
-            //int type = config.IsSub ? config.SubType : config.Type;
-            //if (type != 2 && type != 3)
-            //{ MessageBox.Show("不能匹配图片之外的文件", "提示"); return; }
-            
-            // 不能匹配隐藏文件
-            //bool hide = config.IsSub ? config.SubHide : config.Hide;
-            //hide = !NoHide && hide;
-            //if (hide) { MessageBox.Show("不能匹配图片之外的文件", "提示"); return; }
-
             // 不支持的模式
             if (this.likeToolStripMenuItem.Checked)
             {
@@ -3000,12 +2984,17 @@ namespace PictureViewer
             int yscroll = this.VerticalScroll.Value;
             try { config.SourPicture.Dispose(); } catch { }
             try { config.DestPicture.Dispose(); } catch { }
-            ShowUnk();
+            config.SourPicture = null;
+            config.DestPicture = null;
+            this.pictureBox1.Image = null;
 
             // 开始查询
             this.Visible = false;
             Form_Find find = new Form_Find((Form_Find.MODE)mode);
             find.ShowDialog();
+            //int ch = find.Location.Y + find.Height / 2;
+            //int cw = find.Location.X + find.Width / 2;
+            //this.Location = new Point(cw - this.Width / 2, ch - this.Height / 2);
             this.Visible = true;
 
             // 更新主界面

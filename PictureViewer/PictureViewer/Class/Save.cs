@@ -192,6 +192,11 @@ namespace PictureViewer.Class
 
                 swCFG.WriteLine("FastKey_Input_Enter=" + Load.settings.FastKey_Input_Enter.ToString());
                 swCFG.WriteLine("");
+
+                swCFG.WriteLine("FastKey_Image_Esc=" + Load.settings.FastKey_Image_Esc.ToString());
+                swCFG.WriteLine("FastKey_Image_Enter=" + Load.settings.FastKey_Image_Enter.ToString());
+                swCFG.WriteLine("FastKey_Image_Rotate=" + Load.settings.FastKey_Image_Rotate.ToString());
+                swCFG.WriteLine("");
             }
             catch { swCFG.Close(); return false; } swCFG.Close(); return true;
         }

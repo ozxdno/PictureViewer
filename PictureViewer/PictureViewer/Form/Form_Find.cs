@@ -295,13 +295,17 @@ namespace PictureViewer
             Class.Save.settings.Form_Find_Pixes = config.MinCmpPix;
 
             config.Initializing = false;
-            Stop(); Timer.Close();
+            Stop();
+            Timer.Close();
 
             try { SourPic.Dispose(); } catch { }
             try { DestPic.Dispose(); } catch { }
 
             for (int i = 0; i < images.Count; i++) { images[i].Close(); }
+
             images.Clear();
+            PictureFiles.Clear();
+            Results.Clear();
         }
         private void Form_Updata(object source, System.Timers.ElapsedEventArgs e)
         {
