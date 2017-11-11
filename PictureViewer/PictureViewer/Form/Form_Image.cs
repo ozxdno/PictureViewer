@@ -158,6 +158,8 @@ namespace PictureViewer
         }
         private void Form_Image_MouseDown(object sender, MouseEventArgs e)
         {
+            if (mouse.Down1 || mouse.Down2 || mouse.Down3) { return; }
+
             if (e.Button == MouseButtons.Left)
             {
                 mouse.Down1 = true;
@@ -205,7 +207,7 @@ namespace PictureViewer
                 SetScrollW(mouse.xScroll - xmove);
                 SetScrollH(mouse.yScroll - ymove);
             }
-            if (mouse.Down2 && isGif)
+            if (mouse.Down2 && (this.VerticalScroll.Visible || this.HorizontalScroll.Visible))
             {
                 int xmove = MousePosition.X - mouse.pDown2.X;
                 int ymove = MousePosition.Y - mouse.pDown2.Y;

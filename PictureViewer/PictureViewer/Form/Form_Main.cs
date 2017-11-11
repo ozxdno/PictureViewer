@@ -121,13 +121,6 @@ namespace PictureViewer
             /// 适应图（小图，改变了大小去匹配窗体的大小）
             /// </summary>
             public Image DestPicture;
-
-            /// <summary>
-            /// 错误类型：
-            /// 0 - 无错误；
-            /// 1 - 读取 ZIP 文件时密码错误；
-            /// </summary>
-            public int Error;
         }
 
         ///////////////////////////////////////////////////// private attribute ///////////////////////////////////////////////
@@ -153,30 +146,11 @@ namespace PictureViewer
         /// </summary>
         private bool UseBoard = true;
         /// <summary>
-        /// 是否自动调整窗体大小
-        /// </summary>
-        private bool UseShapeWindow = false;
-        /// <summary>
-        /// 窗体缩放率 / 图片缩放比率。计算方法如下：
-        /// 首先获取与屏幕成比例的窗口，
-        /// 该窗口裁剪成与显示 图片/视频 相同比例大小（如果有必要），
-        /// 最后调整控件大小。
-        /// </summary>
-        private double ShapeWindowRate = 80;
-        /// <summary>
-        /// 窗体最大大小
-        /// </summary>
-        private Size MaxWindowSize;
-        /// <summary>
-        /// 窗体最小大小
-        /// </summary>
-        private Size MinWindowSize;
-        /// <summary>
         /// 边框尺寸
         /// </summary>
         private Size BoardSize;
         /// <summary>
-        /// 客户区高度
+        /// 客户区长度
         /// </summary>
         private int ClientHeight
         {
@@ -192,13 +166,32 @@ namespace PictureViewer
             set { this.Width = UseBoard ? value + BoardSize.Width : value; }
         }
         /// <summary>
-        /// 开启无文件提示（仅一次）
+        /// 客户区距窗体顶端的距离
         /// </summary>
-        private bool TipForInput = false;
+        private int ClientTop;
         /// <summary>
-        /// 上一次滚轮翻页时间，最大值（ulong.MaxValue）表示正在翻页
+        /// 客户区距窗体左端的距离
         /// </summary>
-        private ulong WheelPageTime;
+        private int ClientLeft;
+        /// <summary>
+        /// 是否自动调整窗体大小
+        /// </summary>
+        private bool UseShapeWindow = false;
+        /// <summary>
+        /// 窗体缩放率 / 图片缩放比率。计算方法如下：
+        /// 首先获取与屏幕成比例的窗口，
+        /// 该窗口裁剪成与显示 图片/视频 相同比例大小（如果有必要），
+        /// 最后调整控件大小。
+        /// </summary>
+        private double ShapeWindowRate = 80;
+        /// <summary>
+        /// 窗体最大大小
+        /// </summary>
+        private int MaxWindowSize;
+        /// <summary>
+        /// 窗体最小大小
+        /// </summary>
+        private int MinWindowSize;
         /// <summary>
         /// 该窗体是否被激活
         /// </summary>
@@ -240,6 +233,8 @@ namespace PictureViewer
             public ulong tUp2;
             public Point pDown2;
             public Point pUp2;
+
+            public ulong tWheel;
             
             public Point pWindow;
             public int xScroll;
@@ -374,7 +369,6 @@ namespace PictureViewer
 
             config.ConfigPath = FileOperate.getExePath();
             config.ConfigName = "pv.pvini";
-            //if (!Class.Load.Load_CFG()) { MessageBox.Show("配置文件（pv.pvini）不存在或已损坏"); }
             Class.Load.Load_CFG();
 
             #endregion
@@ -405,27 +399,21 @@ namespace PictureViewer
 
             #endregion
 
-            #region 边框，缩放
+            #region 边框，缩放，窗体
 
             BoardSize = this.Size - this.ClientSize;
+            Point ptTL = this.PointToScreen(new Point(0, 0));
+            ClientTop = ptTL.Y - this.Location.Y;
+            ClientLeft = ptTL.X - this.Location.X;
 
             if (!Class.Load.settings.Form_Main_UseBoard) { this.FormBorderStyle = FormBorderStyle.None; }
             UseBoard = Class.Load.settings.Form_Main_UseBoard;
             UseShapeWindow = Class.Load.settings.Form_Main_ShapeWindow;
             ShapeWindowRate = Class.Load.settings.Form_Main_ShapeWindowRate;
             this.shapeToolStripMenuItem.Checked = UseShapeWindow;
-
-            int sh = Screen.PrimaryScreen.Bounds.Height;
-            int sw = Screen.PrimaryScreen.Bounds.Width;
-            int max = Class.Load.settings.Form_Main_MaxWindowSize;
-            int min = Class.Load.settings.Form_Main_MinWindowSize;
-
-            MaxWindowSize = new Size(sw * max / 100, sh * max / 100);
-            MinWindowSize = new Size(sw * min / 100, sh * min / 100);
-
-            #endregion
-
-            #region 起始窗体大小，位置
+            
+            MaxWindowSize= Class.Load.settings.Form_Main_MaxWindowSize;
+            MinWindowSize = Class.Load.settings.Form_Main_MinWindowSize;
 
             this.UseSmallWindowOpen = Class.Load.settings.Form_Main_UseSmallWindowOpen;
             this.Height = Class.Load.settings.Form_Main_Height;
@@ -434,26 +422,27 @@ namespace PictureViewer
 
             if (UseSmallWindowOpen)
             {
-                int side = Math.Min(MinWindowSize.Height, MinWindowSize.Width);
+                int sh = Screen.PrimaryScreen.Bounds.Height;
+                int sw = Screen.PrimaryScreen.Bounds.Width;
+
+                int side = Math.Min(MinWindowSize * sh / 100, MinWindowSize * sw / 100);
                 this.Height = side;
                 this.Width = side;
                 this.Location = new Point((sw - this.Width) / 2, (sh - this.Height) / 2);
-                ShapeWindowRate = 10;
+                ShapeWindowRate = MinWindowSize;
             }
 
             #endregion
-
+            
             #region 其他，参数初始化
 
             this.lockToolStripMenuItem.Checked = Class.Load.settings.Form_Main_Lock;
-            WheelPageTime = 0;
 
             tip.Previous = new Point(0, 0);
             tip.Message = "";
             tip.Form = new Form_Tip();
             tip.Begin = 0;
             tip.Visible = false;
-
             this.tipToolStripMenuItem.Checked = Class.Load.settings.Form_Main_Tip;
 
             #endregion
@@ -537,6 +526,7 @@ namespace PictureViewer
             mouse.nUp = 0;
             mouse.tDown = 0;
             mouse.tUp = 0;
+            mouse.tWheel = 0;
 
             #endregion
 
@@ -847,6 +837,7 @@ namespace PictureViewer
                 mouse.pDown = MousePosition;
                 mouse.tDown = TimeCount;
                 mouse.nDown++;
+                mouse.pWindow = this.Location;
             }
 
             if (e.nButton == 2)
@@ -890,96 +881,97 @@ namespace PictureViewer
 
             #region 判断位置是否摆正
 
-            int rech = UseBoard ? this.Height - BoardSize.Height : this.Height;
-            int recw = UseBoard ? this.Width - BoardSize.Width : this.Width;
-
             bool PicWindowIsOK = true;
-            int picx = this.pictureBox1.Location.X;
-            int picy = this.pictureBox1.Location.Y;
-            int pich = this.pictureBox1.Height;
-            int picw = this.pictureBox1.Width;
-            if (PicWindowIsOK && pich >= rech) { PicWindowIsOK = picy <= 1; }
-            if (PicWindowIsOK && picw >= recw) { PicWindowIsOK = picx <= 1; }
-            if (PicWindowIsOK && pich < rech)
-            {
-                int stdy = UseBoard ? (this.Height - BoardSize.Height - pich) / 2 : (this.Height - pich) / 2;
-                PicWindowIsOK = Math.Abs(stdy - picy) <= 1;
-            }
-            if (PicWindowIsOK && picw < recw)
-            {
-                int stdx = UseBoard ? (this.Width - BoardSize.Width - picw) / 2 : (this.Width - picw) / 2;
-                PicWindowIsOK = Math.Abs(stdx - picx) <= 1;
-            }
-
             bool VidWindowIsOK = true;
-            VidWindowIsOK = rech - 2 == this.axWindowsMediaPlayer1.Height && recw - 2 == this.axWindowsMediaPlayer1.Width;
+
+            if (true)
+            {
+                int rech = ClientHeight;
+                int recw = ClientWidth;
+                int pich = this.pictureBox1.Height;
+                int picw = this.pictureBox1.Width;
+                int xloc = this.pictureBox1.Location.X;
+                int yloc = this.pictureBox1.Location.Y;
+
+                if (recw <= picw) { PicWindowIsOK = PicWindowIsOK && xloc <= 1; }
+                if (rech <= pich) { PicWindowIsOK = PicWindowIsOK && yloc <= 1; }
+                if (recw > picw) { PicWindowIsOK = PicWindowIsOK && Math.Abs((recw - picw) / 2 - xloc) < 2; }
+                if (rech > pich) { PicWindowIsOK = PicWindowIsOK && Math.Abs((rech - pich) / 2 - yloc) < 2; }
+                if (UseShapeWindow) { PicWindowIsOK = PicWindowIsOK && pich >= rech && yloc <= 0; }
+                if (UseShapeWindow) { PicWindowIsOK = PicWindowIsOK && picw >= recw && xloc <= 0; }
+            }
+            if (true)
+            {
+                int rech = ClientHeight;
+                int recw = ClientWidth;
+                int vidh = this.axWindowsMediaPlayer1.Height;
+                int vidw = this.axWindowsMediaPlayer1.Width;
+                int xloc = this.axWindowsMediaPlayer1.Location.X;
+                int yloc = this.axWindowsMediaPlayer1.Location.Y;
+
+                VidWindowIsOK = VidWindowIsOK && xloc <= 1 && recw - vidw <= 4;
+                VidWindowIsOK = VidWindowIsOK && yloc <= 1 && rech - vidh <= 4;
+            }
 
             #endregion
 
+            int type = config.IsSub ? config.SubType : config.Type;
+
             #region -1 型文件的双击操作
 
-            if (config.Type == -1 || (config.IsSub && config.SubType == -1))
+            if (FileOperate.IsError(type))
             {
-                if (!PicWindowIsOK) { ShowSmall(); return; }
-                if (rech < config.SourPicture.Height || recw < config.SourPicture.Width)
-                { NextShowBigPicture = !NextShowBigPicture; }
-                if (NextShowBigPicture) { ShowBig(true); } else { ShowSmall(); } return;
+                if (!PicWindowIsOK) { ShowPicture(null, null, false); return; }
+
+                int rech = ClientHeight;
+                int recw = ClientWidth;
+                int pich = config.SourPicture.Height;
+                int picw = config.SourPicture.Width;
+
+                if (rech >= pich && recw >= picw) { ShowPictureS(); return; }
+
+                NextShowBigPicture = !NextShowBigPicture;
+                if (NextShowBigPicture) { ShowPictureB(); } else { ShowPictureS(); }
+                return;
             }
 
             #endregion
 
             #region 0 型文件双击操作
 
-            if (config.Type == 0)
+            if (FileOperate.IsUnsupport(type))
             {
-                ShowCurrent(); return;
+                if (!PicWindowIsOK) { ShowPicture(null, null, false); return; }
+
+                int rech = ClientHeight;
+                int recw = ClientWidth;
+                int pich = config.SourPicture.Height;
+                int picw = config.SourPicture.Width;
+
+                if (rech >= pich && recw >= picw) { ShowPictureS(); return; }
+
+                NextShowBigPicture = !NextShowBigPicture;
+                if (NextShowBigPicture) { ShowPictureB(); } else { ShowPictureS(); }
+                return;
             }
 
             #endregion
-
-            #region 1 型文件的双击操作
-
-            if (config.Type == 1)
-            {
-                if (config.SubType == 2)
-                {
-                    if (!PicWindowIsOK) { ShowSmall(); return; }
-                    if (rech < config.SourPicture.Height || recw < config.SourPicture.Width)
-                    { NextShowBigPicture = !NextShowBigPicture; }
-                    if (NextShowBigPicture) { ShowBig(true); } else { ShowSmall(); } return;
-                }
-                if (config.SubType == 3)
-                {
-                    ShowBig(); return;
-                }
-                if (config.SubType == 4)
-                {
-                    if (!VidWindowIsOK) { ShapeControl(); return; }
-
-                    WMPLib.WMPPlayState state = this.axWindowsMediaPlayer1.playState;
-                    if (state == WMPLib.WMPPlayState.wmppsPaused) { this.axWindowsMediaPlayer1.Ctlcontrols.play(); }
-                    if (state == WMPLib.WMPPlayState.wmppsStopped) { this.axWindowsMediaPlayer1.Ctlcontrols.play(); }
-                    if (state == WMPLib.WMPPlayState.wmppsPlaying) { this.axWindowsMediaPlayer1.Ctlcontrols.pause(); }
-                    return;
-                }
-
-                ShowCurrent(); return;
-            }
-
-            #endregion
-
+            
             #region 2 型文件的双击操作
 
-            // 位置不对时，双击调整图片位置。
-            // 有边框时：双击大小图切换，当源图过小时，双击只显示源图且不改变下一次显示的状态。
-            // 无边框时：双击大小图切换，当源图过小时，双击只显示源图且不改变下一次显示的状态。
-
-            if (config.Type == 2)
+            if (FileOperate.IsPicture(type))
             {
-                if (!PicWindowIsOK) { ShowSmall(); return; }
-                if (rech < config.SourPicture.Height || recw < config.SourPicture.Width)
-                { NextShowBigPicture = !NextShowBigPicture; }
-                if (NextShowBigPicture) { ShowBig(true); } else { ShowSmall(); }
+                if (!PicWindowIsOK) { ShowPicture(null, null, false); return; }
+
+                int rech = ClientHeight;
+                int recw = ClientWidth;
+                int pich = config.SourPicture.Height;
+                int picw = config.SourPicture.Width;
+
+                if (rech >= pich && recw >= picw) { ShowPictureS(); return; }
+
+                NextShowBigPicture = !NextShowBigPicture;
+                if (NextShowBigPicture) { ShowPictureB(); } else { ShowPictureS(); }
                 return;
             }
 
@@ -987,18 +979,19 @@ namespace PictureViewer
 
             #region 3 型文件的双击操作
 
-            if (config.Type == 3)
+            if (FileOperate.IsGif(type))
             {
-                ShowBig(); return;
+                ShowGif(null, null, false); return;
             }
 
             #endregion
 
             #region 4 型文件的双击操作
 
-            if (config.Type == 4)
+            if (FileOperate.IsStream(type))
             {
-                if (!VidWindowIsOK) { ShapeControl(); return; }
+                string name = config.IsSub ? config.SubName : config.Name;
+                if (!VidWindowIsOK) { ShowVideo(null, name, false); return; }
 
                 WMPLib.WMPPlayState state = this.axWindowsMediaPlayer1.playState;
                 if (state == WMPLib.WMPPlayState.wmppsPaused) { this.axWindowsMediaPlayer1.Ctlcontrols.play(); }
@@ -1008,29 +1001,7 @@ namespace PictureViewer
             }
 
             #endregion
-
-            #region 5 型文件的双击操作
-
-            if (config.Type == 5)
-            {
-                if (config.SubType == 2)
-                {
-                    if (!PicWindowIsOK) { ShowSmall(); return; }
-                    if (rech < config.SourPicture.Height || recw < config.SourPicture.Width)
-                    { NextShowBigPicture = !NextShowBigPicture; }
-                    if (NextShowBigPicture) { ShowBig(true); } else { ShowSmall(); }
-                    return;
-                }
-                if (config.SubType == 3)
-                {
-                    ShowBig(); return;
-                }
-
-                ShowCurrent(); return;
-            }
-
-            #endregion
-
+            
             #region 其他文件双击操作
 
             ShowCurrent();
@@ -1126,71 +1097,20 @@ namespace PictureViewer
         }
         private void Form_MouseWheel(object sender, MouseEventArgs e)
         {
-            int ch = UseBoard ? this.Height - BoardSize.Height : this.Height;
-            int cw = UseBoard ? this.Width - BoardSize.Width : this.Width;
             int type = config.IsSub ? config.SubType : config.Type;
-
-            #region 播放视频/音频时，滚轮不起作用
-
-            if (FileOperate.IsStream(type))
-            {
-                return;
-            }
-
-            #endregion
-
-            #region 滚轮滚动屏幕。当目前是 GIF 时，缩放窗体。
-
-            if ((this.HorizontalScroll.Visible || this.VerticalScroll.Visible) ||
-                (this.pictureBox1.Visible && (this.pictureBox1.Height > ch || this.pictureBox1.Width > cw)))
-            {
-                if (!FileOperate.IsGif(type) || !UseShapeWindow || this.lockToolStripMenuItem.Checked) { return; }
-
-                // 必须存在源图
-                if (config.SourPicture == null) { return; }
-
-                // 屏幕参数
-                int sh = Screen.PrimaryScreen.Bounds.Height;
-                int sw = Screen.PrimaryScreen.Bounds.Width;
-
-                // 当前缩放
-                int ph = UseBoard ? this.Height - BoardSize.Height : this.Height;
-                int pw = UseBoard ? this.Width - BoardSize.Width : this.Width;
-                double rate1 = (double)ph / sh * 100;
-                double rate2 = (double)pw / sw * 100;
-                double currRate = Math.Max(rate1, rate2);
-
-                // 下一次的显示比例
-                if (e.Delta > 0) { ShapeWindowRate = currRate + 5; }
-                if (e.Delta < 0) { ShapeWindowRate = currRate - 5; }
-                if (ShapeWindowRate <= Class.Load.settings.Form_Main_MinWindowSize) { ShapeWindowRate = Class.Load.settings.Form_Main_MinWindowSize; }
-                if (ShapeWindowRate >= Class.Load.settings.Form_Main_MaxWindowSize) { ShapeWindowRate = Class.Load.settings.Form_Main_MaxWindowSize; }
-
-                // 显示 GIF
-                ShowGif(null, null, false);
-                return;
-            }
-
-            #endregion
+            bool xs = this.HorizontalScroll.Visible;
+            bool ys = this.VerticalScroll.Visible;
 
             #region 滑动滚轮上下翻页
 
-            if (this.lockToolStripMenuItem.Checked ||
-                (!this.axWindowsMediaPlayer1.Visible && !this.pictureBox1.Visible))
+            if (this.lockToolStripMenuItem.Checked && !xs && !ys)
             {
-                if (WheelPageTime == ulong.MaxValue) { return; }
-                if (TimeCount - WheelPageTime < 20) { return; }
+                if (FileOperate.IsStream(type)) { return; }
+                if (TimeCount - mouse.tWheel < 20) { return; }
+                mouse.tWheel = TimeCount;
                 
-                WheelPageTime = ulong.MaxValue;
-                bool prevState = tip.Hide;
-                tip.Hide = true;
-
                 if (e.Delta > 0) { RightMenu_Previous(null, null); }
                 if (e.Delta < 0) { RightMenu_Next(null, null); }
-
-                tip.Hide = prevState;
-                WheelPageTime = TimeCount;
-
                 return;
             }
 
@@ -1200,12 +1120,13 @@ namespace PictureViewer
 
             if (FileOperate.IsError(type) || FileOperate.IsUnsupport(type) || FileOperate.IsPicture(type))
             {
-                // 必须存在源图
                 if (config.SourPicture == null) { return; }
-                
-                // 屏幕参数
+                if (xs || ys) { return; }
+
                 int sh = Screen.PrimaryScreen.Bounds.Height;
                 int sw = Screen.PrimaryScreen.Bounds.Width;
+                int ch = ClientHeight;
+                int cw = ClientWidth;
 
                 // 当前缩放
                 double rate1 = (double)this.pictureBox1.Height / sh * 100;
@@ -1215,32 +1136,95 @@ namespace PictureViewer
                 // 下一次的显示比例
                 if (e.Delta > 0) { ShapeWindowRate = currRate + 5; }
                 if (e.Delta < 0) { ShapeWindowRate = currRate - 5; }
-                if (ShapeWindowRate <= Class.Load.settings.Form_Main_MinWindowSize) { ShapeWindowRate = Class.Load.settings.Form_Main_MinWindowSize; }
-                if (ShapeWindowRate >= Class.Load.settings.Form_Main_MaxWindowSize) { ShapeWindowRate = Class.Load.settings.Form_Main_MaxWindowSize; }
-
+                
                 // 不自动裁剪窗体时，显示图片的比例不能大于当前窗口（出现滚动条）
-                int nexth = (int)(sh * ShapeWindowRate / 100);
-                int nextw = (int)(sw * ShapeWindowRate / 100);
-                double h2w = (double)config.SourPicture.Height / config.SourPicture.Width;
-                rate1 = (double)nexth / config.SourPicture.Height;
-                rate2 = (double)nextw / config.SourPicture.Width;
-                if (rate1 <= rate2) { nextw = (int)(nexth / h2w); }
-                else { nexth = (int)(nextw * h2w); }
-                if (!UseShapeWindow && (nexth >= ch || nextw >= cw))
+                if (!UseShapeWindow)
                 {
                     rate1 = (double)ch / config.SourPicture.Height;
                     rate2 = (double)cw / config.SourPicture.Width;
-                    nexth = (int)(Math.Min(rate1, rate2) * config.SourPicture.Height);
-                    nextw = (int)(Math.Min(rate1, rate2) * config.SourPicture.Width);
-                    rate1 = (double)nexth / sh * 100;
-                    rate2 = (double)nextw / sw * 100;
-                    ShapeWindowRate = Math.Max(rate1, rate2);
+                    double maxRate = Math.Min(rate1, rate2);
+
+                    int maxh = (int)(config.SourPicture.Height * maxRate);
+                    int maxw = (int)(config.SourPicture.Width * maxRate);
+
+                    rate1 = (double)maxh / sh * 100;
+                    rate2 = (double)maxw / sw * 100;
+                    maxRate = Math.Max(rate1, rate2);
+                    if (ShapeWindowRate > maxRate) { ShapeWindowRate = maxRate; }
                 }
 
                 // 显示图片
-                if (ShapeWindowRate <= Class.Load.settings.Form_Main_MinWindowSize) { ShapeWindowRate = Class.Load.settings.Form_Main_MinWindowSize; }
-                if (ShapeWindowRate >= Class.Load.settings.Form_Main_MaxWindowSize) { ShapeWindowRate = Class.Load.settings.Form_Main_MaxWindowSize; }
-                ShowRate();
+                if (ShapeWindowRate <= MinWindowSize) { ShapeWindowRate = MinWindowSize; }
+                if (ShapeWindowRate >= MaxWindowSize) { ShapeWindowRate = MaxWindowSize; }
+                ShowPictureR();
+            }
+
+            #endregion
+
+            #region 当目前是 GIF 时，缩放窗体。
+
+            if (FileOperate.IsGif(type))
+            {
+                if (this.lockToolStripMenuItem.Checked) { return; }
+                if (config.SourPicture == null) { return; }
+                if (!UseShapeWindow) { return; }
+                
+                int sh = Screen.PrimaryScreen.Bounds.Height;
+                int sw = Screen.PrimaryScreen.Bounds.Width;
+                int ph = ClientHeight;
+                int pw = ClientWidth;
+
+                double rate1 = (double)ph / sh * 100;
+                double rate2 = (double)pw / sw * 100;
+                double currRate = Math.Max(rate1, rate2);
+
+                // 下一次的显示比例
+                if (e.Delta > 0) { ShapeWindowRate = currRate + 5; }
+                if (e.Delta < 0) { ShapeWindowRate = currRate - 5; }
+                if (ShapeWindowRate <= MinWindowSize) { ShapeWindowRate = MinWindowSize; }
+                if (ShapeWindowRate >= MaxWindowSize) { ShapeWindowRate = MaxWindowSize; }
+                
+                // 显示 GIF
+                ShowGif(null, null, false);
+                return;
+            }
+
+            #endregion
+            
+            #region 播放音/视频
+
+            if (FileOperate.IsStream(type))
+            {
+                if (xs || ys) { return; }
+
+                string extension = config.IsSub ? config.SubExtension : config.Extension;
+                bool isVideo = FileOperate.IsVideo(extension);
+                bool isMusic = FileOperate.IsMusic(extension);
+
+                if (isVideo)
+                {
+                    if (!UseShapeWindow) { return; }
+
+                    int sh = Screen.PrimaryScreen.Bounds.Height;
+                    int sw = Screen.PrimaryScreen.Bounds.Width;
+                    int ph = ClientHeight;
+                    int pw = ClientWidth;
+
+                    double rate1 = (double)ph / sh * 100;
+                    double rate2 = (double)pw / sw * 100;
+                    double currRate = Math.Max(rate1, rate2);
+
+                    // 下一次的显示比例
+                    if (e.Delta > 0) { ShapeWindowRate = currRate + 5; }
+                    if (e.Delta < 0) { ShapeWindowRate = currRate - 5; }
+                    if (ShapeWindowRate <= MinWindowSize) { ShapeWindowRate = MinWindowSize; }
+                    if (ShapeWindowRate >= MaxWindowSize) { ShapeWindowRate = MaxWindowSize; }
+                    
+                    ShowVideo(null, ".mp4", false);
+                    return;
+                }
+
+                return;
             }
 
             #endregion
@@ -1609,15 +1593,11 @@ namespace PictureViewer
 
                 #region 右键拖拽窗体
 
-                if (mouse.Down2)
+                if (mouse.Down2 && this.HorizontalScroll.Visible && this.VerticalScroll.Visible)
                 {
-                    int type = config.IsSub ? config.SubType : config.Type;
-                    if (FileOperate.IsGif(type))
-                    {
-                        int xmove = MousePosition.X - mouse.pDown2.X;
-                        int ymove = MousePosition.Y - mouse.pDown2.Y;
-                        this.Location = new Point(mouse.pWindow.X + xmove, mouse.pWindow.Y + ymove);
-                    }
+                    int xmove = MousePosition.X - mouse.pDown2.X;
+                    int ymove = MousePosition.Y - mouse.pDown2.Y;
+                    this.Location = new Point(mouse.pWindow.X + xmove, mouse.pWindow.Y + ymove);
                 }
 
                 #endregion
@@ -1633,43 +1613,33 @@ namespace PictureViewer
                     SetScrollH(mouse.yScroll - yS);
                 }
 
+
+
                 #endregion
 
-                #region 刷新播放时间
-
-                if ((config.Type == 4) || (config.IsSub && config.SubType == 4))
+                #region 刷新播放时间
+                if (FileOperate.IsStream(config.IsSub ? config.SubType : config.Type))
                 {
-                    string index = "[" + (config.FileIndex+1).ToString() + "/" + FileOperate.RootFiles[config.FolderIndex].Name.Count.ToString() + "]";
-                    string subindex = "[" + (config.SubIndex + 1).ToString() + "/" + config.SubFiles.Count.ToString() + "]";
-                    string curpos = "";
-                    string total = "";
-                    try { curpos = this.axWindowsMediaPlayer1.Ctlcontrols.currentPositionString; } catch { }
-                    try { total = this.axWindowsMediaPlayer1.currentMedia.durationString; } catch { }
-
-                    string title = config.IsSub ?
-                        index + " " + subindex + " [" + curpos + "/" + total + "] " + config.Name + " : " + config.SubName :
-                        index + " [" + curpos + "/" + total + "] " + config.Name;
-
-                    if (curpos.Length != 0 && total.Length != 0)
+                    if (config.IsSub && FileOperate.IsZip(config.Type)) { } else
                     {
-                        this.Text = title;
-                        this.textToolStripMenuItem.Text = title;
+                        string index = "[" + (config.FileIndex + 1).ToString() + "/" + FileOperate.RootFiles[config.FolderIndex].Name.Count.ToString() + "]";
+                        string subindex = "[" + (config.SubIndex + 1).ToString() + "/" + config.SubFiles.Count.ToString() + "]";
+                        string curpos = "";
+                        string total = "";
+                        try { curpos = this.axWindowsMediaPlayer1.Ctlcontrols.currentPositionString; } catch { }
+                        try { total = this.axWindowsMediaPlayer1.currentMedia.durationString; } catch { }
+
+                        string title = config.IsSub ?
+                            index + " " + subindex + " [" + curpos + "/" + total + "] " + config.Name + " : " + config.SubName :
+                            index + " [" + curpos + "/" + total + "] " + config.Name;
+                        if (curpos.Length != 0 && total.Length != 0)
+                        {
+                            this.Text = title;
+                        }
                     }
                 }
 
-                #endregion
-
-                #region 当不存在任何文件时提示导入
-
-                if (TipForInput && FileOperate.RootFiles.Count == 0)
-                {
-                    TipForInput = false;
-                    if (DialogResult.OK == MessageBox.Show("当前不存在任何文件夹，是否导入文件夹？", "提示", MessageBoxButtons.OKCancel))
-                    { RightMenu_Input(null, null); }
-                }
-
-                #endregion
-
+                #endregion                
                 #region 按键滑动滚动条
 
                 if (key.Down && !this.lockToolStripMenuItem.Checked && (this.HorizontalScroll.Visible || this.VerticalScroll.Visible))
@@ -1792,7 +1762,7 @@ namespace PictureViewer
             }
             if (config.ExistFile && config.Type == 5)
             {
-                config.Error = ZipOperate.ReadZipEX(config.Path + "\\" + config.Name);
+                ZipOperate.ReadZipEX(config.Path + "\\" + config.Name);
                 if (config.SubIndex < 0) { config.SubIndex = 0; }
                 if (config.SubIndex >= config.SubFiles.Count) { config.SubIndex = config.SubFiles.Count - 1; }
                 if (config.SubFiles.Count != 0)
@@ -1814,7 +1784,10 @@ namespace PictureViewer
             if (this.axWindowsMediaPlayer1.playState == WMPLib.WMPPlayState.wmppsPlaying)
             { try { this.axWindowsMediaPlayer1.Ctlcontrols.stop(); } catch { } }
 
+            config.SourPicture = null;
+            config.DestPicture = null;
             this.pictureBox1.Image = null;
+
             this.HorizontalScroll.Value = 0;
             this.VerticalScroll.Value = 0;
 
@@ -1828,9 +1801,6 @@ namespace PictureViewer
                 imenu.Checked = i == config.FolderIndex;
             }
 
-            this.titleToolStripMenuItem1.Text = "Not Exist";
-            this.textToolStripMenuItem.Text = "Unknow";
-
             #endregion
 
             #region 提取显示文本，处理错误信息，若文件不存在，标题给出提示信息后直接返回
@@ -1841,15 +1811,13 @@ namespace PictureViewer
             string subindex = config.ExistFile && config.IsSub ?
                 "[" + (config.SubIndex + 1).ToString() + "/" + config.SubFiles.Count.ToString() + "]" :
                 "";
-
-            //if (config.Error == 1) { config.Error = 0; this.Text = index + " [Wrong Password] " + config.Name; ShowErr(); return; }
-
+            
             if (FileOperate.RootFiles.Count == 0) { this.Text = "[Empty] You can click right button to input a folder to start"; ShowNot(); return; }
-            if (!config.ExistFolder) { this.Text = "[Not Exist] " + config.Path; ShowNot(); return; }
+            if (!config.ExistFolder) { this.Text = "[Not Exist] " + config.Path; ShowErr(); return; }
             if (FileOperate.RootFiles[config.FolderIndex].Name.Count == 0) { this.Text = "[0/0] [Empty Folder] Current Root Folder Is Empty !"; ShowNot(); return; }
-            if (!config.ExistFile) { this.Text = index + " [Not Exist] " + config.Name; ShowNot(); return; }
-            if (config.Type == 1 && config.SubFiles.Count == 0) { this.Text = index + " " + subindex + " [Empty Folder] " + config.Name; ShowNot(); return; }
-            if (config.Type == 5 && config.SubFiles.Count == 0) { this.Text = index + " " + subindex + " [Empty File] " + config.Name; ShowNot(); return; }
+            if (!config.ExistFile) { this.Text = index + " [Not Exist] " + config.Name; ShowErr(); return; }
+            if (FileOperate.IsFolder(config.Type) && config.SubFiles.Count == 0) { this.Text = index + " " + subindex + " [Empty Folder] " + config.Name; ShowNot(); return; }
+            if (FileOperate.IsZip(config.Type) && config.SubFiles.Count == 0) { this.Text = index + " " + subindex + " [Empty File] " + config.Name; ShowNot(); return; }
 
             #endregion
 
@@ -1868,7 +1836,7 @@ namespace PictureViewer
             
             #region 0 型文件（暂不支持类型）
 
-            if (config.Type == 0)
+            if (FileOperate.IsUnsupport(config.Type))
             {
                 this.Text = config.IsSub ?
                     index + " " + subindex + " [Unsupport] " + config.Name + " : " + config.SubName :
@@ -1880,25 +1848,27 @@ namespace PictureViewer
 
             #region 1 型文件（文件夹）
 
-            if (config.Type == 1)
+            if (FileOperate.IsFolder(config.Type))
             {
                 this.Text = config.SubType == 4 ?
                     index + " " + subindex + " " + config.Name + " : " + config.SubName :
                     index + " " + subindex + " " + config.Name + " : " + config.SubName;
                 
-                if (config.SubType == 2) { ShowPicture(config.Path + "\\" + config.Name, config.SubName); return; }
-                if (config.SubType == 3) { ShowGif(config.Path + "\\" + config.Name, config.SubName); return; }
-                if (config.SubType == 4) { ShowVideo(config.Path + "\\" + config.Name, config.SubName); return; }
+                if (FileOperate.IsPicture(config.SubType)) { ShowPicture(config.Path + "\\" + config.Name, config.SubName); return; }
+                if (FileOperate.IsGif(config.SubType)) { ShowGif(config.Path + "\\" + config.Name, config.SubName); return; }
+                if (FileOperate.IsStream(config.SubType)) { ShowVideo(config.Path + "\\" + config.Name, config.SubName); return; }
 
                 this.Text = index + " " + subindex + " [Unsupport] " + config.Name + " : " + config.SubName;
-                ShowUnp(); return;
+                config.SubType = -1;
+                ShowUnp();
+                return;
             }
 
             #endregion
 
             #region 2 型文件（图片）
 
-            if (config.Type == 2)
+            if (FileOperate.IsPicture(config.Type))
             {
                 this.Text = index + " " + config.Name;
                 ShowPicture(config.Path, config.Name); return;
@@ -1908,7 +1878,7 @@ namespace PictureViewer
 
             #region 3 型文件（GIF）
 
-            if (config.Type == 3)
+            if (FileOperate.IsGif(config.Type))
             {
                 this.Text = index + " " + config.Name;
                 ShowGif(config.Path, config.Name); return;
@@ -1918,7 +1888,7 @@ namespace PictureViewer
 
             #region 4 型文件（视频）
 
-            if (config.Type == 4)
+            if (FileOperate.IsStream(config.Type))
             {
                 this.Text = index + " " + config.Name;
                 ShowVideo(config.Path, config.Name); return;
@@ -1928,7 +1898,7 @@ namespace PictureViewer
 
             #region 5 型文件（ZIP）
 
-            if (config.Type == 5)
+            if (FileOperate.IsZip(config.Type))
             {
                 if (!ZipOperate.Known)
                 {
@@ -1938,11 +1908,13 @@ namespace PictureViewer
 
                 this.Text = index + " " + subindex + " " + config.Name + " : " + config.SubName;
                 
-                if (config.SubType == 2 && ZipOperate.LoadPictureEX()) { ShowPicture(null, null, false); return; }
-                if (config.SubType == 3 && ZipOperate.LoadGifEX()) { ShowGif(null, null, false); return; }
+                if (FileOperate.IsPicture(config.SubType) && ZipOperate.LoadPictureEX()) { ShowPicture(null, null, false); return; }
+                if (FileOperate.IsGif(config.SubType) && ZipOperate.LoadGifEX()) { ShowGif(null, null, false); return; }
 
                 this.Text = index + " " + subindex + " [Unsupport] " + config.Name + " : " + config.SubName;
-                ShowUnp(); return;
+                config.SubType = -1;
+                ShowUnp();
+                return;
             }
 
             #endregion
@@ -1951,74 +1923,261 @@ namespace PictureViewer
 
             this.Text = index + " [Unsupport] " + config.Name;
             ShowUnp();
+            config.Type = -1;
 
             #endregion
         }
         private void ShowPicture(string path, string name, bool load = true)
         {
-            if (load) { config.SourPicture = (Bitmap)Image.FromFile(path + "\\" + name); }
-
-            this.titleToolStripMenuItem1.Text = config.ExistFolder ?
-                this.toolTip1.ToolTipTitle = config.Path :
-                "Not Exist";
-            this.textToolStripMenuItem.Text = this.Text;
-
-            this.axWindowsMediaPlayer1.Visible = false;
-            this.pictureBox1.Visible = true;
+            #region 确保占用资源被释放
             
-            if (NextShowBigPicture) { ShowBig(); } else { ShowSmall(); }
+            if (load) { try { config.SourPicture.Dispose(); } catch { } }
+            try { config.DestPicture.Dispose(); } catch { }
+            if (load) { config.SourPicture = null; }
+            config.DestPicture = null;
+            if (load) { this.pictureBox1.Image = null; }
+
+            if (this.axWindowsMediaPlayer1.playState == WMPLib.WMPPlayState.wmppsPlaying)
+            { this.axWindowsMediaPlayer1.Ctlcontrols.stop(); }
+
+            #endregion
+
+            #region 重新加载资源
+
+            if (load) { config.SourPicture = Image.FromFile(path + "\\" + name); }
+            if (config.SourPicture == null) { return; }
+            this.axWindowsMediaPlayer1.Visible = false;
+            this.pictureBox1.Visible = true;
+
+            #endregion
+
+            #region 加载并显示图片
+            
+            if (NextShowBigPicture) { ShowPictureB(); }
+            else { ShowPictureS(); }
+
+            #endregion
+
+            #region 确保窗体打开
 
             this.axWindowsMediaPlayer1.Visible = false;
             this.pictureBox1.Visible = true;
+
+            #endregion
         }
         private void ShowGif(string path, string name, bool load = true)
         {
+            #region 确保资源被释放
+
+            if (load) { try { config.SourPicture.Dispose(); } catch { } }
+            try { config.DestPicture.Dispose(); } catch { }
+            if (load) { config.SourPicture = null; }
+            config.DestPicture = null;
+            if (load) { this.pictureBox1.Image = null; }
+            
+            if (this.axWindowsMediaPlayer1.playState == WMPLib.WMPPlayState.wmppsPlaying)
+            { this.axWindowsMediaPlayer1.Ctlcontrols.stop(); }
+
+            #endregion
+
+            #region 重新加载资源
+
             if (load) { config.SourPicture = (Bitmap)Image.FromFile(path + "\\" + name); }
+            if (config.SourPicture == null) { return; }
+            this.axWindowsMediaPlayer1.Visible = false;
+            this.pictureBox1.Visible = true;
 
-            this.titleToolStripMenuItem1.Text = config.ExistFolder ?
-                this.toolTip1.ToolTipTitle = config.Path :
-                "Not Exist";
-            this.textToolStripMenuItem.Text = this.Text;
+            #endregion
+
+            #region 获取窗体大小
+
+            if (UseShapeWindow)
+            {
+                int sh = (int)(Screen.PrimaryScreen.Bounds.Height * ShapeWindowRate / 100);
+                int sw = (int)(Screen.PrimaryScreen.Bounds.Width * ShapeWindowRate / 100);
+
+                double rate1 = (double)sh / config.SourPicture.Height;
+                double rate2 = (double)sw / config.SourPicture.Width;
+                double rate = Math.Min(rate1, rate2);
+                if (rate > 1) { rate = 1; }
+
+                int shapeh = (int)(config.SourPicture.Height * rate);
+                int shapew = (int)(config.SourPicture.Width * rate);
+
+                // 当屏幕能够容纳 GIF 源图，则不做任何裁剪。
+                if (sh >= config.SourPicture.Height && sw >= config.SourPicture.Width)
+                {
+                    shapeh = config.SourPicture.Height;
+                    shapew = config.SourPicture.Width;
+                }
+
+                int centerh = this.Location.Y + this.Height / 2;
+                int centerw = this.Location.X + this.Width / 2;
+
+                SetScroll0();
+                ClientHeight = shapeh;
+                ClientWidth = shapew;
+                this.Location = new Point(centerw - this.Width / 2, centerh - this.Height / 2);
+            }
+
+            #endregion
+
+            #region 获取控件大小，加载源图
+
+            if (true)
+            {
+                int ch = ClientHeight;
+                int cw = ClientWidth;
+                double rate1 = (double)ch / config.SourPicture.Height;
+                double rate2 = (double)cw / config.SourPicture.Width;
+                double rate = Math.Min(rate1, rate2);
+                if (rate > 1) { rate = 1; }
+
+                int shapeh = (int)(config.SourPicture.Height * rate);
+                int shapew = (int)(config.SourPicture.Width * rate);
+
+                SetScroll0();
+                this.pictureBox1.Location = new Point((cw - shapew) / 2, (ch - shapeh) / 2);
+                this.pictureBox1.Height = config.SourPicture.Height;
+                this.pictureBox1.Width = config.SourPicture.Width;
+                if (load) { this.pictureBox1.Image = config.SourPicture; }
+            }
+
+            #endregion
+
+            #region 确保窗体打开
 
             this.axWindowsMediaPlayer1.Visible = false;
             this.pictureBox1.Visible = true;
 
-            ShapeWindow();
-            ShowBig();
-            
-            this.axWindowsMediaPlayer1.Visible = false;
-            this.pictureBox1.Visible = true;
+            #endregion
         }
-        private void ShowVideo(string path, string name)
+        private void ShowVideo(string path, string name, bool load = true)
         {
-            this.titleToolStripMenuItem1.Text = config.ExistFolder ?
-                this.toolTip1.ToolTipTitle = config.Path :
-                "Not Exist";
-            this.textToolStripMenuItem.Text = this.Text;
+            #region 确保占用资源被释放
 
+            try { config.SourPicture.Dispose(); } catch { }
+            try { config.DestPicture.Dispose(); } catch { }
+            config.SourPicture = null;
+            config.DestPicture = null;
+            this.pictureBox1.Image = null;
+
+            if (load && this.axWindowsMediaPlayer1.playState == WMPLib.WMPPlayState.wmppsPlaying)
+            { this.axWindowsMediaPlayer1.Ctlcontrols.stop(); }
+
+            #endregion
+
+            #region 重新加载资源
+            
             this.axWindowsMediaPlayer1.Visible = true;
             this.pictureBox1.Visible = false;
             
-            ShapeWindow();
-            ShapeControl();
+            if (load && axWindowsMediaPlayer1.URL != path + "\\" + name) { axWindowsMediaPlayer1.URL = path + "\\" + name; }
+            if (load) { axWindowsMediaPlayer1.Ctlcontrols.play(); }
+            
+            #endregion
 
-            if (axWindowsMediaPlayer1.URL != path + "\\" + name) { axWindowsMediaPlayer1.URL = path + "\\" + name; }
-            axWindowsMediaPlayer1.Ctlcontrols.play();
+            #region 获取窗体大小
+
+            bool isMusic = FileOperate.IsMusic(FileOperate.getExtension(name));
+            bool isVideo = FileOperate.IsVideo(FileOperate.getExtension(name));
+
+            if (isMusic)
+            {
+                int sh = Screen.PrimaryScreen.Bounds.Height * MinWindowSize / 100;
+                int sw = Screen.PrimaryScreen.Bounds.Width * MinWindowSize / 100;
+
+                int shapeh = Math.Min(sh, sw);
+                int shapew = shapeh;
+
+                int centerh = this.Location.Y + this.Height / 2;
+                int centerw = this.Location.X + this.Width / 2;
+
+                SetScroll0();
+                ClientHeight = shapeh;
+                ClientWidth = shapew;
+                this.Location = new Point(centerw - this.Width / 2, centerh - this.Height / 2);
+            }
+            if (isVideo)
+            {
+                int sh = (int)(Screen.PrimaryScreen.Bounds.Height * ShapeWindowRate / 100);
+                int sw = (int)(Screen.PrimaryScreen.Bounds.Width * ShapeWindowRate / 100);
+
+                int shapeh = sh;
+                int shapew = sw;
+
+                int centerh = this.Location.Y + this.Height / 2;
+                int centerw = this.Location.X + this.Width / 2;
+
+                SetScroll0();
+                ClientHeight = shapeh;
+                ClientWidth = shapew;
+                this.Location = new Point(centerw - this.Width / 2, centerh - this.Height / 2);
+            }
+
+            #endregion
+
+            #region 获取控件大小
+
+            if (isMusic)
+            {
+                int ch = ClientHeight;
+                int cw = ClientWidth;
+
+                int sh = Screen.PrimaryScreen.Bounds.Height * MinWindowSize / 100;
+                int sw = Screen.PrimaryScreen.Bounds.Width * MinWindowSize / 100;
+                int shapeh = Math.Min(sh, sw) - 2;
+                int shapew = shapeh;
+
+                SetScroll0();
+                this.axWindowsMediaPlayer1.Location = new Point((cw - shapew) / 2, (ch - shapeh) / 2);
+                this.axWindowsMediaPlayer1.Height = shapeh;
+                this.axWindowsMediaPlayer1.Width = shapew; 
+            }
+            if (isVideo)
+            {
+                int ch = ClientHeight;
+                int cw = ClientWidth;
+
+                int shapeh = ch - 2;
+                int shapew = cw - 2;
+
+                SetScroll0();
+                this.axWindowsMediaPlayer1.Location = new Point(1, 1);
+                this.axWindowsMediaPlayer1.Height = shapeh;
+                this.axWindowsMediaPlayer1.Width = shapew;
+            }
+
+            #endregion
+
+            #region 确保窗体打开
 
             this.axWindowsMediaPlayer1.Visible = true;
             this.pictureBox1.Visible = false;
+
+            #endregion
         }
         private void ShowOff()
         {
-            this.titleToolStripMenuItem1.Text = config.ExistFolder ?
-                this.toolTip1.ToolTipTitle = config.Path :
-                "Not Exist";
-            this.textToolStripMenuItem.Text = this.Text;
+            #region 确保占用资源被释放
 
+            try { config.SourPicture.Dispose(); } catch { }
+            try { config.DestPicture.Dispose(); } catch { }
+            config.SourPicture = null;
+            config.DestPicture = null;
             this.pictureBox1.Image = null;
 
-            this.pictureBox1.Visible = false;
+            if (this.axWindowsMediaPlayer1.playState == WMPLib.WMPPlayState.wmppsPlaying)
+            { this.axWindowsMediaPlayer1.Ctlcontrols.stop(); }
+
+            #endregion
+
+            #region 确保窗体关闭
+
             this.axWindowsMediaPlayer1.Visible = false;
+            this.pictureBox1.Visible = false;
+
+            #endregion
         }
         private void ShowUnk()
         {
@@ -2048,376 +2207,244 @@ namespace PictureViewer
             if (File.Exists(errpath + "\\" + errname)) { ShowPicture(errpath, errname); }
             else { ShowOff(); }
         }
-        private void ShowBig(bool focus = false)
+        private void ShowPictureB()
         {
-            // 该函数只有2个功能
-            // 源图太大，则放大。
-            // 源图不大，则显示源图
-
             if (config.SourPicture == null) { return; }
-            if (!focus) { SetScroll0(); }
-            ShapeWindow();
-            
-            // 聚焦点
-            int xF = MousePosition.X - this.Location.X - this.pictureBox1.Location.X;
-            if (UseBoard) { xF -= BoardSize.Width / 2; }
-            int yF = MousePosition.Y - this.Location.Y - this.pictureBox1.Location.Y;
-            if (UseBoard) { yF -= 30; }
-            double xR = focus ? (double)xF / config.DestPicture.Width : 0;
-            if (xR < 0) { xR = 0; }
-            if (xR > 1) { xR = 1; }
-            double yR = focus ? (double)yF / config.DestPicture.Height : 0;
-            if (yR < 0) { yR = 0; }
-            if (yR > 1) { yR = 1; }
+            if (ClientHeight >= config.SourPicture.Height && ClientWidth >= config.SourPicture.Width)
+            { ShowPictureS(); return; }
 
-            // 显示图片（能够显示源图则显示源图）
-            this.pictureBox1.Image = config.SourPicture;
-            ShapeControl();
-            
-            // 把聚焦点放到屏幕中央
-            int width = UseBoard ? this.Width - BoardSize.Width : this.Width;
-            int xS = (int)(config.SourPicture.Width * xR - width / 2);
-            if (xS < this.HorizontalScroll.Minimum) { xS = this.HorizontalScroll.Minimum; }
-            if (xS > this.HorizontalScroll.Maximum) { xS = this.HorizontalScroll.Maximum; }
+            #region 获取聚焦点
 
-            int height = UseBoard ? this.Height - BoardSize.Height : this.Height;
-            int yS = (int)(config.SourPicture.Height * yR - height / 2);
-            if (yS < this.VerticalScroll.Minimum) { yS = this.VerticalScroll.Minimum; }
-            if (yS > this.VerticalScroll.Maximum) { yS = this.VerticalScroll.Maximum; }
+            int xfocus = this.pictureBox1.PointToClient(MousePosition).X;
+            int yfocus = this.pictureBox1.PointToClient(MousePosition).Y;
+            if (config.DestPicture == null) { xfocus = 0; yfocus = 0; }
 
-            SetScrollW(xS); SetScrollH(yS);
-        }
-        private void ShowSmall()
-        {
-            // 按窗体大小显示图片。
-            // 在打开边框时，若图片太小，窗体过大，则显示源图。
+            double xrate = (double)xfocus / this.pictureBox1.Width;
+            double yrate = (double)yfocus / this.pictureBox1.Height;
 
-            if (config.SourPicture == null) { return; }
+            if (xrate < 0) { xrate = 0; }
+            if (xrate > 1) { xrate = 1; }
+            if (yrate < 0) { yrate = 0; }
+            if (yrate > 1) { yrate = 1; }
+
+            #endregion
+
+            #region 显示源图片
+
             SetScroll0();
-            ShapeWindow();
+            this.pictureBox1.Location = new Point(0, 0);
+            this.pictureBox1.Height = config.SourPicture.Height;
+            this.pictureBox1.Width = config.SourPicture.Width;
+            this.pictureBox1.Image = config.SourPicture;
 
-            int ch = UseBoard ? this.Height - BoardSize.Height : this.Height;
-            int cw = UseBoard ? this.Width - BoardSize.Width : this.Width;
-            int sourX = config.SourPicture.Width;
-            int sourY = config.SourPicture.Height;
+            #endregion
 
-            if (ch == 0 || cw == 0) { ch = MinWindowSize.Height; cw = MinWindowSize.Width; }
+            #region 获取移动量
 
-            double ratex = (double)cw / sourX;
-            double ratey = (double)ch / sourY;
-            double rate = Math.Min(ratex, ratey);
+            int xscroll = (int)(config.SourPicture.Width * xrate) - ClientWidth / 2;
+            int yscroll = (int)(config.SourPicture.Height * yrate) - ClientHeight / 2;
 
-            int destX = (int)(sourX * rate);
-            int destY = (int)(sourY * rate);
-            if (Math.Abs(destX - cw) <= 2) { destX = cw; }
-            if (Math.Abs(destY - ch) <= 2) { destY = ch; }
+            SetScrollW(xscroll);
+            SetScrollH(yscroll);
 
-            if (destX > config.SourPicture.Width && destY > config.SourPicture.Height)
+            #endregion
+        }
+        private void ShowPictureS()
+        {
+            if (config.SourPicture == null) { return; }
+
+            #region 获取窗体大小
+
+            if (UseShapeWindow)
             {
-                destX = config.SourPicture.Width;
-                destY = config.SourPicture.Height;
+                int sh = (int)(Screen.PrimaryScreen.Bounds.Height * ShapeWindowRate / 100);
+                int sw = (int)(Screen.PrimaryScreen.Bounds.Width * ShapeWindowRate / 100);
+
+                double rate1 = (double)sh / config.SourPicture.Height;
+                double rate2 = (double)sw / config.SourPicture.Width;
+                double rate = Math.Min(rate1, rate2);
+                if (rate > 1) { rate = 1; }
+
+                int shapeh = (int)(config.SourPicture.Height * rate);
+                int shapew = (int)(config.SourPicture.Width * rate);
+                
+                int centerh = this.Location.Y + this.Height / 2;
+                int centerw = this.Location.X + this.Width / 2;
+
+                SetScroll0();
+                ClientHeight = shapeh;
+                ClientWidth = shapew;
+                this.Location = new Point(centerw - this.Width / 2, centerh - this.Height / 2);
             }
 
-            config.DestPicture = (Image)new Bitmap(destX, destY);
-            Graphics g = Graphics.FromImage(config.DestPicture);
-            g.DrawImage(config.SourPicture, new Rectangle(0, 0, destX, destY), new Rectangle(0, 0, sourX, sourY), GraphicsUnit.Pixel);
-            g.Dispose();
-            
-            this.pictureBox1.Image = config.DestPicture;
-            SetScroll0();
-            ShapeControl();
-        }
-        private void ShowRate()
-        {
-            // 强行按比例放缩图片
-            // 不能放出滚动条
+            #endregion
 
-            int type = config.IsSub ? config.SubType : config.Type;
-            if (type != 2 && type != -1 && type != 0) { return; }
+            #region 获取控件大小，并填充目标图片
+
+            if (true)
+            {
+                int ch = ClientHeight;
+                int cw = ClientWidth;
+                double rate1 = (double)ch / config.SourPicture.Height;
+                double rate2 = (double)cw / config.SourPicture.Width;
+                double rate = Math.Min(rate1, rate2);
+                if (rate > 1) { rate = 1; }
+
+                int shapeh = (int)(config.SourPicture.Height * rate);
+                int shapew = (int)(config.SourPicture.Width * rate);
+
+                // 无缝
+                if (Math.Abs(shapeh - ch) < 3) { shapeh = ch; }
+                if (Math.Abs(shapew - cw) < 3) { shapew = cw; }
+
+                // 绘图
+                try { config.DestPicture.Dispose(); } catch { }
+                config.DestPicture = (Image)new Bitmap(shapew, shapeh);
+                Graphics g = Graphics.FromImage(config.DestPicture);
+                g.DrawImage(
+                    config.SourPicture,
+                    new Rectangle(0, 0, shapew, shapeh),
+                    new Rectangle(0, 0, config.SourPicture.Width, config.SourPicture.Height),
+                    GraphicsUnit.Pixel);
+                g.Dispose();
+
+                // 填充
+                SetScroll0();
+                this.pictureBox1.Location = new Point((cw - shapew) / 2, (ch - shapeh) / 2);
+                this.pictureBox1.Height = shapeh;
+                this.pictureBox1.Width = shapew;
+                this.pictureBox1.Image = config.DestPicture;
+            }
+
+            #endregion
+        }
+        private void ShowPictureR()
+        {
             if (config.SourPicture == null) { return; }
 
-            //if (UseShapeWindow) { ShowSmall(); return; }
+            #region 获取窗体大小
 
-            SetScroll0();
-            ShapeWindow(true);
+            if (UseShapeWindow)
+            {
+                int sh = (int)(Screen.PrimaryScreen.Bounds.Height * ShapeWindowRate / 100);
+                int sw = (int)(Screen.PrimaryScreen.Bounds.Width * ShapeWindowRate / 100);
 
-            int ch = UseBoard ? this.Height - BoardSize.Height : this.Height;
-            int cw = UseBoard ? this.Width - BoardSize.Width : this.Width;
-            int sh = Screen.PrimaryScreen.Bounds.Height;
-            int sw = Screen.PrimaryScreen.Bounds.Width;
-            int wh = (int)(sh * ShapeWindowRate / 100);
-            int ww = (int)(sw * ShapeWindowRate / 100); // 虚拟窗口大小
+                double rate1 = (double)sh / config.SourPicture.Height;
+                double rate2 = (double)sw / config.SourPicture.Width;
+                double rate = Math.Min(rate1, rate2);
 
-            // 如果已经是裁剪窗口模式，则不必再虚拟窗口大小
-            if (UseShapeWindow && !UseBoard) { ww = cw; wh = ch; }
+                int shapeh = (int)(config.SourPicture.Height * rate);
+                int shapew = (int)(config.SourPicture.Width * rate);
 
-            int sourX = config.SourPicture.Width;
-            int sourY = config.SourPicture.Height;
-            double ratex = (double)ww / sourX;
-            double ratey = (double)wh / sourY;
-            double rate = Math.Min(ratex, ratey);
-            int destX = UseShapeWindow && !UseBoard ? cw : (int)(sourX * rate);
-            int destY = UseShapeWindow && !UseBoard ? ch : (int)(sourY * rate);
+                int centerh = this.Location.Y + this.Height / 2;
+                int centerw = this.Location.X + this.Width / 2;
 
-            if (config.DestPicture != null) { config.DestPicture.Dispose(); }
-            config.DestPicture = (Image)new Bitmap(destX, destY);
-            Graphics g = Graphics.FromImage(config.DestPicture);
-            g.DrawImage(config.SourPicture, new Rectangle(0, 0, destX, destY), new Rectangle(0, 0, sourX, sourY), GraphicsUnit.Pixel);
-            g.Dispose();
+                SetScroll0();
+                ClientHeight = shapeh;
+                ClientWidth = shapew;
+                this.Location = new Point(centerw - this.Width / 2, centerh - this.Height / 2);
+            }
 
-            this.pictureBox1.Image = config.DestPicture;
-            SetScroll0();
-            ShapeControl(true);
+            #endregion
+
+            #region 获取控件大小，并填充目标图片
+
+            if (true)
+            {
+                int sh = (int)(Screen.PrimaryScreen.Bounds.Height * ShapeWindowRate / 100);
+                int sw = (int)(Screen.PrimaryScreen.Bounds.Width * ShapeWindowRate / 100);
+                int ch = ClientHeight;
+                int cw = ClientWidth;
+
+                double rate1 = (double)sh / config.SourPicture.Height;
+                double rate2 = (double)sw / config.SourPicture.Width;
+                double rate = Math.Min(rate1, rate2);
+
+                int shapeh = (int)(config.SourPicture.Height * rate);
+                int shapew = (int)(config.SourPicture.Width * rate);
+
+                // 无缝
+                if (Math.Abs(shapeh - ch) < 3) { shapeh = ch; }
+                if (Math.Abs(shapew - cw) < 3) { shapew = cw; }
+
+                // 绘图
+                try { config.DestPicture.Dispose(); } catch { }
+                config.DestPicture = (Image)new Bitmap(shapew, shapeh);
+                Graphics g = Graphics.FromImage(config.DestPicture);
+                g.DrawImage(
+                    config.SourPicture,
+                    new Rectangle(0, 0, shapew, shapeh),
+                    new Rectangle(0, 0, config.SourPicture.Width, config.SourPicture.Height),
+                    GraphicsUnit.Pixel);
+                g.Dispose();
+
+                // 填充
+                SetScroll0();
+                this.pictureBox1.Location = new Point((cw - shapew) / 2, (ch - shapeh) / 2);
+                this.pictureBox1.Height = shapeh;
+                this.pictureBox1.Width = shapew;
+                this.pictureBox1.Image = config.DestPicture;
+            }
+
+            #endregion
         }
         private void ShowBoard(bool show)
         {
             if (UseBoard == show) { return; }
-            
-            int centreh = this.Location.Y + this.Height / 2;
-            int centrew = this.Location.X + this.Width / 2;
 
-            int clienth = UseBoard ? this.Height - BoardSize.Height : this.Height;
-            int clientw = UseBoard ? this.Width - BoardSize.Width : this.Width;
+            int top = UseBoard ? this.Location.Y + ClientTop : this.Location.Y;
+            int lef = UseBoard ? this.Location.X + ClientLeft : this.Location.X;
 
-            int xscroll = this.HorizontalScroll.Value;
-            int yscroll = this.VerticalScroll.Value;
+            int centerh = top + ClientHeight / 2;
+            int centerw = lef + ClientWidth / 2;
 
             UseBoard = show;
             if (show) { this.FormBorderStyle = FormBorderStyle.Sizable; }
             else { this.FormBorderStyle = FormBorderStyle.None; }
 
-            this.Height = UseBoard ? clienth + BoardSize.Height : clienth;
-            this.Width = UseBoard ? clientw + BoardSize.Width : clientw;
+            int pty = centerh - ClientHeight / 2 - (UseBoard ? ClientTop : 0);
+            int ptx = centerw - ClientWidth / 2 - (UseBoard ? ClientLeft : 0);
 
-            if (show) { this.Location = new Point(this.Location.X - BoardSize.Width, this.Location.Y - BoardSize.Height); }
-            else { this.Location = new Point(this.Location.X + BoardSize.Width, this.Location.Y + BoardSize.Height); }
-            
-            SetScrollW(xscroll); SetScrollH(yscroll);
+            this.Location = new Point(ptx, pty);
 
-            if (!show)
+            #region 判断位置
+
+            bool PicWindowIsOK = true;
+            bool VidWindowIsOK = true;
+            int type = config.IsSub ? config.SubType : config.Type;
+            if (!FileOperate.IsStream(type))
             {
-                // TIP
-                //this.tipToolStripMenuItem.Checked = true;
-
-                int type = config.IsSub ? config.SubType : config.Type;
-                bool isMusic = config.IsSub ? FileOperate.IsMusic(config.SubExtension) : FileOperate.IsMusic(config.Extension);
-                if (type == 4 && isMusic) { ShapeWindow(); ShapeControl(); }
-            }
-            else
-            {
-                // TIP
-                //this.tipToolStripMenuItem.Checked = false;
-
-                int type = config.IsSub ? config.SubType : config.Type;
-                bool isMusic = config.IsSub ? FileOperate.IsMusic(config.SubExtension) : FileOperate.IsMusic(config.Extension);
-
-                int rech = UseBoard ? this.Height - BoardSize.Height : this.Height;
-                int recw = UseBoard ? this.Width - BoardSize.Width : this.Width;
-                bool PicWindowIsOK = true;
-                int picx = this.pictureBox1.Location.X;
-                int picy = this.pictureBox1.Location.Y;
+                int rech = ClientHeight;
+                int recw = ClientWidth;
                 int pich = this.pictureBox1.Height;
                 int picw = this.pictureBox1.Width;
-                if (PicWindowIsOK && pich >= rech) { PicWindowIsOK = picy <= 1; }
-                if (PicWindowIsOK && picw >= recw) { PicWindowIsOK = picx <= 1; }
-                if (PicWindowIsOK && pich < rech)
-                {
-                    int stdy = UseBoard ? (this.Height - BoardSize.Height - pich) / 2 : (this.Height - pich) / 2;
-                    PicWindowIsOK = Math.Abs(stdy - picy) <= 1;
-                }
-                if (PicWindowIsOK && picw < recw)
-                {
-                    int stdx = UseBoard ? (this.Width - BoardSize.Width - picw) / 2 : (this.Width - picw) / 2;
-                    PicWindowIsOK = Math.Abs(stdx - picx) <= 1;
-                }
+                int xloc = this.pictureBox1.Location.X;
+                int yloc = this.pictureBox1.Location.Y;
 
-                if (type == -1 || type == 0 || type == 2 || type == 3)
-                {
-                    if (!PicWindowIsOK) { ShowCurrent(); }
-                }
-                if (type == 4 && isMusic) { ShapeWindow(); ShapeControl(); }
+                if (recw <= picw) { PicWindowIsOK = PicWindowIsOK && xloc <= 1; }
+                if (rech <= pich) { PicWindowIsOK = PicWindowIsOK && yloc <= 1; }
+                if (recw > picw) { PicWindowIsOK = PicWindowIsOK && Math.Abs((recw - picw) / 2 - xloc) < 2; }
+                if (rech > pich) { PicWindowIsOK = PicWindowIsOK && Math.Abs((rech - pich) / 2 - yloc) < 2; }
+                if (UseShapeWindow) { PicWindowIsOK = PicWindowIsOK && pich >= rech && yloc <= 0; }
+                if (UseShapeWindow) { PicWindowIsOK = PicWindowIsOK && picw >= recw && xloc <= 0; }
+
+                if (!PicWindowIsOK) { ShowPicture(null, null, false); }
             }
-
-            //this.Location = new Point(centrew - this.Width / 2, centreh - this.Height / 2);
-            if (show) { this.toolTip1.Dispose(); } else { this.toolTip1 = new ToolTip(); }
-        }
-        private void ShapeWindow(bool zoom = false)
-        {
-            if (!UseShapeWindow) { return; }
-            int sh = Screen.PrimaryScreen.Bounds.Height;
-            int sw = Screen.PrimaryScreen.Bounds.Width;
-
-            int shapeh = Math.Min(sh / 4, sw / 4);
-            int shapew = shapeh;
-
-            int inith = this.Height;
-            int initw = this.Width;
-
-            int centreh = this.Location.Y + this.Height / 2;
-            int centrew = this.Location.X + this.Width / 2;
-
-            int type = config.IsSub ? config.SubType : config.Type;
-            bool isMusic = config.IsSub ? FileOperate.IsMusic(config.SubExtension) : FileOperate.IsMusic(config.Extension);
-            bool isVideo = config.IsSub ? FileOperate.IsVideo(config.SubExtension) : FileOperate.IsVideo(config.Extension);
-
-            #region 隐藏文件、错误提示的大小
-
-            if ((type == -1 || type == 0) && config.SourPicture != null)
+            if (FileOperate.IsStream(type))
             {
-                int maxh = (int)(sh * ShapeWindowRate / 100);
-                int maxw = (int)(sw * ShapeWindowRate / 100);
-                int pich = config.SourPicture.Height;
-                int picw = config.SourPicture.Width;
+                int rech = ClientHeight;
+                int recw = ClientWidth;
+                int vidh = this.axWindowsMediaPlayer1.Height;
+                int vidw = this.axWindowsMediaPlayer1.Width;
+                int xloc = this.axWindowsMediaPlayer1.Location.X;
+                int yloc = this.axWindowsMediaPlayer1.Location.Y;
 
-                double h2w = (double)pich / picw;
-                double rate1 = (double)maxh / pich;
-                double rate2 = (double)maxw / picw;
+                VidWindowIsOK = VidWindowIsOK && xloc == 1 && recw - vidw == 2;
+                VidWindowIsOK = VidWindowIsOK && yloc == 1 && rech - vidh == 2;
 
-                if (rate1 <= rate2) { shapeh = maxh; shapew = (int)(shapeh / h2w); }
-                else { shapew = maxw; shapeh = (int)(shapew * h2w); }
+                string name = config.IsSub ? config.SubName : config.Name;
 
-                //if (!zoom && MaxWindowSize.Height > config.SourPicture.Height && MaxWindowSize.Width > config.SourPicture.Width)
-                //{ shapeh = config.SourPicture.Height; shapew = config.SourPicture.Width; }
-                if (!zoom && shapeh > config.SourPicture.Height && shapew > config.SourPicture.Width)
-                { shapeh = config.SourPicture.Height; shapew = config.SourPicture.Width; }
-            }
-
-            #endregion
-
-            #region 图片文件自适应窗体大小
-
-            if (type == 2 && config.SourPicture != null)
-            {
-                int maxh = (int)(sh * ShapeWindowRate / 100);
-                int maxw = (int)(sw * ShapeWindowRate / 100);
-                int pich = config.SourPicture.Height;
-                int picw = config.SourPicture.Width;
-
-                double h2w = (double)pich / picw;
-                double rate1 = (double)maxh / pich;
-                double rate2 = (double)maxw / picw;
-
-                if (rate1 <= rate2) { shapeh = maxh; shapew = (int)(shapeh / h2w); }
-                else { shapew = maxw; shapeh = (int)(shapew * h2w); }
-
-                //if (!zoom && MaxWindowSize.Height > config.SourPicture.Height && MaxWindowSize.Width > config.SourPicture.Width)
-                //{ shapeh = config.SourPicture.Height; shapew = config.SourPicture.Width; }
-                if (!zoom && shapeh > config.SourPicture.Height && shapew > config.SourPicture.Width)
-                { shapeh = config.SourPicture.Height; shapew = config.SourPicture.Width; }
-            }
-
-            #endregion
-
-            #region GIF 文件自适应窗体大小
-
-            if (type == 3 && config.SourPicture != null)
-            {
-                int maxh = (int)(sh * ShapeWindowRate / 100);
-                int maxw = (int)(sw * ShapeWindowRate / 100);
-                int pich = config.SourPicture.Height;
-                int picw = config.SourPicture.Width;
-
-                double h2w = (double)pich / picw;
-                double rate1 = (double)maxh / pich;
-                double rate2 = (double)maxw / picw;
-
-                if (rate1 <= rate2) { shapeh = maxh; shapew = (int)(shapeh / h2w); }
-                else { shapew = maxw; shapeh = (int)(shapew * h2w); }
-
-                //if (!zoom && MaxWindowSize.Height > config.SourPicture.Height && MaxWindowSize.Width > config.SourPicture.Width)
-                //{ shapeh = config.SourPicture.Height; shapew = config.SourPicture.Width; }
-                if (!zoom && shapeh > config.SourPicture.Height && shapew > config.SourPicture.Width)
-                { shapeh = config.SourPicture.Height; shapew = config.SourPicture.Width; }
-            }
-
-            #endregion
-
-            #region 音频文件自适应窗体大小
-
-            if (type == 4 && isMusic)
-            {
-                if (UseBoard) { shapeh = shapew = Math.Min(sh / 5, sw / 5); }
-                else { shapeh = shapew = Math.Min(sh / 10, sw / 10); }
-            }
-
-            #endregion
-
-            #region 视频文件自适应窗体大小
-
-            if (type == 4 && isVideo)
-            {
-                shapeh = sh / 2;
-                shapew = sw / 2;
-            }
-
-            #endregion
-
-            
-            int newh = UseBoard ? shapeh + BoardSize.Height : shapeh;
-            int neww = UseBoard ? shapew + BoardSize.Width : shapew;
-            this.Height = newh;
-            this.Width = neww;
-            int setx = centrew - this.Width / 2;
-            int sety = centreh - this.Height / 2;
-            this.Location = new Point(setx, sety);
-        }
-        private void ShapeControl(bool zoom = false)
-        {
-            int type = config.IsSub ? config.SubType : config.Type;
-            int ch = UseBoard ? this.Height - BoardSize.Height : this.Height;
-            int cw = UseBoard ? this.Width - BoardSize.Width : this.Width;
-
-            #region picture box
-
-            if (type == -1 || type == 0 || type == 2)
-            {
-                if (config.SourPicture == null) { return; }
-                if (!NextShowBigPicture && config.DestPicture == null) { return; }
-
-                int shapeh = 0, shapew = 0;
-                if (NextShowBigPicture || type == 3) { shapeh = config.SourPicture.Height; shapew = config.SourPicture.Width; }
-                else { shapeh = config.DestPicture.Height; shapew = config.DestPicture.Width; }
-                //if (config.SourPicture.Height < MaxWindowSize.Height && config.SourPicture.Width < MaxWindowSize.Width)
-                //{ shapeh = config.SourPicture.Height; shapew = config.SourPicture.Width; }
-                if (config.SourPicture.Height < ch && config.SourPicture.Width < cw)
-                { shapeh = config.SourPicture.Height; shapew = config.SourPicture.Width; }
-                if (zoom) { shapeh = config.DestPicture.Height; shapew = config.DestPicture.Width; }
-                
-                int recth = UseBoard ? this.Height - BoardSize.Height : this.Height; ;
-                int rectw = UseBoard ? this.Width - BoardSize.Width : this.Width; ;
-                int x = shapew > rectw ? 0 : (rectw - shapew) / 2;
-                int y = shapeh > recth ? 0 : (recth - shapeh) / 2;
-                
-                this.pictureBox1.Location = new Point(x, y);
-                this.pictureBox1.Height = shapeh;
-                this.pictureBox1.Width = shapew;
-            }
-
-            if (type == 3)
-            {
-                if (config.SourPicture == null) { return; }
-                int shapeh = config.SourPicture.Height;
-                int shapew = config.SourPicture.Width;
-
-                int recth = UseBoard ? this.Height - BoardSize.Height : this.Height; ;
-                int rectw = UseBoard ? this.Width - BoardSize.Width : this.Width; ;
-                int x = shapew > rectw ? 0 : (rectw - shapew) / 2;
-                int y = shapeh > recth ? 0 : (recth - shapeh) / 2;
-
-                this.pictureBox1.Height = shapeh;
-                this.pictureBox1.Width = shapew;
-                this.pictureBox1.Location = new Point(x, y);
-            }
-
-            #endregion
-
-            #region wmp
-
-            if (type == 4)
-            {
-                this.axWindowsMediaPlayer1.Height = ch - 2;
-                this.axWindowsMediaPlayer1.Width = cw - 2;
-                this.axWindowsMediaPlayer1.Location = new Point(1, 1);
+                if (!VidWindowIsOK) { ShowVideo(null, name, false); }
             }
 
             #endregion
@@ -2672,7 +2699,7 @@ namespace PictureViewer
             FileOperate.Reload();
 
             int type = config.IsSub ? config.SubType : config.Type;
-            if (FileOperate.IsStream(type)) { ShapeControl(); return; }
+            if (FileOperate.IsStream(type)) { ShowVideo(null, null, false); return; }
             ShowCurrent();
         }
         private void RightMenu_Input(object sender, EventArgs e)
