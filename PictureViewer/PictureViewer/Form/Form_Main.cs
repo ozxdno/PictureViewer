@@ -200,14 +200,6 @@ namespace PictureViewer
         /// </summary>
         private ulong WheelPageTime;
         /// <summary>
-        /// 缓存上一次 X 方向的滑动量
-        /// </summary>
-        private int PrevScrollX;
-        /// <summary>
-        /// 缓存上一次 Y 方向的滑动量
-        /// </summary>
-        private int PrevScrollY;
-        /// <summary>
         /// 该窗体是否被激活
         /// </summary>
         private bool IsActive;
@@ -246,6 +238,12 @@ namespace PictureViewer
             public bool Up2;
             public ulong tDown2;
             public ulong tUp2;
+            public Point pDown2;
+            public Point pUp2;
+            
+            public Point pWindow;
+            public int xScroll;
+            public int yScroll;
         }
         /// <summary>
         /// 方向键信息
@@ -506,9 +504,9 @@ namespace PictureViewer
             #region 判断索引号是否有效，调整索引号，显示初始文件
 
             config.SubFiles = new List<string>();
-            if (config.FolderIndex < 0 || config.FolderIndex >= FileOperate.RootFiles.Count) { config.FolderIndex = 0; }
-            if (config.FileIndex < 0 || FileOperate.RootFiles.Count == 0 || config.FileIndex >= FileOperate.RootFiles[config.FolderIndex].Name.Count)
-            { config.FileIndex = 0; }
+            //if (config.FolderIndex < 0 || config.FolderIndex >= FileOperate.RootFiles.Count) { config.FolderIndex = 0; }
+            //if (config.FileIndex < 0 || FileOperate.RootFiles.Count == 0 || config.FileIndex >= FileOperate.RootFiles[config.FolderIndex].Name.Count)
+            //{ config.FileIndex = 0; }
 
             ShowCurrent();
 
@@ -771,10 +769,56 @@ namespace PictureViewer
 
             if (e.KeyValue == Class.Load.settings.FastKey_Main_Rotate)
             {
+                if (this.HorizontalScroll.Visible || this.VerticalScroll.Visible) { return; }
+
                 int type = config.IsSub ? config.SubType : config.Type;
                 if (type != 2) { return; }
 
                 config.SourPicture.RotateFlip(RotateFlipType.Rotate90FlipNone);
+                string path = config.IsSub ? config.Path + "\\" + config.Name : config.Path;
+                string name = config.IsSub ? config.SubName : config.Name;
+                try { config.SourPicture.Save(path + "\\" + name); } catch { }
+
+                ShowPicture(null, null, false);
+                return;
+            }
+
+            #endregion
+
+            #region 翻转 X
+
+            if (e.KeyValue == Class.Load.settings.FastKey_Main_FlipX)
+            {
+                if (this.HorizontalScroll.Visible || this.VerticalScroll.Visible) { return; }
+
+                int type = config.IsSub ? config.SubType : config.Type;
+                if (!FileOperate.IsPicture(type)) { return; }
+
+                config.SourPicture.RotateFlip(RotateFlipType.RotateNoneFlipX);
+                string path = config.IsSub ? config.Path + "\\" + config.Name : config.Path;
+                string name = config.IsSub ? config.SubName : config.Name;
+                try { config.SourPicture.Save(path + "\\" + name); } catch { }
+
+                ShowPicture(null, null, false);
+                return;
+            }
+
+            #endregion
+
+            #region 翻转 Y
+
+            if (e.KeyValue == Class.Load.settings.FastKey_Main_FlipY)
+            {
+                if (this.HorizontalScroll.Visible || this.VerticalScroll.Visible) { return; }
+
+                int type = config.IsSub ? config.SubType : config.Type;
+                if (!FileOperate.IsPicture(type)) { return; }
+
+                config.SourPicture.RotateFlip(RotateFlipType.RotateNoneFlipY);
+                string path = config.IsSub ? config.Path + "\\" + config.Name : config.Path;
+                string name = config.IsSub ? config.SubName : config.Name;
+                try { config.SourPicture.Save(path + "\\" + name); } catch { }
+
                 ShowPicture(null, null, false);
                 return;
             }
@@ -1035,7 +1079,7 @@ namespace PictureViewer
 
         private void Form_MouseDown(object sender, MouseEventArgs e)
         {
-            if (e.Button == MouseButtons.Left)
+            if (e.Button == MouseButtons.Left && !mouse.Down2)
             {
                 this.Cursor = Cursors.Default;
                 mouse.Down = true;
@@ -1043,15 +1087,18 @@ namespace PictureViewer
                 mouse.pDown = MousePosition;
                 mouse.tDown = TimeCount;
 
-                PrevScrollX = this.HorizontalScroll.Value;
-                PrevScrollY = this.VerticalScroll.Value;
+                mouse.pWindow = this.Location;
+                mouse.xScroll = this.HorizontalScroll.Value;
+                mouse.yScroll = this.VerticalScroll.Value;
             }
 
-            if (e.Button == MouseButtons.Right)
+            if (e.Button == MouseButtons.Right && !mouse.Down)
             {
                 mouse.Down2 = true;
                 mouse.Up2 = false;
+                mouse.pDown2 = MousePosition;
                 mouse.tDown2 = TimeCount;
+                mouse.pWindow = this.Location;
             }
         }
         private void Form_MouseUp(object sender, MouseEventArgs e)
@@ -1069,28 +1116,58 @@ namespace PictureViewer
             {
                 mouse.Down2 = false;
                 mouse.Up2 = true;
+                mouse.pUp2 = MousePosition;
                 mouse.tUp2 = TimeCount;
+
+                this.contextMenuStrip1.Visible =
+                    Math.Abs(mouse.pDown2.X - mouse.pUp2.X) < 10 &&
+                    Math.Abs(mouse.pDown2.Y - mouse.pUp2.Y) < 10;
             }
         }
         private void Form_MouseWheel(object sender, MouseEventArgs e)
         {
             int ch = UseBoard ? this.Height - BoardSize.Height : this.Height;
             int cw = UseBoard ? this.Width - BoardSize.Width : this.Width;
-            
+            int type = config.IsSub ? config.SubType : config.Type;
+
             #region 播放视频/音频时，滚轮不起作用
 
-            if (config.Type == 4 || (config.IsSub && config.SubType == 4))
+            if (FileOperate.IsStream(type))
             {
                 return;
             }
 
             #endregion
 
-            #region 滚轮滚动屏幕
+            #region 滚轮滚动屏幕。当目前是 GIF 时，缩放窗体。
 
             if ((this.HorizontalScroll.Visible || this.VerticalScroll.Visible) ||
                 (this.pictureBox1.Visible && (this.pictureBox1.Height > ch || this.pictureBox1.Width > cw)))
             {
+                if (!FileOperate.IsGif(type) || !UseShapeWindow || this.lockToolStripMenuItem.Checked) { return; }
+
+                // 必须存在源图
+                if (config.SourPicture == null) { return; }
+
+                // 屏幕参数
+                int sh = Screen.PrimaryScreen.Bounds.Height;
+                int sw = Screen.PrimaryScreen.Bounds.Width;
+
+                // 当前缩放
+                int ph = UseBoard ? this.Height - BoardSize.Height : this.Height;
+                int pw = UseBoard ? this.Width - BoardSize.Width : this.Width;
+                double rate1 = (double)ph / sh * 100;
+                double rate2 = (double)pw / sw * 100;
+                double currRate = Math.Max(rate1, rate2);
+
+                // 下一次的显示比例
+                if (e.Delta > 0) { ShapeWindowRate = currRate + 5; }
+                if (e.Delta < 0) { ShapeWindowRate = currRate - 5; }
+                if (ShapeWindowRate <= Class.Load.settings.Form_Main_MinWindowSize) { ShapeWindowRate = Class.Load.settings.Form_Main_MinWindowSize; }
+                if (ShapeWindowRate >= Class.Load.settings.Form_Main_MaxWindowSize) { ShapeWindowRate = Class.Load.settings.Form_Main_MaxWindowSize; }
+
+                // 显示 GIF
+                ShowGif(null, null, false);
                 return;
             }
 
@@ -1119,16 +1196,9 @@ namespace PictureViewer
 
             #endregion
 
-            #region 根据文件类型确定待执行的代码段
-
-            int codephase = config.IsSub ? config.SubType : config.Type;
-            //if (UseBoard) { BoardSize = this.Size - this.ClientSize; }
-
-            #endregion
-
             #region 图片型文件滑动滚轮操作
 
-            if (codephase == -1 || codephase == 0 || codephase == 2)
+            if (FileOperate.IsError(type) || FileOperate.IsUnsupport(type) || FileOperate.IsPicture(type))
             {
                 // 必须存在源图
                 if (config.SourPicture == null) { return; }
@@ -1140,7 +1210,7 @@ namespace PictureViewer
                 // 当前缩放
                 double rate1 = (double)this.pictureBox1.Height / sh * 100;
                 double rate2 = (double)this.pictureBox1.Width / sw * 100;
-                int currRate = (int)Math.Max(rate1, rate2);
+                double currRate = Math.Max(rate1, rate2);
 
                 // 下一次的显示比例
                 if (e.Delta > 0) { ShapeWindowRate = currRate + 5; }
@@ -1278,7 +1348,10 @@ namespace PictureViewer
                         tip.Form.KeyValue == Class.Load.settings.FastKey_Main_L ||
                         tip.Form.KeyValue == Class.Load.settings.FastKey_Main_R ||
                         tip.Form.KeyValue == Class.Load.settings.FastKey_Main_Board ||
-                        tip.Form.KeyValue == Class.Load.settings.FastKey_Main_Enter)
+                        tip.Form.KeyValue == Class.Load.settings.FastKey_Main_Enter ||
+                        tip.Form.KeyValue == Class.Load.settings.FastKey_Main_Rotate ||
+                        tip.Form.KeyValue == Class.Load.settings.FastKey_Main_FlipX ||
+                        tip.Form.KeyValue == Class.Load.settings.FastKey_Main_FlipY)
                     {
                         KeyEventArgs eKey = new KeyEventArgs((Keys)tip.Form.KeyValue);
                         if (tip.Form.KeyState == 0) { Form_KeyDown(null, eKey); }
@@ -1527,23 +1600,37 @@ namespace PictureViewer
 
                 if (!this.HorizontalScroll.Visible && !this.VerticalScroll.Visible && mouse.Down)
                 {
-                    int xMove = MousePosition.X - mouse.pDown.X;
-                    int yMove = MousePosition.Y - mouse.pDown.Y;
-                    this.Location = new Point(this.Location.X + xMove, this.Location.Y + yMove);
-                    mouse.pDown = MousePosition;
+                    int xmove = MousePosition.X - mouse.pDown.X;
+                    int ymove = MousePosition.Y - mouse.pDown.Y;
+                    this.Location = new Point(mouse.pWindow.X + xmove, mouse.pWindow.Y + ymove);
+                }
+
+                #endregion
+
+                #region 右键拖拽窗体
+
+                if (mouse.Down2)
+                {
+                    int type = config.IsSub ? config.SubType : config.Type;
+                    if (FileOperate.IsGif(type))
+                    {
+                        int xmove = MousePosition.X - mouse.pDown2.X;
+                        int ymove = MousePosition.Y - mouse.pDown2.Y;
+                        this.Location = new Point(mouse.pWindow.X + xmove, mouse.pWindow.Y + ymove);
+                    }
                 }
 
                 #endregion
 
                 #region 拖拽图片
-                
-                if((this.HorizontalScroll.Visible || this.VerticalScroll.Visible) && mouse.Down)
+
+                if ((this.HorizontalScroll.Visible || this.VerticalScroll.Visible) && mouse.Down)
                 {
                     int xS = MousePosition.X - mouse.pDown.X;
                     int yS = MousePosition.Y - mouse.pDown.Y;
 
-                    SetScrollW(PrevScrollX - xS);
-                    SetScrollH(PrevScrollY - yS);
+                    SetScrollW(mouse.xScroll - xS);
+                    SetScrollH(mouse.yScroll - yS);
                 }
 
                 #endregion
@@ -1684,9 +1771,10 @@ namespace PictureViewer
             config.Extension = FileOperate.getExtension(config.Name);
             config.Hide = FileOperate.IsSupportHide(config.Extension);
             config.Type = FileOperate.getFileType(config.Extension);
-            config.IsSub = config.Type == 1 || config.Type == 5;
+            config.IsSub = FileOperate.IsComic(config.Type);
             if (config.Type == 1) { config.ExistFile = Directory.Exists(config.Path + "\\" + config.Name); }
             else { config.ExistFile = File.Exists(config.Path + "\\" + config.Name); }
+            if (!config.IsSub) { config.SubIndex = -1; }
 
             if (config.ExistFile && config.Type == 1)
             {
@@ -2553,9 +2641,7 @@ namespace PictureViewer
             FileOperate.HideFiles(FileOperate.RootFiles[config.FolderIndex].Path);
 
             // 重新加载文件
-            int folder = config.FolderIndex, file = config.FileIndex, sub = config.SubIndex;
-            FileOperate.Cover(FileOperate.RootFiles[config.FolderIndex].Path);
-            config.FolderIndex = folder; config.FileIndex = file; config.SubIndex = sub;
+            FileOperate.Reload(config.FolderIndex);
 
             // 显示
             ShowCurrent();
@@ -2574,9 +2660,7 @@ namespace PictureViewer
             FileOperate.ShowFiles(FileOperate.RootFiles[config.FolderIndex].Path);
 
             // 重新加载文件
-            int folder = config.FolderIndex, file = config.FileIndex, sub = config.SubIndex;
-            FileOperate.Cover(FileOperate.RootFiles[config.FolderIndex].Path);
-            config.FolderIndex = folder; config.FileIndex = file; config.SubIndex = sub;
+            FileOperate.Reload(config.FolderIndex);
 
             // 显示
             ShowCurrent();
@@ -2585,8 +2669,10 @@ namespace PictureViewer
         private void RightMenu_Refresh(object sender, EventArgs e)
         {
             this.IsActive = true;
+            FileOperate.Reload();
 
-            if (config.Type == 4 || (config.IsSub && config.SubType == 4)) { ShapeControl(); return; }
+            int type = config.IsSub ? config.SubType : config.Type;
+            if (FileOperate.IsStream(type)) { ShapeControl(); return; }
             ShowCurrent();
         }
         private void RightMenu_Input(object sender, EventArgs e)
@@ -2961,16 +3047,7 @@ namespace PictureViewer
         private void RightMenu_Find(object sender, EventArgs e)
         {
             //this.contextMenuStrip1.Hide();
-
-            // 不支持的模式
-            if (this.likeToolStripMenuItem.Checked)
-            {
-                if (DialogResult.Cancel == MessageBox.Show("尚不支持“LIKE”模式查找，是否使用“SAME”模式？", "模式不支持", MessageBoxButtons.OKCancel))
-                { return; }
-                this.likeToolStripMenuItem.Checked = false;
-                this.sameToolStripMenuItem.Checked = true;
-            }
-
+            
             // 计算模式
             ushort mode = 0;
             if (this.fullToolStripMenuItem.Checked) { mode += (ushort)Form_Find.MODE.FULL; }
@@ -3003,8 +3080,10 @@ namespace PictureViewer
             this.sameToolStripMenuItem.Checked = Class.Load.settings.Form_Main_Find_Same;
             this.likeToolStripMenuItem.Checked = Class.Load.settings.Form_Main_Find_Like;
             this.turnToolStripMenuItem.Checked = Class.Load.settings.Form_Main_Find_Turn;
+            this.pathToolStripMenuItem.Text = config.ExportFolder;
 
             // 是否跳转
+            //FileOperate.Reload();
             ShowCurrent();
             if (!Form_Find.IsSwitch) { SetScrollW(xscroll); SetScrollH(yscroll); }
         }

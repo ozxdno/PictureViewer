@@ -208,6 +208,7 @@ namespace PictureViewer.Class
                         newResultItem = true;
                         Form_Find.Results.Add(new List<int>());
                         Form_Find.config.Standard.Add(Form_Find.config.Sour[Form_Find.IndexS]);
+                        Form_Find.Results[Form_Find.Results.Count - 1].Add(Form_Find.config.Sour[Form_Find.IndexS]);
                     }
                     Form_Find.Results[Form_Find.Results.Count - 1].Add(Form_Find.config.Dest[Form_Find.IndexD]);
                 }
@@ -265,7 +266,7 @@ namespace PictureViewer.Class
 
             if (mode == Form_Find.MODE.FULL_LIKE_NOTURN)
             {
-
+                return cmpRow000();
             }
 
             #endregion
@@ -274,7 +275,12 @@ namespace PictureViewer.Class
 
             if (mode == Form_Find.MODE.FULL_LIKE_TURN)
             {
+                if (cmpRow000()) { return true; }
+                if (cmpRow090()) { return true; }
+                if (cmpRow180()) { return true; }
+                if (cmpRow270()) { return true; }
 
+                return false;
             }
 
             #endregion
@@ -334,7 +340,7 @@ namespace PictureViewer.Class
 
             if (mode == Form_Find.MODE.PART_LIKE_NOTURN)
             {
-
+                return cmpRow000();
             }
 
             #endregion
@@ -343,7 +349,12 @@ namespace PictureViewer.Class
 
             if (mode == Form_Find.MODE.PART_LIKE_TURN)
             {
+                if (cmpRow000()) { return true; }
+                if (cmpRow090()) { return true; }
+                if (cmpRow180()) { return true; }
+                if (cmpRow270()) { return true; }
 
+                return false;
             }
 
             #endregion
@@ -399,7 +410,7 @@ namespace PictureViewer.Class
 
             if (mode == Form_Find.MODE.FULL_LIKE_NOTURN)
             {
-
+                return cmpCol000();
             }
 
             #endregion
@@ -408,7 +419,11 @@ namespace PictureViewer.Class
 
             if (mode == Form_Find.MODE.FULL_LIKE_TURN)
             {
-
+                if (cmpCol000()) { return true; }
+                if (cmpCol090()) { return true; }
+                if (cmpCol180()) { return true; }
+                if (cmpCol270()) { return true; }
+                return false;
             }
 
             #endregion
@@ -467,7 +482,7 @@ namespace PictureViewer.Class
 
             if (mode == Form_Find.MODE.PART_LIKE_NOTURN)
             {
-
+                return cmpCol000();
             }
 
             #endregion
@@ -476,7 +491,11 @@ namespace PictureViewer.Class
 
             if (mode == Form_Find.MODE.PART_LIKE_TURN)
             {
-
+                if (cmpCol000()) { return true; }
+                if (cmpCol090()) { return true; }
+                if (cmpCol180()) { return true; }
+                if (cmpCol270()) { return true; }
+                return false;
             }
 
             #endregion

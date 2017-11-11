@@ -195,6 +195,17 @@ namespace PictureViewer.Class
         }
 
         /// <summary>
+        /// 从完整的文件名中获取文件路径
+        /// </summary>
+        /// <param name="fullname">文件的完整文件名</param>
+        /// <returns></returns>
+        public static string getPath(string fullname)
+        {
+            if (fullname == null || fullname.Length == 0) { return ""; }
+            int cut = fullname.LastIndexOf('\\'); if (cut == -1) { return ""; }
+            return fullname.Substring(0, cut);
+        }
+        /// <summary>
         /// 从完整的文件名中获取文件名称
         /// </summary>
         /// <param name="fullname">文件的完整文件名</param>
@@ -202,7 +213,18 @@ namespace PictureViewer.Class
         {
             if (fullname == null || fullname.Length == 0) { return ""; }
             int cut = fullname.LastIndexOf('\\'); if (cut == -1) { return fullname; }
-            return fullname.Substring(cut);
+            return fullname.Substring(cut + 1);
+        }
+        /// <summary>
+        /// 从文件名中获取不带后缀的文件名
+        /// </summary>
+        /// <param name="name">文件名</param>
+        /// <returns></returns>
+        public static string getName2(string name)
+        {
+            if (name == null || name.Length == 0) { return ""; }
+            int dot = name.LastIndexOf('.'); if (dot == -1) { return name; }
+            return name.Substring(0, dot);
         }
         /// <summary>
         /// 获取文件后缀
@@ -350,10 +372,11 @@ namespace PictureViewer.Class
             return root.Path;
         }
         /// <summary>
-        /// 重新加载指定路径下的文件，文件流指向第一个文件。
+        /// 重新加载指定路径下的文件。
         /// </summary>
         /// <param name="fullpath">指定路径</param>
-        public static void Cover(string fullpath)
+        /// <param name="jump">是否跳转到该路径</param>
+        public static void Reload(string fullpath, bool jump = false)
         {
             // 覆盖路径是否已经存在，若不存在，新建路径。
             int index = Search(fullpath);
@@ -377,14 +400,14 @@ namespace PictureViewer.Class
             foreach (FileInfo file in files)
             { if (FileOperate.IsSupport(FileOperate.getExtension(file.Name))) { cover.Name.Add(file.Name); } }
 
-            RootFiles[index] = cover;
+            RootFiles[index] = cover; if (!jump) { return; }
 
-            Form_Main.config.FolderIndex = RootFiles.Count - 1;
-            Form_Main.config.FileIndex = cover.Name.Count == 0 ? -1 : 0;
+            Form_Main.config.FolderIndex = index;
+            Form_Main.config.FileIndex = 0;
             Form_Main.config.SubIndex = 0;
         }
         /// <summary>
-        /// 重新加载所有根目录下的文件
+        /// 重新加载所有根目录下的文件（不会删除相同的根目录）
         /// </summary>
         public static void Reload()
         {
@@ -407,6 +430,32 @@ namespace PictureViewer.Class
                     RootFiles[i].Name.Add(files[j].Name);
                 }
             }
+        }
+        /// <summary>
+        /// 重新加载指定根目录的文件
+        /// </summary>
+        /// <param name="index">根目录索引号</param>
+        /// <param name="jump">是否跳转到该路径</param>
+        public static void Reload(int index, bool jump = false)
+        {
+            if (index < 0 || index >= FileOperate.RootFiles.Count) { return; }
+            RootFiles[index].Name.Clear();
+            if (!Directory.Exists(RootFiles[index].Path)) { return; }
+
+            ROOT cover = RootFiles[index];
+            DirectoryInfo dir = new DirectoryInfo(cover.Path);
+            FileInfo[] files = dir.GetFiles();
+            DirectoryInfo[] folders = dir.GetDirectories();
+
+            foreach (DirectoryInfo folder in folders) { cover.Name.Add(folder.Name); }
+            foreach (FileInfo file in files)
+            { if (FileOperate.IsSupport(FileOperate.getExtension(file.Name))) { cover.Name.Add(file.Name); } }
+
+            RootFiles[index] = cover; if (!jump) { return; }
+
+            Form_Main.config.FolderIndex = index;
+            Form_Main.config.FileIndex = 0;
+            Form_Main.config.SubIndex = 0;
         }
 
         /// <summary>
@@ -683,6 +732,114 @@ namespace PictureViewer.Class
         public static bool IsVideo(string extension)
         {
             return FileSupport.IsVideo(extension);
+        }
+        /// <summary>
+        /// 判断指定类型是不是图片文件
+        /// </summary>
+        /// <param name="type">类型</param>
+        /// <returns></returns>
+        public static bool IsPicture(int type)
+        {
+            return type == 2;
+        }
+        /// <summary>
+        /// 判断指定后缀是不是图片文件
+        /// </summary>
+        /// <param name="extension">后缀</param>
+        /// <returns></returns>
+        public static bool IsPicture(string extension)
+        {
+            return IsPicture(getFileType(extension));
+        }
+        /// <summary>
+        /// 判断指定类型是不是 GIF 文件
+        /// </summary>
+        /// <param name="type">类型</param>
+        /// <returns></returns>
+        public static bool IsGif(int type)
+        {
+            return type == 3;
+        }
+        /// <summary>
+        /// 判断指定后缀是不是 GIF 文件
+        /// </summary>
+        /// <param name="extension">后缀</param>
+        /// <returns></returns>
+        public static bool IsGif(string extension)
+        {
+            return IsGif(getFileType(extension));
+        }
+        /// <summary>
+        /// 判断指定类型是不是 ZIP 文件
+        /// </summary>
+        /// <param name="type">类型</param>
+        /// <returns></returns>
+        public static bool IsZip(int type)
+        {
+            return type == 5;
+        }
+        /// <summary>
+        /// 判断指定后缀是不是 ZIP 文件
+        /// </summary>
+        /// <param name="extension">后缀</param>
+        /// <returns></returns>
+        public static bool IsZip(string extension)
+        {
+            return IsZip(getFileType(extension));
+        }
+        /// <summary>
+        /// 判断指定类型是不是文件夹
+        /// </summary>
+        /// <param name="type">类型</param>
+        /// <returns></returns>
+        public static bool IsFolder(int type)
+        {
+            return type == 1;
+        }
+        /// <summary>
+        /// 判断指定后缀是不是文件夹
+        /// </summary>
+        /// <param name="extension">后缀</param>
+        /// <returns></returns>
+        public static bool IsFolder(string extension)
+        {
+            return IsFolder(getFileType(extension));
+        }
+        /// <summary>
+        /// 判断指定类型是不是流媒体
+        /// </summary>
+        /// <param name="type">类型</param>
+        /// <returns></returns>
+        public static bool IsStream(int type)
+        {
+            return type == 4;
+        }
+        /// <summary>
+        /// 判断指定后缀是不是流媒体
+        /// </summary>
+        /// <param name="extension">后缀</param>
+        /// <returns></returns>
+        public static bool IsStream(string extension)
+        {
+            return IsStream(getFileType(extension));
+        }
+        /// <summary>
+        /// 判断指定类型是不是错误类型
+        /// </summary>
+        /// <param name="type">类型</param>
+        /// <returns></returns>
+        public static bool IsError(int type)
+        {
+            return type < 0 || type > 5;
+        }
+        /// <summary>
+        /// 判断指定类型是不是不支持类型
+        /// </summary>
+        /// <param name="type">类型</param>
+        /// <returns></returns>
+        public static bool IsUnsupport(int type)
+        {
+            return type == 0;
         }
 
         /// <summary>

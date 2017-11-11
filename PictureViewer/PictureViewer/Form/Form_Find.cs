@@ -16,7 +16,7 @@ namespace PictureViewer
     public partial class Form_Find : Form
     {
         /////////////////////////////////////////////////////////// public attribute //////////////////////////////////////////////////
-
+    
         /// <summary>
         /// 需要找的图片
         /// </summary>
@@ -102,15 +102,15 @@ namespace PictureViewer
             /// <summary>
             /// 文件所在根目录序号
             /// </summary>
-            public int FolderIndex;
+            public List<int> FolderIndexes;
             /// <summary>
             /// 文件序号
             /// </summary>
-            public int FileIndex;
+            public List<int> FileIndexes;
             /// <summary>
             /// 子文件序号
             /// </summary>
-            public int SubIndex;
+            public List<int> SubIndexes;
 
             /// <summary>
             /// 高，单位：像素
@@ -121,7 +121,7 @@ namespace PictureViewer
             /// </summary>
             public int Width;
             /// <summary>
-            /// 大小，单位：KB
+            /// 大小，单位：B（字节）
             /// </summary>
             public long Length;
             /// <summary>
@@ -297,15 +297,11 @@ namespace PictureViewer
             config.Initializing = false;
             Stop();
             Timer.Close();
+            Results.Clear();
+            CloseImage();
 
             try { SourPic.Dispose(); } catch { }
             try { DestPic.Dispose(); } catch { }
-
-            for (int i = 0; i < images.Count; i++) { images[i].Close(); }
-
-            images.Clear();
-            PictureFiles.Clear();
-            Results.Clear();
         }
         private void Form_Updata(object source, System.Timers.ElapsedEventArgs e)
         {
@@ -320,6 +316,11 @@ namespace PictureViewer
                 if (!config.Initializing && config.Method == -1)
                 {
                     this.Text = "[Prepared Files]: " + PictureFiles.Count.ToString();
+                }
+
+                for (int i = images.Count - 1; i >= 0; i--)
+                {
+                    if (images[i].IsDisposed) { images.RemoveAt(i); }
                 }
 
                 bool s1 = false;
@@ -350,14 +351,7 @@ namespace PictureViewer
 
                 ShowCombo();
                 ShowList();
-
-                if (IsFinish)
-                {
-                    if (!PM.Abort) { this.startToolStripMenuItem.Text = "Start"; }
-                    if (this.listBox1.SelectedIndex == -1 && config.Current.Count != 0) {
-                        this.listBox1.SelectedIndex = 0;
-                    }
-                }
+                if (IsFinish && !PM.Abort) { this.startToolStripMenuItem.Text = "Start"; }
 
                 Point ptMouse;
                 ptMouse = this.label6.PointToClient(MousePosition);
@@ -509,7 +503,8 @@ namespace PictureViewer
             if (DialogResult.Cancel == MessageBox.Show("把当前文件导出？", "确认", MessageBoxButtons.OKCancel))
             { return; }
 
-            Stop(); CloseImage(p.Path, p.Name);
+            //Stop();
+            CloseImage(p.Path, p.Name);
             
             try { SourPic.Dispose(); } catch { }
             try { DestPic.Dispose(); } catch { }
@@ -533,7 +528,9 @@ namespace PictureViewer
             if (Results.Count <= indexS || Results[indexS].Count == 0) { MessageBox.Show("文件不存在！", "提示"); return; }
             if (DialogResult.Cancel == MessageBox.Show("把当前所有文件导出？", "确认", MessageBoxButtons.OKCancel)) { return; }
 
-            Stop();
+            // 把当前文件导出并不会影响搜索
+            //Stop();
+
             try { SourPic.Dispose(); } catch { }
             try { DestPic.Dispose(); } catch { }
             this.pictureBox1.BackgroundImage = null;
@@ -563,6 +560,18 @@ namespace PictureViewer
             ShowSourPic();
             ShowDestPic();
             if (reason.Length != 0) { MessageBox.Show(reason, "移动失败！"); }
+        }
+        private void RightMenu_ExportPath(object sender, EventArgs e)
+        {
+            FolderBrowserDialog Folder = new FolderBrowserDialog();
+
+            string SelectedPath = Form_Main.config.ExportFolder;
+            if (!Directory.Exists(SelectedPath)) { SelectedPath = Form_Main.config.ConfigPath; }
+            Folder.SelectedPath = SelectedPath;
+
+            if (Folder.ShowDialog() != DialogResult.OK) { return; }
+            Form_Main.config.ExportFolder = Folder.SelectedPath;
+            this.exportPathToolStripMenuItem.Text = Folder.SelectedPath;
         }
         private void RightMenu_Remove(object sender, EventArgs e)
         {
@@ -626,9 +635,22 @@ namespace PictureViewer
 
             PICTURE p = PictureFiles[config.Current[indexD]];
             Stop();
-            Form_Main.config.FolderIndex = p.FolderIndex;
-            Form_Main.config.FileIndex = p.FileIndex;
-            Form_Main.config.SubIndex = p.SubIndex;
+
+            List<int> selectedfolders = new List<int>();
+            for (int i = 0; i < this.source2ToolStripMenuItem.DropDownItems.Count; i++)
+            {
+                ToolStripMenuItem iMenu = (ToolStripMenuItem)this.source2ToolStripMenuItem.DropDownItems[i];
+                if (iMenu.Checked) { selectedfolders.Add(i); }
+            }
+            int selected = 0;
+            for (int i = 0; i < p.FolderIndexes.Count; i++)
+            {
+                if (selectedfolders.IndexOf(p.FolderIndexes[i]) != -1) { selected = i; break; }
+            }
+
+            Form_Main.config.FolderIndex = p.FolderIndexes[selected];
+            Form_Main.config.FileIndex = p.FileIndexes[selected];
+            Form_Main.config.SubIndex = p.SubIndexes[selected];
             IsSwitch = true;
             this.Close();
         }
@@ -711,7 +733,7 @@ namespace PictureViewer
         }
         private void RightMenu_Source1(object sender, EventArgs e)
         {
-            if (config.Initializing) { return; }
+            //if (config.Initializing) { return; }
 
             this.contextMenuStrip1.Hide();
 
@@ -723,7 +745,7 @@ namespace PictureViewer
         }
         private void RightMenu_Source2(object sender, EventArgs e)
         {
-            if (config.Initializing) { return; }
+            //if (config.Initializing) { return; }
 
             this.contextMenuStrip1.Hide();
 
@@ -732,6 +754,110 @@ namespace PictureViewer
             {
                 i.Checked = next;
             }
+        }
+        private void RightMenu_Rename(object sender, EventArgs e)
+        {
+            if (config.Initializing) { return; }
+            if (config.Current.Count == 0) { MessageBox.Show("文件不存在！", "提示"); return; }
+
+            string name = System.DateTime.Now.ToLocalTime().ToString();
+            name = name.Replace('/', '-');
+            name = name.Replace(':', '-');
+            if (DialogResult.Cancel == MessageBox.Show("把当前所有文件重命名为：" + name + "？", "确认", MessageBoxButtons.OKCancel))
+            { return; }
+
+            try { SourPic.Dispose(); } catch { }
+            try { DestPic.Dispose(); } catch { }
+            this.pictureBox1.BackgroundImage = null;
+            this.pictureBox2.BackgroundImage = null;
+
+            int sourIndex = this.comboBox1.SelectedIndex;
+            if (sourIndex != -1) { sourIndex = config.Standard[sourIndex]; }
+
+            for (int i = 0; i < config.Current.Count; i++)
+            {
+                PICTURE p = PictureFiles[config.Current[i]];
+
+                string sour = p.Full;
+                string dest = p.Path + "\\" + name + " " + (i + 1).ToString() + FileOperate.getExtension(p.Name);
+                try { File.Move(sour, dest); } catch { continue; }
+
+                p.Path = FileOperate.getPath(dest);
+                p.Name = FileOperate.getName(dest);
+                p.Full = dest;
+                PictureFiles[config.Current[i]] = p;
+
+                this.listBox1.Items[i] =
+                    "[" + (i + 1).ToString() + "] [" +
+                    (p.Length / 1000).ToString() + " KB] " +
+                    (sourIndex == config.Current[i] ? "[Source] " + p.Name : p.Name);
+            }
+
+            ShowSourPic();
+            ShowDestPic();
+        }
+        private void RightMenu_Rename2(object sender, EventArgs e)
+        {
+            if (config.Initializing) { return; }
+            if (config.Standard.Count == 0) { MessageBox.Show("文件不存在！", "提示"); return; }
+            if (DialogResult.Cancel == MessageBox.Show("把当前所有搜索结果重命名？", "确认", MessageBoxButtons.OKCancel))
+            { return; }
+
+            try { SourPic.Dispose(); } catch { }
+            try { DestPic.Dispose(); } catch { }
+            this.pictureBox1.BackgroundImage = null;
+            this.pictureBox2.BackgroundImage = null;
+
+
+            int sourIndex = this.comboBox1.SelectedIndex;
+            int sourSelect = sourIndex;
+            if (sourIndex != -1) { sourIndex = config.Standard[sourIndex]; }
+            
+            string data = DateTime.Now.ToString("yyyy-MM-dd");
+            int h = System.DateTime.Now.Hour;
+            int m = System.DateTime.Now.Minute;
+            int s = System.DateTime.Now.Second;
+
+            string nextName = "";
+            string hstr = "";
+            string mstr = "";
+            string sstr = "";
+
+            for (int i = 0; i < Results.Count; i++)
+            {
+                s++; if (s > 59) { s = 0; m++; }
+                if (m > 59) { m = 0; h++; }
+                if (h > 23) { h = 0; }
+
+                sstr = s.ToString(); if (s < 10) { sstr = '0' + sstr; }
+                mstr = m.ToString(); if (m < 10) { mstr = '0' + mstr; }
+                hstr = h.ToString(); if (h < 10) { hstr = '0' + hstr; }
+
+                nextName = data + " " + hstr + "-" + mstr + "-" + sstr;
+
+                for (int j = 0; j < Results[i].Count; j++)
+                {
+                    PICTURE p = PictureFiles[Results[i][j]];
+
+                    string sour = p.Full;
+                    string dest = p.Path + "\\" + nextName + " " + (j + 1).ToString() + FileOperate.getExtension(p.Name);
+                    try { File.Move(sour, dest); } catch { continue; }
+
+                    p.Path = FileOperate.getPath(dest);
+                    p.Name = FileOperate.getName(dest);
+                    p.Full = dest;
+                    PictureFiles[Results[i][j]] = p;
+
+                    if (i != sourSelect) { continue; }
+                    this.listBox1.Items[j] =
+                        "[" + (j + 1).ToString() + "] [" +
+                        (p.Length / 1000).ToString() + " KB] " +
+                        (sourIndex == config.Current[j] ? "[Source] " + p.Name : p.Name);
+                }
+            }
+
+            ShowSourPic();
+            ShowDestPic();
         }
 
         private void ShowInitial()
@@ -784,16 +910,18 @@ namespace PictureViewer
                 this.toolTip2.SetToolTip(this.pictureBox2, tempName);
             }
         }
-        private void ShowSourPic()
+        private void ShowSourPic(int index)
         {
-            if (this.comboBox1.SelectedIndex == -1)
+            if (index < 0 || index >= PictureFiles.Count)
             {
+                InitPicture(ref SourFile);
                 this.pictureBox2.BackgroundImage = null;
                 this.toolTip2.ToolTipTitle = null;
                 this.toolTip2.SetToolTip(this.pictureBox2, "No Selected Any File");
                 return;
             }
 
+            SourFile = PictureFiles[index];
             string fullname = SourFile.Full;
             Bitmap temp;
 
@@ -818,16 +946,24 @@ namespace PictureViewer
             this.toolTip2.ToolTipTitle = SourFile.Path;
             this.toolTip2.SetToolTip(this.pictureBox2, "[" + size + " KB] " + SourFile.Name);
         }
-        private void ShowDestPic()
+        private void ShowSourPic()
         {
-            if (this.listBox1.SelectedIndex == -1)
+            int sel = this.comboBox1.SelectedIndex;
+            if (sel < 0 || sel > config.Standard.Count) { ShowSourPic(-1); return; }
+            ShowSourPic(config.Standard[sel]);
+        }
+        private void ShowDestPic(int index)
+        {
+            if (index < 0 || index >= PictureFiles.Count)
             {
+                InitPicture(ref DestFile);
                 this.pictureBox1.BackgroundImage = null;
                 this.toolTip1.ToolTipTitle = null;
                 this.toolTip1.SetToolTip(this.pictureBox1, "No Selected Any File");
                 return;
             }
 
+            DestFile = PictureFiles[index];
             string fullname = DestFile.Full;
             Bitmap temp;
 
@@ -847,16 +983,18 @@ namespace PictureViewer
                 temp.Dispose();
             }
 
-            string source = Form_Main.config.IsSub ?
-                Form_Main.config.Path + "\\" + Form_Main.config.Name + "\\" + Form_Main.config.SubName :
-                Form_Main.config.Path + "\\" + Form_Main.config.Name;
-            //string sourceTip = source == DestFile.Full ? " [无法输出] " : "";
-            string sourceTip = "";
+            string sourceTip = SourFile.Full == DestFile.Full ? "[Source] " + DestFile.Name : DestFile.Name;
 
             string size = (DestPic == null || DestFile.Length == 0) ? "?" : (DestFile.Length / 1000).ToString();
             this.pictureBox1.BackgroundImage = DestPic;
             this.toolTip1.ToolTipTitle = DestFile.Path;
-            this.toolTip1.SetToolTip(this.pictureBox1, "[" + size + " KB] " + sourceTip + DestFile.Name);
+            this.toolTip1.SetToolTip(this.pictureBox1, "[" + size + " KB] " + sourceTip);
+        }
+        private void ShowDestPic()
+        {
+            int sel = this.listBox1.SelectedIndex;
+            if (sel < 0 || sel > config.Current.Count) { ShowDestPic(-1); return; }
+            ShowDestPic(config.Current[sel]);
         }
         private void ShowList()
         {
@@ -876,7 +1014,9 @@ namespace PictureViewer
                 {
                     string sequence = "[" + (i + 1).ToString() + "] ";
                     string size = "[" + (PictureFiles[newCurrent[i]].Length / 1000).ToString() + " KB] ";
-                    string name = PictureFiles[newCurrent[i]].Name;
+                    string name = newCurrent[i] == config.Standard[this.comboBox1.SelectedIndex] ?
+                        "[Source] " + PictureFiles[newCurrent[i]].Name :
+                        PictureFiles[newCurrent[i]].Name;
                     config.Current.Add(newCurrent[i]);
                     this.listBox1.Items.Add(sequence + size + name);
                     continue;
@@ -893,11 +1033,16 @@ namespace PictureViewer
                     config.Current[i] = newCurrent[i];
                     string sequence = "[" + (i + 1).ToString() + "] ";
                     string size = "[" + (PictureFiles[newCurrent[i]].Length / 1000).ToString() + " KB] ";
-                    string name = PictureFiles[newCurrent[i]].Name;
+                    string name = newCurrent[i] == config.Standard[this.comboBox1.SelectedIndex] ?
+                        "[Source] "+ PictureFiles[newCurrent[i]].Name :
+                        PictureFiles[newCurrent[i]].Name;
                     this.listBox1.Items[i] = sequence + size + name;
                     continue;
                 }
             }
+
+            if (this.listBox1.Items.Count != 0 && this.listBox1.SelectedIndex == -1)
+            { this.listBox1.SelectedIndex = 0; }
         }
         private void ShowCombo()
         {
@@ -931,6 +1076,8 @@ namespace PictureViewer
 
         private void Start()
         {
+            Stop();
+
             bool cmp1 = this.source1ToolStripMenuItem.Checked && !this.source2ToolStripMenuItem.Checked;
             bool cmp2 = this.source1ToolStripMenuItem.Checked && this.source2ToolStripMenuItem.Checked;
             bool cmp0 = !this.source1ToolStripMenuItem.Checked && this.source2ToolStripMenuItem.Checked;
@@ -938,9 +1085,10 @@ namespace PictureViewer
             config.Method = cmp0 ? 0 : (cmp1 ? 1 : (cmp2 ? 2 : -1));
 
             int type = Form_Main.config.IsSub ? Form_Main.config.SubType : Form_Main.config.Type;
-            if (cmp0 && type != 2 && type != 3)
+            if (cmp0 && !FileOperate.IsPicture(type) && !FileOperate.IsGif(type))
             { MessageBox.Show("不能比较图片/GIF以外的文件！", "提示"); return; }
 
+            CheckPictureFiles();
             GetSourList();
             GetDestList();
 
@@ -1030,6 +1178,10 @@ namespace PictureViewer
             this.source1ToolStripMenuItem.Checked = false;
             this.source2ToolStripMenuItem.Checked = true;
 
+            this.exportPathToolStripMenuItem.Text = (Form_Main.config.ExportFolder == null || Form_Main.config.ExportFolder.Length == 0) ?
+                FileOperate.getExePath() :
+                Form_Main.config.ExportFolder;
+
             #endregion
 
             #region 初始化填充文件内容
@@ -1041,8 +1193,26 @@ namespace PictureViewer
         }
         private void GetFiles()
         {
-            PictureFiles.Clear();
+            IndexS = 0; // Result 中文件个数
+            IndexD = 0; // PictureFiles 中文件个数
+
+            #region 判断文件是否仍然存在
             
+            for (int i = PictureFiles.Count - 1; config.Initializing && i >= 0; i--)
+            {
+                if (!File.Exists(PictureFiles[i].Full)) { PictureFiles.RemoveAt(i); continue; }
+
+                PictureFiles[i].FolderIndexes.Clear();
+                PictureFiles[i].FileIndexes.Clear();
+                PictureFiles[i].SubIndexes.Clear();
+            }
+
+            IndexD = PictureFiles.Count;
+
+            #endregion
+
+            #region 确保每个文件都存在于 PictureFiles 中
+
             for (int i = 0; config.Initializing && i < FileOperate.RootFiles.Count; i++)
             {
                 for (int j = 0; config.Initializing && j < FileOperate.RootFiles[i].Name.Count; j++)
@@ -1050,80 +1220,101 @@ namespace PictureViewer
                     string path = FileOperate.RootFiles[i].Path;
                     string name = FileOperate.RootFiles[i].Name[j];
                     int type = FileOperate.getFileType(FileOperate.getExtension(name));
-                    if (type == 1)
+                    int index = -1;
+
+                    #region Folder
+
+                    if (FileOperate.IsFolder(type))
                     {
+                        if (!Directory.Exists(path + "\\" + name)) { continue; }
+
                         List<string> subfiles = FileOperate.getSubFiles(path + "\\" + name);
                         for (int k = 0; config.Initializing && k < subfiles.Count; k++)
                         {
                             type = FileOperate.getFileType(FileOperate.getExtension(subfiles[k]));
-                            if (type != 2 && type != 3) { continue; }
+                            if (!FileOperate.IsPicture(type) && !FileOperate.IsGif(type))
+                            { continue; }
+
+                            index = GetFileIndex(path + "\\" + name + "\\" + subfiles[k]);
+                            
+                            if (index != -1)
+                            {
+                                PictureFiles[index].FolderIndexes.Add(i);
+                                PictureFiles[index].FileIndexes.Add(j);
+                                PictureFiles[index].SubIndexes.Add(k);
+                                IndexS++;
+                                continue;
+                            }
 
                             PICTURE p = new PICTURE();
                             p.Loaded = false;
                             p.Path = path + "\\" + name;
                             p.Name = subfiles[k];
                             p.Full = p.Path + "\\" + p.Name;
-                            p.FolderIndex = i;
-                            p.FileIndex = j;
-                            p.SubIndex = k;
+                            p.FolderIndexes = new List<int>(); p.FolderIndexes.Add(i);
+                            p.FileIndexes = new List<int>(); p.FileIndexes.Add(j);
+                            p.SubIndexes = new List<int>(); p.SubIndexes.Add(k);
+                            FileInfo f = new FileInfo(p.Full);
+                            p.Length = f.Length;
                             PictureFiles.Add(p);
                             IndexS++;
+                            IndexD++;
                         }
                         continue;
                     }
-                    if (type == 2 || type == 3)
+
+                    #endregion
+
+                    #region PIC/GIF
+
+                    if (FileOperate.IsPicture(type) || FileOperate.IsGif(type))
                     {
+                        if (!File.Exists(path + "\\" + name)) { continue; }
+
+                        index = GetFileIndex(path + "\\" + name);
+                        if (index != -1)
+                        {
+                            PictureFiles[index].FolderIndexes.Add(i);
+                            PictureFiles[index].FileIndexes.Add(j);
+                            PictureFiles[index].SubIndexes.Add(-1);
+                            IndexS++;
+                            continue;
+                        }
+
                         PICTURE p = new PICTURE();
                         p.Loaded = false;
                         p.Path = path;
                         p.Name = name;
                         p.Full = p.Path + "\\" + p.Name;
-                        p.FolderIndex = i;
-                        p.FileIndex = j;
-                        p.SubIndex = -1;
+                        p.FolderIndexes = new List<int>(); p.FolderIndexes.Add(i);
+                        p.FileIndexes = new List<int>(); p.FileIndexes.Add(j);
+                        p.SubIndexes = new List<int>(); p.SubIndexes.Add(-1);
+                        FileInfo f = new FileInfo(p.Full);
+                        p.Length = f.Length;
                         PictureFiles.Add(p);
                         IndexS++;
+                        IndexD++;
                         continue;
                     }
+
+                    #endregion
                 }
             }
+
+            #endregion
 
             IndexS = 0;
-
-            for (int i = PictureFiles.Count - 1; config.Initializing && i >= 0; i--, IndexS++)
-            {
-                if (!File.Exists(PictureFiles[i].Path + "\\" + PictureFiles[i].Name))
-                { PictureFiles.RemoveAt(i); continue; }
-
-                //if (PictureFiles[i].Full == SourFile.Full)
-                //{ PictureFiles.RemoveAt(i); continue; }
-
-                bool foundSame = false;
-                for (int j = 0; j < i; j++)
-                {
-                    if (PictureFiles[i].Full != PictureFiles[j].Full) { continue; }
-                    foundSame = true;
-                    PictureFiles.RemoveAt(i); break;
-                }
-                if (foundSame) { continue; }
-
-                FileInfo f = new FileInfo(PictureFiles[i].Full);
-                PICTURE p = PictureFiles[i];
-                p.Length = f.Length;
-                PictureFiles[i] = p;
-            }
-
+            IndexD = 0;
             config.Initializing = false;
-            IndexS = 0;
         }
         private void SetMode()
         {
-            if (this.likeToolStripMenuItem.Checked)
-            {
-                MessageBox.Show("不支持 LIKE 模式的查找", "提示");
-                this.sameToolStripMenuItem.Checked = true;
-                this.likeToolStripMenuItem.Checked = false;
-            }
+            //if (this.likeToolStripMenuItem.Checked)
+            //{
+            //    MessageBox.Show("不支持 LIKE 模式的查找", "提示");
+            //    this.sameToolStripMenuItem.Checked = true;
+            //    this.likeToolStripMenuItem.Checked = false;
+            //}
 
             ushort mode = 0;
             if (this.fullToolStripMenuItem.Checked) { mode |= (ushort)MODE.FULL; }
@@ -1139,19 +1330,21 @@ namespace PictureViewer
             int index = -1;
             for (int i = 0; i < PictureFiles.Count; i++)
             {
-                if (PictureFiles[i].FolderIndex == folder && PictureFiles[i].FileIndex == file)
+                for (int j = 0; j < PictureFiles[i].FolderIndexes.Count; j++)
                 {
-                    index = i;
-                    if (sub == -1) { return i; }
-                    if (sub == PictureFiles[i].SubIndex) { return i; }
+                    if (PictureFiles[i].FolderIndexes[j] != folder) { continue; }
+                    if (PictureFiles[i].FileIndexes[j] != file) { continue; }
+
+                    if (PictureFiles[i].SubIndexes[j] == -1) { index = i; }
+                    if (PictureFiles[i].SubIndexes[j] == 0) { index = i; }
+                    if (PictureFiles[i].SubIndexes[j] == sub) { return i; }
                 }
             }
             return index;
         }
-        private int GetFileIndex(string path, string name = null)
+        private int GetFileIndex(string full)
         {
-            if (path == null) { return -1; }
-            string full = name == null ? path : path + "\\" + name;
+            if (full == null || full.Length == 0) { return -1; }
 
             for (int i = 0; i < PictureFiles.Count; i++)
             {
@@ -1161,18 +1354,19 @@ namespace PictureViewer
         }
         private void GetSourList()
         {
-            config.Sour = new List<int>();
-            
+            if (config.Sour == null) { config.Sour = new List<int>(); }
+            else { config.Sour.Clear(); }
+
             if (config.Method == 0)
             {
-                string full = Form_Main.config.IsSub ?
-                    Form_Main.config.Path + "\\" + Form_Main.config.Name + "\\" + Form_Main.config.SubName :
-                    Form_Main.config.Path + "\\" + Form_Main.config.Name;
-                int index = GetFileIndex(full);
+                int folder = Form_Main.config.FolderIndex;
+                int file = Form_Main.config.FileIndex;
+                int sub = Form_Main.config.SubIndex;
+                int index = GetFileIndex(folder, file, sub);
                 if (index != -1) { config.Sour.Add(index); }
                 return;
             }
-
+            
             for (int i = 0; i < this.source1ToolStripMenuItem.DropDownItems.Count; i++)
             {
                 ToolStripMenuItem iMenu = (ToolStripMenuItem)this.source1ToolStripMenuItem.DropDownItems[i];
@@ -1180,14 +1374,14 @@ namespace PictureViewer
 
                 for (int j = 0; j < PictureFiles.Count; j++)
                 {
-                    if (PictureFiles[j].FolderIndex == i) { config.Sour.Add(j); }
+                    if (PictureFiles[j].FolderIndexes.IndexOf(i) != -1) { config.Sour.Add(j); }
                 }
             }
         }
         private void GetDestList()
         {
-            config.Dest = new List<int>();
-            if (config.Method == 1) { return; }
+            if (config.Dest == null) { config.Dest = new List<int>(); }
+            else { config.Dest.Clear(); }
 
             for (int i = 0; i < this.source2ToolStripMenuItem.DropDownItems.Count; i++)
             {
@@ -1196,7 +1390,7 @@ namespace PictureViewer
 
                 for (int j = 0; j < PictureFiles.Count; j++)
                 {
-                    if (PictureFiles[j].FolderIndex == i) { config.Dest.Add(j); }
+                    if (PictureFiles[j].FolderIndexes.IndexOf(i) != -1) { config.Dest.Add(j); }
                 }
             }
         }
@@ -1210,6 +1404,38 @@ namespace PictureViewer
                     images.RemoveAt(i);
                 }
             }
+        }
+        private void CloseImage()
+        {
+            for (int i = images.Count - 1; i >= 0; i--)
+            {
+                images[i].Close();
+                images.RemoveAt(i);
+            }
+        }
+        private void CheckPictureFiles()
+        {
+            for (int i = PictureFiles.Count - 1; i >= 0; i--)
+            {
+                if (!File.Exists(PictureFiles[i].Full)) { PictureFiles.RemoveAt(i); }
+            }
+        }
+        private void InitPicture(ref PICTURE p)
+        {
+            p.Loaded = false;
+            p.Full = "";
+            p.Path = "";
+            p.Name = "";
+            p.FolderIndexes = null;
+            p.FileIndexes = null;
+            p.SubIndexes = null;
+            p.Height = 0;
+            p.Width = 0;
+            p.Length = 0;
+            p.Row = 0;
+            p.Col = 0;
+            p.GraysR = null;
+            p.GraysC = null;
         }
 
         private Bitmap CopyPicture(Bitmap sour, double rate)

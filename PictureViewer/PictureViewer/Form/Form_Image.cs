@@ -47,9 +47,11 @@ namespace PictureViewer
         private bool nextShowBig = false;
         private bool exist;
         private bool error;
-
-        private Bitmap sour = null;
-        private Bitmap dest = null;
+        private bool isPic;
+        private bool isGif;
+        
+        private Image sour = null;
+        private Image dest = null;
         private string tip1 = null;
         private string tip2 = null;
 
@@ -85,8 +87,11 @@ namespace PictureViewer
             if (!File.Exists(full)) { path = Class.FileOperate.getExePath(); name = "err.tip"; }
             exist = File.Exists(full);
 
+            isPic = Class.FileOperate.IsPicture(type);
+            isGif = Class.FileOperate.IsGif(type);
+
             FillTipError();
-            if (!error) { sour = (Bitmap)Image.FromFile(full); }
+            if (!error) { sour = Image.FromFile(full); }
 
             int xinit = MousePosition.X - this.Width / 2;
             int yinit = MousePosition.Y - this.Height / 2;
@@ -105,26 +110,51 @@ namespace PictureViewer
         }
         private void Form_Image_MouseWheel(object sender, MouseEventArgs e)
         {
-            if (this.HorizontalScroll.Visible || this.VerticalScroll.Visible) { return; }
-            if (sour == null) { return; }
+            if (isGif)
+            {
+                if (sour == null) { return; }
 
-            // 屏幕参数
-            int sh = Screen.PrimaryScreen.Bounds.Height;
-            int sw = Screen.PrimaryScreen.Bounds.Width;
+                // 屏幕参数
+                int sh = Screen.PrimaryScreen.Bounds.Height;
+                int sw = Screen.PrimaryScreen.Bounds.Width;
 
-            // 当前缩放
-            double rate1 = (double)this.pictureBox1.Height / sh * 100;
-            double rate2 = (double)this.pictureBox1.Width / sw * 100;
-            int currRate = (int)Math.Max(rate1, rate2);
+                // 当前缩放
+                double rate1 = (double)this.Height / sh * 100;
+                double rate2 = (double)this.Width / sw * 100;
+                double currRate = Math.Max(rate1, rate2);
 
-            // 下一次的显示比例
-            if (e.Delta > 0) { rate = currRate + 5; }
-            if (e.Delta < 0) { rate = currRate - 5; }
-            if (rate <= 10) { rate = 10; }
-            if (rate >= 100) { rate = 100; }
-            
-            // 显示图片
-            ShowPictureR();
+                // 下一次的显示比例
+                if (e.Delta > 0) { rate = currRate + 5; }
+                if (e.Delta < 0) { rate = currRate - 5; }
+                if (rate <= 10) { rate = 10; }
+                if (rate >= 100) { rate = 100; }
+
+                // 显示图片
+                ShowPictureS();
+            }
+            else
+            {
+                if (this.HorizontalScroll.Visible || this.VerticalScroll.Visible) { return; }
+                if (sour == null) { return; }
+
+                // 屏幕参数
+                int sh = Screen.PrimaryScreen.Bounds.Height;
+                int sw = Screen.PrimaryScreen.Bounds.Width;
+
+                // 当前缩放
+                double rate1 = (double)this.pictureBox1.Height / sh * 100;
+                double rate2 = (double)this.pictureBox1.Width / sw * 100;
+                double currRate = Math.Max(rate1, rate2);
+
+                // 下一次的显示比例
+                if (e.Delta > 0) { rate = currRate + 5; }
+                if (e.Delta < 0) { rate = currRate - 5; }
+                if (rate <= 10) { rate = 10; }
+                if (rate >= 100) { rate = 100; }
+
+                // 显示图片
+                ShowPictureR();
+            }
         }
         private void Form_Image_MouseDown(object sender, MouseEventArgs e)
         {
@@ -137,6 +167,13 @@ namespace PictureViewer
                 mouse.xScroll = this.HorizontalScroll.Value;
                 mouse.yScroll = this.VerticalScroll.Value;
             }
+            if (e.Button == MouseButtons.Right)
+            {
+                mouse.Down2 = true;
+                mouse.Up2 = false;
+                mouse.pDown2 = MousePosition;
+                mouse.pWindow = this.Location;
+            }
         }
         private void Form_Image_MouseUp(object sender, MouseEventArgs e)
         {
@@ -145,6 +182,12 @@ namespace PictureViewer
                 mouse.Down1 = false;
                 mouse.Up1 = true;
                 mouse.pUp1 = MousePosition;
+            }
+            if (e.Button == MouseButtons.Right)
+            {
+                mouse.Down2 = false;
+                mouse.Up2 = true;
+                mouse.pUp2 = MousePosition;
             }
         }
         private void Form_Image_MouseMove(object sender, MouseEventArgs e)
@@ -162,10 +205,17 @@ namespace PictureViewer
                 SetScrollW(mouse.xScroll - xmove);
                 SetScrollH(mouse.yScroll - ymove);
             }
+            if (mouse.Down2 && isGif)
+            {
+                int xmove = MousePosition.X - mouse.pDown2.X;
+                int ymove = MousePosition.Y - mouse.pDown2.Y;
+                this.Location = new Point(mouse.pWindow.X + xmove, mouse.pWindow.Y + ymove);
+            }
         }
         private void Form_Image_DoubleClicked(object sender, EventArgs e)
         {
             if (sour == null) { return; }
+            if (isGif) { return; }
 
             int ph = this.Height;
             int pw = this.Width;
@@ -188,6 +238,20 @@ namespace PictureViewer
                 ShowPictureS();
                 return;
             }
+            if (e.KeyValue == Class.Load.settings.FastKey_Image_FlipX)
+            {
+                if (this.HorizontalScroll.Visible || this.VerticalScroll.Visible) { return; }
+                sour.RotateFlip(RotateFlipType.RotateNoneFlipX);
+                ShowPictureS();
+                return;
+            }
+            if (e.KeyValue == Class.Load.settings.FastKey_Image_FlipY)
+            {
+                if (this.HorizontalScroll.Visible || this.VerticalScroll.Visible) { return; }
+                sour.RotateFlip(RotateFlipType.RotateNoneFlipY);
+                ShowPictureS();
+                return;
+            }
             if (e.KeyValue == Class.Load.settings.FastKey_Image_Enter)
             {
                 Form_Image_DoubleClicked(null, null);
@@ -203,7 +267,7 @@ namespace PictureViewer
 
             this.pictureBox1.Height = sour.Height;
             this.pictureBox1.Width = sour.Width;
-            this.pictureBox1.BackgroundImage = sour;
+            this.pictureBox1.Image = sour;
 
             double xrate = (double)xfocus / dest.Width;
             if (xrate < 0) { xrate = 0; }
@@ -227,7 +291,7 @@ namespace PictureViewer
             if (sour == null) { return; }
 
             #region 窗体大小
-
+            
             int sh = (int)(Screen.PrimaryScreen.Bounds.Height * rate / 100);
             int sw = (int)(Screen.PrimaryScreen.Bounds.Width * rate / 100);
             int centerw = this.Location.X + this.Width / 2;
@@ -236,18 +300,19 @@ namespace PictureViewer
             double h2h = (double)sh / sour.Height;
             double w2w = (double)sw / sour.Width;
             double x2x = Math.Min(h2h, w2w); if (x2x > 1) { x2x = 1; }
-
             int ph = (int)(sour.Height * x2x);
             int pw = (int)(sour.Width * x2x);
-
+            
             this.Height = ph; this.Width = pw;
             this.Location = new Point(centerw - pw / 2, centerh - ph / 2);
-            this.pictureBox1.Height = ph;
-            this.pictureBox1.Width = pw;
+            this.pictureBox1.Height = isGif ? sour.Height : ph;
+            this.pictureBox1.Width = isGif ? sour.Width : pw;
 
             #endregion
 
             #region 填充图片
+
+            if (isGif) { this.pictureBox1.Image = sour; return; }
 
             try { dest.Dispose(); } catch { }
             this.pictureBox1.BackgroundImage = null;
@@ -257,7 +322,7 @@ namespace PictureViewer
             g.DrawImage(sour, new Rectangle(0, 0, pw, ph), new Rectangle(0, 0, sour.Width, sour.Height), GraphicsUnit.Pixel);
             g.Dispose();
 
-            this.pictureBox1.BackgroundImage = dest;
+            this.pictureBox1.Image = dest;
 
             #endregion
         }
@@ -296,14 +361,14 @@ namespace PictureViewer
             g.DrawImage(sour, new Rectangle(0, 0, pw, ph), new Rectangle(0, 0, sour.Width, sour.Height), GraphicsUnit.Pixel);
             g.Dispose();
 
-            this.pictureBox1.BackgroundImage = dest;
+            this.pictureBox1.Image = dest;
 
             #endregion
         }
 
         private void FillTipError()
         {
-            if (type != 2 && type != 3)
+            if (!Class.FileOperate.IsPicture(type) && !Class.FileOperate.IsGif(type))
             {
                 tip1 = "[Error]: Select is not a Picture or Gif File";
                 tip2 = name + " : " + path;
@@ -322,6 +387,15 @@ namespace PictureViewer
             tip1 = path;
             tip2 = name;
             error = false;
+        }
+        private void LoadPicture()
+        {
+            try { sour.Dispose(); } catch { }
+            try { dest.Dispose(); } catch { }
+            this.pictureBox1.Image = null;
+
+            if (!File.Exists(full)) { return; }
+            sour = Image.FromFile(full);
         }
         private void SetScrollH(int value)
         {

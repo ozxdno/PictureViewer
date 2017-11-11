@@ -93,6 +93,10 @@ namespace PictureViewer.Class
             public int FastKey_Image_Esc;
             public int FastKey_Image_Enter;
             public int FastKey_Image_Rotate;
+            public int FastKey_Main_FlipX;
+            public int FastKey_Main_FlipY;
+            public int FastKey_Image_FlipX;
+            public int FastKey_Image_FlipY;
         }
 
         ///////////////////////////////////////////////////// private attribute ///////////////////////////////////////////////
@@ -168,6 +172,10 @@ namespace PictureViewer.Class
             public bool FastKey_Image_Esc;
             public bool FastKey_Image_Enter;
             public bool FastKey_Image_Rotate;
+            public bool FastKey_Main_FlipX;
+            public bool FastKey_Main_FlipY;
+            public bool FastKey_Image_FlipX;
+            public bool FastKey_Image_FlipY;
         }
 
         ///////////////////////////////////////////////////// public method ///////////////////////////////////////////////
@@ -292,6 +300,10 @@ namespace PictureViewer.Class
                     case "FastKey_Image_Esc": Found.FastKey_Image_Esc = ToInt(Item[1], ref settings.FastKey_Image_Esc); break;
                     case "FastKey_Image_Enter": Found.FastKey_Image_Enter = ToInt(Item[1], ref settings.FastKey_Image_Enter); break;
                     case "FastKey_Image_Rotate": Found.FastKey_Image_Rotate = ToInt(Item[1], ref settings.FastKey_Image_Rotate); break;
+                    case "FastKey_Image_FlipX": Found.FastKey_Image_FlipX = ToInt(Item[1], ref settings.FastKey_Image_FlipX); break;
+                    case "FastKey_Main_FlipX": Found.FastKey_Main_FlipX = ToInt(Item[1], ref settings.FastKey_Main_FlipX); break;
+                    case "FastKey_Image_FlipY": Found.FastKey_Image_FlipY = ToInt(Item[1], ref settings.FastKey_Image_FlipY); break;
+                    case "FastKey_Main_FlipY": Found.FastKey_Main_FlipY = ToInt(Item[1], ref settings.FastKey_Main_FlipY); break;
                     default: break;
                 }
 
@@ -364,36 +376,23 @@ namespace PictureViewer.Class
 
             #region 根目录
 
+            for (int i = RootPath.Count - 1; i >= 0; i--)
+            {
+                for (int j = 0; j < i; j++)
+                {
+                    if (RootPath[i] == RootPath[j]) { RootPath.RemoveAt(i); break; }
+                }
+            }
+
             for (int i = 0; i < RootPath.Count; i++)
             {
                 FileOperate.ROOT root = new FileOperate.ROOT();
                 root.Path = RootPath[i];
                 root.Name = new List<string>();
-                if (!Directory.Exists(root.Path)) { continue; }
-
-                DirectoryInfo dir = new DirectoryInfo(root.Path);
-                FileInfo[] files = dir.GetFiles();
-                DirectoryInfo[] folders = dir.GetDirectories();
-
-                foreach (DirectoryInfo folder in folders) { root.Name.Add(folder.Name); }
-                foreach (FileInfo file in files)
-                { if (FileOperate.IsSupport(FileOperate.getExtension(file.Name))) { root.Name.Add(file.Name); } }
-
                 FileOperate.RootFiles.Add(root);
             }
 
-            #endregion
-
-            #region 去除重复根目录
-
-            for (int i = FileOperate.RootFiles.Count - 1; i >= 0; i--)
-            {
-                for (int j = 0; j < i; j++)
-                {
-                    if (FileOperate.RootFiles[i].Path != FileOperate.RootFiles[j].Path) { continue; }
-                    FileOperate.RootFiles.RemoveAt(i); break;
-                }
-            }
+            FileOperate.Reload();
 
             #endregion
 
@@ -494,10 +493,10 @@ namespace PictureViewer.Class
 
             if (!Found.FastKey_Find_Esc) { settings.FastKey_Find_Esc = (int)ConsoleKey.Escape; }
             if (!Found.FastKey_Find_Export) { settings.FastKey_Find_Export = (int)ConsoleKey.Delete; }
-            if (!Found.FastKey_Find_U) { settings.FastKey_Find_U = (int)ConsoleKey.UpArrow; }
-            if (!Found.FastKey_Find_D) { settings.FastKey_Find_D = (int)ConsoleKey.DownArrow; }
-            if (!Found.FastKey_Find_L) { settings.FastKey_Find_L = (int)ConsoleKey.LeftArrow; }
-            if (!Found.FastKey_Find_R) { settings.FastKey_Find_R = (int)ConsoleKey.RightArrow; }
+            if (!Found.FastKey_Find_U) { settings.FastKey_Find_U = (int)ConsoleKey.W; }
+            if (!Found.FastKey_Find_D) { settings.FastKey_Find_D = (int)ConsoleKey.S; }
+            if (!Found.FastKey_Find_L) { settings.FastKey_Find_L = (int)ConsoleKey.A; }
+            if (!Found.FastKey_Find_R) { settings.FastKey_Find_R = (int)ConsoleKey.D; }
 
             if (!Found.FastKey_Search_Esc) { settings.FastKey_Search_Esc = (int)ConsoleKey.Escape; }
             if (!Found.FastKey_Search_Enter) { settings.FastKey_Search_Enter = (int)ConsoleKey.Enter; }
@@ -507,6 +506,11 @@ namespace PictureViewer.Class
             if (!Found.FastKey_Image_Esc) { settings.FastKey_Image_Esc = (int)ConsoleKey.Escape; }
             if (!Found.FastKey_Image_Enter) { settings.FastKey_Image_Enter = (int)ConsoleKey.Enter; }
             if (!Found.FastKey_Image_Rotate) { settings.FastKey_Image_Rotate = (int)ConsoleKey.R; }
+
+            if (!Found.FastKey_Image_FlipX) { settings.FastKey_Image_FlipX = (int)ConsoleKey.X; }
+            if (!Found.FastKey_Main_FlipX) { settings.FastKey_Main_FlipX = (int)ConsoleKey.X; }
+            if (!Found.FastKey_Image_FlipY) { settings.FastKey_Image_FlipY = (int)ConsoleKey.Y; }
+            if (!Found.FastKey_Main_FlipY) { settings.FastKey_Main_FlipY = (int)ConsoleKey.Y; }
 
             #endregion
 
