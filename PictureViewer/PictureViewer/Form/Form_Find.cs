@@ -866,7 +866,8 @@ namespace PictureViewer
             string path = isSub ? Form_Main.config.Path + "\\" + Form_Main.config.Name : Form_Main.config.Path;
             string name = isSub ? Form_Main.config.SubName : Form_Main.config.Name;
             string full = path + "\\" + name;
-            if (File.Exists(full))
+            int type = isSub ? Form_Main.config.SubType : Form_Main.config.Type;
+            if (File.Exists(full) && (FileOperate.IsPicture(type) || FileOperate.IsGif(type)))
             {
                 Bitmap temp = (Bitmap)Image.FromFile(full);
 
@@ -906,7 +907,7 @@ namespace PictureViewer
                 temp.Dispose();
                 
                 this.pictureBox2.BackgroundImage = SourPic;
-                this.toolTip2.ToolTipTitle = "[Error]: Source file is not exist !";
+                this.toolTip2.ToolTipTitle = "[Error]: Source file is not a picture or not exist !";
                 this.toolTip2.SetToolTip(this.pictureBox2, tempName);
             }
         }

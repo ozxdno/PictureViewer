@@ -3091,6 +3091,8 @@ namespace PictureViewer
             config.SourPicture = null;
             config.DestPicture = null;
             this.pictureBox1.Image = null;
+            if (this.axWindowsMediaPlayer1.playState == WMPLib.WMPPlayState.wmppsPlaying)
+            { this.axWindowsMediaPlayer1.Ctlcontrols.stop(); }
 
             // 开始查询
             this.Visible = false;
