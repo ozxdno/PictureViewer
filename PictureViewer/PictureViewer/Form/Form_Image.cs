@@ -23,7 +23,16 @@ namespace PictureViewer
         /// </summary>
         public string Name;
 
-        public Form_Image(string path, string name, double rate = 80)
+        /// <summary>
+        /// 打开一个 图片/GIF 文件的副本。location - 打开位置：
+        /// 0 - 当前鼠标位置位于图片中间；
+        /// 1 - 当前鼠标位置位于图片左上角；
+        /// </summary>
+        /// <param name="path">文件路径</param>
+        /// <param name="name">文件名称</param>
+        /// <param name="rate">缩放比率</param>
+        /// <param name="location">打开位置</param>
+        public Form_Image(string path, string name, double rate = 80, int location = 0)
         {
             InitializeComponent();
 
@@ -33,6 +42,7 @@ namespace PictureViewer
             this.sourpath = path == null ? "" : path;
             this.sourname = name == null ? "" : name;
             this.rate = rate;
+            this.location = location;
 
             this.MouseWheel += Form_Image_MouseWheel;
         }
@@ -49,7 +59,8 @@ namespace PictureViewer
         private bool error;
         private bool isPic;
         private bool isGif;
-        
+        private int location;
+
         private Image sour = null;
         private Image dest = null;
         private string tip1 = null;
@@ -58,6 +69,9 @@ namespace PictureViewer
         private MOUSE mouse;
         private struct MOUSE
         {
+            public int CurrentDown;
+            public int CurrentUp;
+
             public bool Down1;
             public bool Down2;
             public bool Down3;
@@ -93,9 +107,16 @@ namespace PictureViewer
             FillTipError();
             if (!error) { sour = Image.FromFile(full); }
 
-            int xinit = MousePosition.X - this.Width / 2;
-            int yinit = MousePosition.Y - this.Height / 2;
-            this.Location = new Point(xinit, yinit);
+            if (location == 0)
+            {
+                int xinit = MousePosition.X - this.Width / 2;
+                int yinit = MousePosition.Y - this.Height / 2;
+                this.Location = new Point(xinit, yinit);
+            }
+            if (location == 1)
+            {
+                this.Location = MousePosition;
+            }
             
             ShowPictureS();
 
@@ -158,10 +179,9 @@ namespace PictureViewer
         }
         private void Form_Image_MouseDown(object sender, MouseEventArgs e)
         {
-            if (mouse.Down1 || mouse.Down2 || mouse.Down3) { return; }
-
-            if (e.Button == MouseButtons.Left)
+            if (e.Button == MouseButtons.Left && !mouse.Down2)
             {
+                mouse.CurrentDown = 1;
                 mouse.Down1 = true;
                 mouse.Up1 = false;
                 mouse.pDown1 = MousePosition;
@@ -169,8 +189,9 @@ namespace PictureViewer
                 mouse.xScroll = this.HorizontalScroll.Value;
                 mouse.yScroll = this.VerticalScroll.Value;
             }
-            if (e.Button == MouseButtons.Right)
+            if (e.Button == MouseButtons.Right && !mouse.Down1)
             {
+                mouse.CurrentDown = 2;
                 mouse.Down2 = true;
                 mouse.Up2 = false;
                 mouse.pDown2 = MousePosition;
@@ -181,12 +202,14 @@ namespace PictureViewer
         {
             if (e.Button == MouseButtons.Left)
             {
+                mouse.CurrentUp = 1;
                 mouse.Down1 = false;
                 mouse.Up1 = true;
                 mouse.pUp1 = MousePosition;
             }
             if (e.Button == MouseButtons.Right)
             {
+                mouse.CurrentUp = 2;
                 mouse.Down2 = false;
                 mouse.Up2 = true;
                 mouse.pUp2 = MousePosition;
@@ -216,6 +239,7 @@ namespace PictureViewer
         }
         private void Form_Image_DoubleClicked(object sender, EventArgs e)
         {
+            if (mouse.CurrentDown != 1) { return; }
             if (sour == null) { return; }
             if (isGif) { return; }
 

@@ -193,9 +193,17 @@ namespace PictureViewer
         /// </summary>
         private int MinWindowSize;
         /// <summary>
+        /// 鼠标位于拉伸窗体的位置
+        /// </summary>
+        private bool Resizable;
+        /// <summary>
         /// 该窗体是否被激活
         /// </summary>
         private bool IsActive;
+        /// <summary>
+        /// 图片窗口
+        /// </summary>
+        private List<Form_Image> Images = new List<Form_Image>();
         /// <summary>
         /// 鼠标信息
         /// </summary>
@@ -239,6 +247,13 @@ namespace PictureViewer
             public Point pWindow;
             public int xScroll;
             public int yScroll;
+
+            public bool Resizing;
+            public Size Size;
+            public bool ResizeL;
+            public bool ResizeR;
+            public bool ResizeU;
+            public bool ResizeD;
         }
         /// <summary>
         /// 方向键信息
@@ -365,11 +380,13 @@ namespace PictureViewer
 
         private void Form_Loaded(object sender, EventArgs e)
         {
-            #region 配置文件
+            #region 配置文件、图片文件
 
             config.ConfigPath = FileOperate.getExePath();
             config.ConfigName = "pv.pvini";
             Class.Load.Load_CFG();
+
+            Class.Load.Load_PIC();
 
             #endregion
 
@@ -580,7 +597,9 @@ namespace PictureViewer
             Class.Save.settings.Form_Main_Play_Rand = play.Rand;
             Class.Save.settings.Form_Main_Play_ShowTime = (int)play.ShowTime;
 
-            Timer.Close(); Class.Save.Save_CFG();
+            Timer.Close();
+            Class.Save.Save_CFG();
+            Class.Save.Save_PIC();
         }
         private void Form_KeyDown(object sender, KeyEventArgs e)
         {
@@ -740,6 +759,16 @@ namespace PictureViewer
 
             if (e.KeyValue == Class.Load.settings.FastKey_Main_Esc)
             {
+                int type = config.IsSub ? config.SubType : config.Type;
+                if (FileOperate.IsPicture(type) || FileOperate.IsGif(type))
+                {
+                    if (!UseBoard && Images.Count != 0)
+                    {
+                        if (DialogResult.Cancel == MessageBox.Show("该界面为主界面，是否退出？", "确认退出", MessageBoxButtons.OKCancel))
+                        { return; }
+                    }
+                }
+
                 this.Visible = false; Form_Closed(null, null);
                 Application.ExitThread();
             }
@@ -831,20 +860,27 @@ namespace PictureViewer
         {
             if (e.nButton == 1)
             {
-                this.Cursor = Cursors.Default;
                 mouse.Down = true;
                 mouse.Up = false;
                 mouse.pDown = MousePosition;
                 mouse.tDown = TimeCount;
                 mouse.nDown++;
+
                 mouse.pWindow = this.Location;
+                mouse.xScroll = this.HorizontalScroll.Value;
+                mouse.yScroll = this.VerticalScroll.Value;
+
+                mouse.Resizing = Resizable;
+                mouse.Size = this.Size;
             }
 
             if (e.nButton == 2)
             {
                 mouse.Down2 = true;
                 mouse.Up2 = false;
+                mouse.pDown2 = MousePosition;
                 mouse.tDown2 = TimeCount;
+                mouse.pWindow = this.Location;
             }
         }
         private void WMP_MouseUp(object sender, AxWMPLib._WMPOCXEvents_MouseUpEvent e)
@@ -853,21 +889,25 @@ namespace PictureViewer
             {
                 if (mouse.tUp != 0 && TimeCount - mouse.tUp < 20)
                 { Form_Main_DoubleClick(null, null); }
-
-                this.Cursor = Cursors.Default;
+                
                 mouse.Down = false;
                 mouse.Up = true;
                 mouse.pUp = MousePosition;
                 mouse.tUp = TimeCount;
                 mouse.nUp++;
+
+                mouse.Resizing = false;
             }
             if (e.nButton == 2)
             {
-                this.contextMenuStrip1.Show(MousePosition);
-
                 mouse.Down2 = false;
                 mouse.Up2 = true;
+                mouse.pUp2 = MousePosition;
                 mouse.tUp2 = TimeCount;
+
+                bool showMenu = Math.Abs(mouse.pDown2.X - mouse.pUp2.X) < 10 &&
+                    Math.Abs(mouse.pDown2.Y - mouse.pUp2.Y) < 10;
+                if (showMenu) { this.contextMenuStrip1.Show(MousePosition); }
             }
         }
         
@@ -881,95 +921,21 @@ namespace PictureViewer
 
             #region 判断位置是否摆正
 
-            bool PicWindowIsOK = true;
-            bool VidWindowIsOK = true;
-
-            if (true)
-            {
-                int rech = ClientHeight;
-                int recw = ClientWidth;
-                int pich = this.pictureBox1.Height;
-                int picw = this.pictureBox1.Width;
-                int xloc = this.pictureBox1.Location.X;
-                int yloc = this.pictureBox1.Location.Y;
-
-                if (recw <= picw) { PicWindowIsOK = PicWindowIsOK && xloc <= 1; }
-                if (rech <= pich) { PicWindowIsOK = PicWindowIsOK && yloc <= 1; }
-                if (recw > picw) { PicWindowIsOK = PicWindowIsOK && Math.Abs((recw - picw) / 2 - xloc) < 2; }
-                if (rech > pich) { PicWindowIsOK = PicWindowIsOK && Math.Abs((rech - pich) / 2 - yloc) < 2; }
-                if (UseShapeWindow) { PicWindowIsOK = PicWindowIsOK && pich >= rech && yloc <= 0; }
-                if (UseShapeWindow) { PicWindowIsOK = PicWindowIsOK && picw >= recw && xloc <= 0; }
-            }
-            if (true)
-            {
-                int rech = ClientHeight;
-                int recw = ClientWidth;
-                int vidh = this.axWindowsMediaPlayer1.Height;
-                int vidw = this.axWindowsMediaPlayer1.Width;
-                int xloc = this.axWindowsMediaPlayer1.Location.X;
-                int yloc = this.axWindowsMediaPlayer1.Location.Y;
-
-                VidWindowIsOK = VidWindowIsOK && xloc <= 1 && recw - vidw <= 4;
-                VidWindowIsOK = VidWindowIsOK && yloc <= 1 && rech - vidh <= 4;
-            }
-
+            bool PicWindowIsOK = !NeedCorrectPictureBox();
+            bool VidWindowIsOK = !NeedCorrectWMP();
+            
             #endregion
 
             int type = config.IsSub ? config.SubType : config.Type;
-
-            #region -1 型文件的双击操作
-
-            if (FileOperate.IsError(type))
-            {
-                if (!PicWindowIsOK) { ShowPicture(null, null, false); return; }
-
-                int rech = ClientHeight;
-                int recw = ClientWidth;
-                int pich = config.SourPicture.Height;
-                int picw = config.SourPicture.Width;
-
-                if (rech >= pich && recw >= picw) { ShowPictureS(); return; }
-
-                NextShowBigPicture = !NextShowBigPicture;
-                if (NextShowBigPicture) { ShowPictureB(); } else { ShowPictureS(); }
-                return;
-            }
-
-            #endregion
-
-            #region 0 型文件双击操作
-
-            if (FileOperate.IsUnsupport(type))
-            {
-                if (!PicWindowIsOK) { ShowPicture(null, null, false); return; }
-
-                int rech = ClientHeight;
-                int recw = ClientWidth;
-                int pich = config.SourPicture.Height;
-                int picw = config.SourPicture.Width;
-
-                if (rech >= pich && recw >= picw) { ShowPictureS(); return; }
-
-                NextShowBigPicture = !NextShowBigPicture;
-                if (NextShowBigPicture) { ShowPictureB(); } else { ShowPictureS(); }
-                return;
-            }
-
-            #endregion
             
             #region 2 型文件的双击操作
 
-            if (FileOperate.IsPicture(type))
+            if (FileOperate.IsPicture(type) || FileOperate.IsUnsupport(type) || FileOperate.IsError(type))
             {
-                if (!PicWindowIsOK) { ShowPicture(null, null, false); return; }
-
-                int rech = ClientHeight;
-                int recw = ClientWidth;
-                int pich = config.SourPicture.Height;
-                int picw = config.SourPicture.Width;
-
-                if (rech >= pich && recw >= picw) { ShowPictureS(); return; }
-
+                if (!PicWindowIsOK) { ShowPictureS(); NextShowBigPicture = false; return; }
+                if (config.SourPicture.Height <= ClientHeight && config.SourPicture.Width <= ClientWidth)
+                { ShowPictureS(); return; }
+                
                 NextShowBigPicture = !NextShowBigPicture;
                 if (NextShowBigPicture) { ShowPictureB(); } else { ShowPictureS(); }
                 return;
@@ -1052,7 +1018,6 @@ namespace PictureViewer
         {
             if (e.Button == MouseButtons.Left && !mouse.Down2)
             {
-                this.Cursor = Cursors.Default;
                 mouse.Down = true;
                 mouse.Up = false;
                 mouse.pDown = MousePosition;
@@ -1061,6 +1026,9 @@ namespace PictureViewer
                 mouse.pWindow = this.Location;
                 mouse.xScroll = this.HorizontalScroll.Value;
                 mouse.yScroll = this.VerticalScroll.Value;
+
+                mouse.Resizing = Resizable;
+                mouse.Size = this.Size;
             }
 
             if (e.Button == MouseButtons.Right && !mouse.Down)
@@ -1074,25 +1042,27 @@ namespace PictureViewer
         }
         private void Form_MouseUp(object sender, MouseEventArgs e)
         {
-            if (e.Button == MouseButtons.Left)
+            if (e.Button == MouseButtons.Left && !mouse.Down2)
             {
-                this.Cursor = Cursors.Default;
                 mouse.Down = false;
                 mouse.Up = true;
                 mouse.pUp = MousePosition;
                 mouse.tUp = TimeCount;
+
+                mouse.Resizing = false;
             }
 
-            if (e.Button == MouseButtons.Right)
+            if (e.Button == MouseButtons.Right && !mouse.Down)
             {
                 mouse.Down2 = false;
                 mouse.Up2 = true;
                 mouse.pUp2 = MousePosition;
                 mouse.tUp2 = TimeCount;
 
-                this.contextMenuStrip1.Visible =
-                    Math.Abs(mouse.pDown2.X - mouse.pUp2.X) < 10 &&
+                // 显示右键菜单
+                bool showMenu = Math.Abs(mouse.pDown2.X - mouse.pUp2.X) < 10 &&
                     Math.Abs(mouse.pDown2.Y - mouse.pUp2.Y) < 10;
+                this.contextMenuStrip1.Visible = showMenu;
             }
         }
         private void Form_MouseWheel(object sender, MouseEventArgs e)
@@ -1165,6 +1135,7 @@ namespace PictureViewer
 
             if (FileOperate.IsGif(type))
             {
+                return; // 该功能会造成歧义，暂时取消。
                 if (this.lockToolStripMenuItem.Checked) { return; }
                 if (config.SourPicture == null) { return; }
                 if (!UseShapeWindow) { return; }
@@ -1244,6 +1215,15 @@ namespace PictureViewer
 
                 #endregion
 
+                #region 整理 Image 窗口
+
+                for (int i = Images.Count - 1; i >= 0; i--)
+                {
+                    if (Images[i].IsDisposed) { Images.RemoveAt(i); }
+                }
+
+                #endregion
+
                 #region 提示信息
 
                 bool inX = MousePosition.X >= this.Location.X && MousePosition.X <= this.Location.X + this.Width;
@@ -1263,6 +1243,7 @@ namespace PictureViewer
                         hover > 20 &&
                         !mouse.Down &&
                         !mouse.Down2 &&
+                        !Resizable &&
                         TimeCount - mouse.tDown > 50 &&
                         TimeCount - mouse.tDown2 > 50 &&
                         TimeCount - mouse.tUp > 20 &&
@@ -1299,6 +1280,7 @@ namespace PictureViewer
                     }
 
                     if (hover > pause ||
+                        Resizable ||
                         TimeCount - mouse.tDown < 50 ||
                         TimeCount - mouse.tDown2 < 50 ||
                         TimeCount - mouse.tUp < 20 ||
@@ -1580,9 +1562,84 @@ namespace PictureViewer
 
                 SetScrollW(scrollw); SetScrollH(scrollh);
 
+                int disL = MousePosition.X - this.Location.X;
+                int disR = this.Location.X + this.Width - MousePosition.X;
+                int disU = MousePosition.Y - this.Location.Y;
+                int disD = this.Location.Y + this.Height - MousePosition.Y;
+                int dis0 = 3;
+
+                Resizable =
+                    (disL >= -dis0 && disL <= dis0) ||
+                    ((disR >= -dis0 && disR <= dis0) && !this.VerticalScroll.Visible) ||
+                    (disU >= -dis0 && disU <= dis0) ||
+                    ((disD >= -dis0 && disD <= dis0) && !this.HorizontalScroll.Visible);
+                Resizable = Resizable && !UseBoard && IsActive;
+
+                #region 图标 - 可以调整窗体大小
+
+                if (Resizable && !mouse.Down)
+                {
+                    bool resizeL = disL >= -dis0 && disL <= dis0;
+                    bool resizeR = disR >= -dis0 && disR <= dis0 && !this.VerticalScroll.Visible;
+                    bool resizeU = disU >= -dis0 && disU <= dis0;
+                    bool resizeD = disD >= -dis0 && disD <= dis0 && !this.HorizontalScroll.Visible;
+                    
+                    if (resizeL && resizeR) { resizeL = disL < disR; resizeR = !resizeL; }
+                    if (resizeU && resizeD) { resizeU = disU < disD; resizeD = !resizeU; }
+
+                    if (resizeL && !resizeU && !resizeD) { this.Cursor = Cursors.SizeWE; }
+                    if (resizeR && !resizeU && !resizeD) { this.Cursor = Cursors.SizeWE; }
+                    if (resizeU && !resizeL && !resizeR) { this.Cursor = Cursors.SizeNS; }
+                    if (resizeD && !resizeL && !resizeR) { this.Cursor = Cursors.SizeNS; }
+
+                    if (resizeL && resizeU) { this.Cursor = Cursors.SizeNWSE; }
+                    if (resizeL && resizeD) { this.Cursor = Cursors.SizeNESW; }
+                    if (resizeR && resizeU) { this.Cursor = Cursors.SizeNESW; }
+                    if (resizeR && resizeD) { this.Cursor = Cursors.SizeNWSE; }
+
+                    mouse.ResizeL = resizeL;
+                    mouse.ResizeR = resizeR;
+                    mouse.ResizeU = resizeU;
+                    mouse.ResizeD = resizeD;
+                }
+
+                if (!mouse.Down && !Resizable && !UseBoard)
+                {
+                    this.Cursor = Cursors.Default;
+                }
+
+                #endregion
+
+                #region 更改窗体大小
+
+                if (mouse.Resizing && mouse.Down)
+                {
+                    int xmove = MousePosition.X - mouse.pDown.X;
+                    int ymove = MousePosition.Y - mouse.pDown.Y;
+
+                    if (xmove != 0 || ymove != 0)
+                    {
+                        int resizeh = mouse.Size.Height;
+                        int resizew = mouse.Size.Width;
+                        int xloc = mouse.pWindow.X;
+                        int yloc = mouse.pWindow.Y;
+                        
+                        if (mouse.ResizeL) { resizew -= xmove; xloc += xmove; }
+                        if (mouse.ResizeR) { resizew += xmove; }
+                        if (mouse.ResizeU) { resizeh -= ymove; yloc += ymove; }
+                        if (mouse.ResizeD) { resizeh += ymove; }
+
+                        this.Height = resizeh;
+                        this.Width = resizew;
+                        this.Location = new Point(xloc, yloc);
+                    }
+                }
+
+                #endregion
+
                 #region 拖拽窗体
 
-                if (!this.HorizontalScroll.Visible && !this.VerticalScroll.Visible && mouse.Down)
+                if (!mouse.Resizing && !this.HorizontalScroll.Visible && !this.VerticalScroll.Visible && mouse.Down)
                 {
                     int xmove = MousePosition.X - mouse.pDown.X;
                     int ymove = MousePosition.Y - mouse.pDown.Y;
@@ -1593,7 +1650,7 @@ namespace PictureViewer
 
                 #region 右键拖拽窗体
 
-                if (mouse.Down2 && this.HorizontalScroll.Visible && this.VerticalScroll.Visible)
+                if (!mouse.Resizing && mouse.Down2 && (this.HorizontalScroll.Visible || this.VerticalScroll.Visible))
                 {
                     int xmove = MousePosition.X - mouse.pDown2.X;
                     int ymove = MousePosition.Y - mouse.pDown2.Y;
@@ -1604,7 +1661,7 @@ namespace PictureViewer
 
                 #region 拖拽图片
 
-                if ((this.HorizontalScroll.Visible || this.VerticalScroll.Visible) && mouse.Down)
+                if (!mouse.Resizing && (this.HorizontalScroll.Visible || this.VerticalScroll.Visible) && mouse.Down)
                 {
                     int xS = MousePosition.X - mouse.pDown.X;
                     int yS = MousePosition.Y - mouse.pDown.Y;
@@ -2028,18 +2085,17 @@ namespace PictureViewer
             {
                 int ch = ClientHeight;
                 int cw = ClientWidth;
-                double rate1 = (double)ch / config.SourPicture.Height;
-                double rate2 = (double)cw / config.SourPicture.Width;
-                double rate = Math.Min(rate1, rate2);
-                if (rate > 1) { rate = 1; }
+                int sh = config.SourPicture.Height;
+                int sw = config.SourPicture.Width;
 
-                int shapeh = (int)(config.SourPicture.Height * rate);
-                int shapew = (int)(config.SourPicture.Width * rate);
+                int px = (cw - sw) / 2; if (px < 0) { px = 0; }
+                int py = (ch - sh) / 2; if (py < 0) { py = 0; }
 
                 SetScroll0();
-                this.pictureBox1.Location = new Point((cw - shapew) / 2, (ch - shapeh) / 2);
+                this.pictureBox1.Location = new Point(px, py);
                 this.pictureBox1.Height = config.SourPicture.Height;
                 this.pictureBox1.Width = config.SourPicture.Width;
+                SetScroll0();
                 if (load) { this.pictureBox1.Image = config.SourPicture; }
             }
 
@@ -2082,7 +2138,7 @@ namespace PictureViewer
             bool isMusic = FileOperate.IsMusic(FileOperate.getExtension(name));
             bool isVideo = FileOperate.IsVideo(FileOperate.getExtension(name));
 
-            if (isMusic)
+            if (isMusic && UseShapeWindow)
             {
                 int sh = Screen.PrimaryScreen.Bounds.Height * MinWindowSize / 100;
                 int sw = Screen.PrimaryScreen.Bounds.Width * MinWindowSize / 100;
@@ -2098,7 +2154,7 @@ namespace PictureViewer
                 ClientWidth = shapew;
                 this.Location = new Point(centerw - this.Width / 2, centerh - this.Height / 2);
             }
-            if (isVideo)
+            if (isVideo && UseShapeWindow)
             {
                 int sh = (int)(Screen.PrimaryScreen.Bounds.Height * ShapeWindowRate / 100);
                 int sw = (int)(Screen.PrimaryScreen.Bounds.Width * ShapeWindowRate / 100);
@@ -2232,7 +2288,13 @@ namespace PictureViewer
             #region 显示源图片
 
             SetScroll0();
-            this.pictureBox1.Location = new Point(0, 0);
+
+            int xpic = (ClientWidth - config.SourPicture.Width) / 2;
+            int ypic = (ClientHeight - config.SourPicture.Height) / 2;
+            if (xpic < 0) { xpic = 0; }
+            if (ypic < 0) { ypic = 0; }
+
+            this.pictureBox1.Location = new Point(xpic, ypic);
             this.pictureBox1.Height = config.SourPicture.Height;
             this.pictureBox1.Width = config.SourPicture.Width;
             this.pictureBox1.Image = config.SourPicture;
@@ -2397,10 +2459,14 @@ namespace PictureViewer
 
             int centerh = top + ClientHeight / 2;
             int centerw = lef + ClientWidth / 2;
+            int clienth = ClientHeight;
+            int clientw = ClientWidth;
 
             UseBoard = show;
             if (show) { this.FormBorderStyle = FormBorderStyle.Sizable; }
             else { this.FormBorderStyle = FormBorderStyle.None; }
+            ClientHeight = clienth;
+            ClientWidth = clientw;
 
             int pty = centerh - ClientHeight / 2 - (UseBoard ? ClientTop : 0);
             int ptx = centerw - ClientWidth / 2 - (UseBoard ? ClientLeft : 0);
@@ -2409,43 +2475,12 @@ namespace PictureViewer
 
             #region 判断位置
 
-            bool PicWindowIsOK = true;
-            bool VidWindowIsOK = true;
+            bool PicWindowIsOK = !NeedCorrectPictureBox();
+            bool VidWindowIsOK = !NeedCorrectWMP();
             int type = config.IsSub ? config.SubType : config.Type;
-            if (!FileOperate.IsStream(type))
-            {
-                int rech = ClientHeight;
-                int recw = ClientWidth;
-                int pich = this.pictureBox1.Height;
-                int picw = this.pictureBox1.Width;
-                int xloc = this.pictureBox1.Location.X;
-                int yloc = this.pictureBox1.Location.Y;
-
-                if (recw <= picw) { PicWindowIsOK = PicWindowIsOK && xloc <= 1; }
-                if (rech <= pich) { PicWindowIsOK = PicWindowIsOK && yloc <= 1; }
-                if (recw > picw) { PicWindowIsOK = PicWindowIsOK && Math.Abs((recw - picw) / 2 - xloc) < 2; }
-                if (rech > pich) { PicWindowIsOK = PicWindowIsOK && Math.Abs((rech - pich) / 2 - yloc) < 2; }
-                if (UseShapeWindow) { PicWindowIsOK = PicWindowIsOK && pich >= rech && yloc <= 0; }
-                if (UseShapeWindow) { PicWindowIsOK = PicWindowIsOK && picw >= recw && xloc <= 0; }
-
-                if (!PicWindowIsOK) { ShowPicture(null, null, false); }
-            }
-            if (FileOperate.IsStream(type))
-            {
-                int rech = ClientHeight;
-                int recw = ClientWidth;
-                int vidh = this.axWindowsMediaPlayer1.Height;
-                int vidw = this.axWindowsMediaPlayer1.Width;
-                int xloc = this.axWindowsMediaPlayer1.Location.X;
-                int yloc = this.axWindowsMediaPlayer1.Location.Y;
-
-                VidWindowIsOK = VidWindowIsOK && xloc == 1 && recw - vidw == 2;
-                VidWindowIsOK = VidWindowIsOK && yloc == 1 && rech - vidh == 2;
-
-                string name = config.IsSub ? config.SubName : config.Name;
-
-                if (!VidWindowIsOK) { ShowVideo(null, name, false); }
-            }
+            string name = config.IsSub ? config.SubName : config.Name;
+            if (!FileOperate.IsStream(type) && !PicWindowIsOK) { ShowPictureS(); }
+            if (FileOperate.IsStream(type) && !VidWindowIsOK) { ShowVideo(null, name, false); }
 
             #endregion
         }
@@ -2495,6 +2530,67 @@ namespace PictureViewer
             this.HorizontalScroll.Value = value;
         }
 
+        private bool NeedCorrectPictureBox()
+        {
+            if (!this.pictureBox1.Visible) { return false; }
+            if (!NextShowBigPicture && (this.HorizontalScroll.Visible || this.VerticalScroll.Visible)) { return true; }
+
+            int ph = this.pictureBox1.Height;
+            int pw = this.pictureBox1.Width;
+            int ch = ClientHeight;
+            int cw = ClientWidth;
+
+            int stdx = (cw - pw) / 2;
+            int stdy = (ch - ph) / 2;
+            if (stdx < 0) { stdx = 0; }
+            if (stdy < 0) { stdy = 0; }
+
+            int nowx = this.pictureBox1.Location.X;
+            int nowy = this.pictureBox1.Location.Y;
+            if (nowx < 0) { nowx = 0; }
+            if (nowy < 0) { nowy = 0; }
+
+            return stdx != nowx || stdy != nowy;
+        }
+        private bool NeedCorrectWMP()
+        {
+            if (!this.axWindowsMediaPlayer1.Visible) { return false; }
+            if (this.HorizontalScroll.Visible || this.VerticalScroll.Visible) { return true; }
+
+            string name = config.IsSub ? config.SubName : config.Name;
+            bool isMusic = FileOperate.IsMusic(FileOperate.getExtension(name));
+            bool isVideo = FileOperate.IsVideo(FileOperate.getExtension(name));
+
+            if (isMusic)
+            {
+                int ph = this.axWindowsMediaPlayer1.Height;
+                int pw = this.axWindowsMediaPlayer1.Width;
+                int ch = ClientHeight;
+                int cw = ClientWidth;
+
+                int stdx = (cw - pw) / 2;
+                int stdy = (ch - ph) / 2;
+                int nowx = this.axWindowsMediaPlayer1.Location.X;
+                int nowy = this.axWindowsMediaPlayer1.Location.Y;
+
+                return UseBoard ? (stdx != nowx || stdy != nowy) : (ph + 2 != ch || pw + 2 != cw);
+            }
+            if (isVideo)
+            {
+                int ph = this.axWindowsMediaPlayer1.Height;
+                int pw = this.axWindowsMediaPlayer1.Width;
+                int ch = ClientHeight;
+                int cw = ClientWidth;
+
+                int nowx = this.axWindowsMediaPlayer1.Location.X;
+                int nowy = this.axWindowsMediaPlayer1.Location.Y;
+
+                return ch != ph + 2 || cw != pw + 2 || nowx != 1 || nowy != 1;
+            }
+
+            return false;
+        }
+        
         private void SearchPlayFile()
         {
             play.FolderIndexes = new List<int>();
@@ -2588,6 +2684,45 @@ namespace PictureViewer
                 if (play.FolderIndexes[play.PlayIndexes[i]] != folderindex || play.FileIndexes[play.PlayIndexes[i]] != fileindex) { continue; }
                 play.Index = i;
                 if (subindex == -1 || play.SubIndexes[play.PlayIndexes[i]] == subindex) { break; }
+            }
+        }
+
+        private void CloseImages()
+        {
+            for (int i = Images.Count - 1; i >= 0; i--)
+            {
+                if (!Images[i].IsDisposed) { Images[i].Close(); }
+            }
+        }
+        private void CloseImages(string fullname)
+        {
+            for (int i = Images.Count - 1; i >= 0; i--)
+            {
+                if (!Images[i].IsDisposed && Images[i].Path + "\\" + Images[i].Name == fullname) { Images[i].Close(); }
+            }
+        }
+        private void CloseImages(string path, string name)
+        {
+            for (int i = Images.Count - 1; i >= 0; i--)
+            {
+                if (!Images[i].IsDisposed && Images[i].Path == path && Images[i].Name == name)
+                {
+                    Images[i].Close();
+                }
+            }
+        }
+        private void ShowImages()
+        {
+            for (int i = 0; i < Images.Count; i++)
+            {
+                if (!Images[i].IsDisposed) { Images[i].Show(); }
+            }
+        }
+        private void HideImages()
+        {
+            for (int i = 0; i < Images.Count; i++)
+            {
+                if (!Images[i].IsDisposed) { Images[i].Hide(); }
             }
         }
 
@@ -2804,6 +2939,8 @@ namespace PictureViewer
             if (config.Type != 5 && DialogResult.Cancel == MessageBox.Show("把 “" + name + "” 导出？", "确认导出", MessageBoxButtons.OKCancel))
             { return; }
 
+            CloseImages(path, name);
+
             // 释放资源
             if (config.SourPicture != null) { config.SourPicture.Dispose(); }
             if (config.DestPicture != null) { config.DestPicture.Dispose(); }
@@ -2876,6 +3013,7 @@ namespace PictureViewer
             
             for (int i = 0; i < config.SubFiles.Count; i++)
             {
+                CloseImages(config.Path + "\\" + config.Name + "\\" + config.SubFiles[i]);
                 File.Move(config.Path + "\\" + config.Name + "\\" + config.SubFiles[i], exportpath + "\\" + config.SubFiles[i]);
             }
             Directory.Delete(config.Path + "\\" + config.Name);
@@ -2919,7 +3057,7 @@ namespace PictureViewer
                 sourname = type == 1 ? config.SubFiles[config.SubIndex] : name;
                 destpath = sourpath;
                 destname = filename;
-
+                
                 string sourex = FileOperate.getExtension(sourname);
                 string destex = FileOperate.getExtension(destname);
                 if (destex != sourex) { destname += sourex; }
@@ -2929,6 +3067,8 @@ namespace PictureViewer
 
                 if (!File.Exists(sour)) { MessageBox.Show("源文件不存在！", "提示"); return; }
                 if (File.Exists(dest)) { MessageBox.Show("目标文件已存在！", "提示"); return; }
+
+                CloseImages(sour);
 
                 try { config.SourPicture.Dispose(); } catch { }
                 try { config.DestPicture.Dispose(); } catch { }
@@ -3066,10 +3206,14 @@ namespace PictureViewer
             this.hideToolStripMenuItem.Checked = next;
             this.contextMenuStrip1.Hide();
         }
-        private void RightMenu_BigPicture(object sender, EventArgs e)
+        private void RightMenu_New(object sender, EventArgs e)
         {
-            NextShowBigPicture = !this.bigPicToolStripMenuItem.Checked;
-            ShowCurrent();
+            int type = config.IsSub ? config.SubType : config.Type;
+            if (!FileOperate.IsPicture(type) && !FileOperate.IsGif(type)) { MessageBox.Show("新窗口不能打开 图片/GIF 以外的文件！", "提示"); return; }
+            string path = config.IsSub ? config.Path + "\\" + config.Name : config.Path;
+            string name = config.IsSub ? config.SubName : config.Name;
+            Images.Add(new Form_Image(path, name, ShapeWindowRate));
+            Images[Images.Count - 1].Show();
         }
         private void RightMenu_Find(object sender, EventArgs e)
         {
@@ -3096,12 +3240,14 @@ namespace PictureViewer
 
             // 开始查询
             this.Visible = false;
+            HideImages();
             Form_Find find = new Form_Find((Form_Find.MODE)mode);
             find.ShowDialog();
             //int ch = find.Location.Y + find.Height / 2;
             //int cw = find.Location.X + find.Width / 2;
             //this.Location = new Point(cw - this.Width / 2, ch - this.Height / 2);
             this.Visible = true;
+            ShowImages();
 
             // 更新主界面
             this.fullToolStripMenuItem.Checked = Class.Load.settings.Form_Main_Find_Full;

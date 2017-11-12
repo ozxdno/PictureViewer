@@ -15,6 +15,10 @@ namespace PictureViewer.Class
         /// 配置文件输入流
         /// </summary>
         public static StreamReader srCFG = null;
+        /// <summary>
+        /// 图片文件输入流
+        /// </summary>
+        public static StreamReader srPIC = null;
 
         /// <summary>
         /// 用户设置的历史记录
@@ -405,6 +409,30 @@ namespace PictureViewer.Class
             #endregion
         }
 
+        /// <summary>
+        /// 读取历史缓存的图片数据
+        /// </summary>
+        /// <returns></returns>
+        public static bool Load_PIC()
+        {
+            Form_Find.PictureFiles.Clear();
+
+            string fullpath = Form_Main.config.ConfigPath + "\\pvdata";
+            if (!File.Exists(fullpath)) { return false; }
+
+            srPIC = new StreamReader(fullpath);
+            while (!srPIC.EndOfStream)
+            {
+                Form_Find.PICTURE p = new Form_Find.PICTURE();
+                bool ok = ToPicture(srPIC.ReadLine(), ref p);
+                if (ok) { Form_Find.PictureFiles.Add(p); }
+            }
+
+            try { srPIC.Close(); } catch { }
+
+            return true;
+        }
+
         ///////////////////////////////////////////////////// private method ///////////////////////////////////////////////
 
         private static void SetDefault()
@@ -578,6 +606,40 @@ namespace PictureViewer.Class
                 return true;
             }
             catch { return false; }
+        }
+
+        private static bool ToPicture(string str, ref Form_Find.PICTURE p)
+        {
+            if (str == null || str.Length == 0) { return false; }
+
+            string[] items = str.Split(new char[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
+            if (items.Length != 2 * settings.Form_Find_Pixes + 7) { return false; }
+
+            p.Loaded = true;
+            p.Path = items[0];
+            p.Name = items[1];
+            p.Full = p.Path + "\\" + p.Name; //if (!File.Exists(p.Full)) { return false; }
+            p.FolderIndexes = new List<int>();
+            p.FileIndexes = new List<int>();
+            p.SubIndexes = new List<int>();
+            try { p.Height = int.Parse(items[2]); } catch { return false; }
+            try { p.Width = int.Parse(items[3]); } catch { return false; }
+            try { p.Length = long.Parse(items[4]); } catch { return false; }
+            try { p.Row = int.Parse(items[5]); } catch { return false; }
+            try { p.Col = int.Parse(items[6]); } catch { return false; }
+            p.GraysR = new int[settings.Form_Find_Pixes];
+            p.GraysC = new int[settings.Form_Find_Pixes];
+
+            for (int i = 0; i < settings.Form_Find_Pixes; i++)
+            {
+                try { p.GraysR[i] = int.Parse(items[7 + i]); } catch { return false; }
+            }
+            for (int i = 0; i < settings.Form_Find_Pixes; i++)
+            {
+                try { p.GraysC[i] = int.Parse(items[7 + settings.Form_Find_Pixes + i]); } catch { return false; }
+            }
+
+            return true;
         }
     }
 }

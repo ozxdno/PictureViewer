@@ -15,6 +15,10 @@ namespace PictureViewer.Class
         /// 配置文件输出流
         /// </summary>
         public static StreamWriter swCFG = null;
+        /// <summary>
+        /// 图片文件输出流
+        /// </summary>
+        public static StreamWriter swPIC = null;
 
         /// <summary>
         /// 保存用户设置信息
@@ -202,10 +206,61 @@ namespace PictureViewer.Class
                 swCFG.WriteLine("FastKey_Image_FlipY=" + Load.settings.FastKey_Image_FlipY.ToString());
                 swCFG.WriteLine("");
             }
-            catch { swCFG.Close(); return false; } swCFG.Close(); return true;
+            catch
+            {  }
+
+            try { swCFG.Close(); } catch { }
+
+            return true;
         }
 
+        /// <summary>
+        /// 保存 PICTURES 文件
+        /// </summary>
+        /// <returns></returns>
+        public static bool Save_PIC()
+        {
+            try
+            {
+                string fullpath = Form_Main.config.ConfigPath + "\\pvdata";
+                swPIC = new StreamWriter(fullpath, false);
+
+                for (int i = 0; i < Form_Find.PictureFiles.Count; i++)
+                {
+                    Form_Find.PICTURE p = Form_Find.PictureFiles[i];
+                    if (!p.Loaded) { continue; }
+                    if (!File.Exists(p.Full)) { continue; }
+
+                    swPIC.WriteLine(getPictureString(p));
+                }
+            }
+            catch
+            {
+
+            }
+
+            try { swPIC.Close(); } catch { }
+            return true;
+        }
 
         ///////////////////////////////////////////////////// private method ///////////////////////////////////////////////
+
+        private static string getPictureString(Form_Find.PICTURE p)
+        {
+            string pstr = "";
+
+            pstr += p.Path + "|";
+            pstr += p.Name + "|";
+            pstr += p.Height.ToString() + "|";
+            pstr += p.Width.ToString() + "|";
+            pstr += p.Length.ToString() + "|";
+            pstr += p.Row.ToString() + "|";
+            pstr += p.Col.ToString() + "|";
+
+            for (int i = 0; i < p.GraysR.Length; i++) { pstr += p.GraysR[i].ToString() + "|"; }
+            for (int i = 0; i < p.GraysC.Length; i++) { pstr += p.GraysC[i].ToString() + "|"; }
+
+            return pstr;
+        }
     }
 }

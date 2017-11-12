@@ -778,6 +778,8 @@ namespace PictureViewer
             {
                 PICTURE p = PictureFiles[config.Current[i]];
 
+                CloseImage(p.Path, p.Name);
+
                 string sour = p.Full;
                 string dest = p.Path + "\\" + name + " " + (i + 1).ToString() + FileOperate.getExtension(p.Name);
                 try { File.Move(sour, dest); } catch { continue; }
@@ -838,6 +840,8 @@ namespace PictureViewer
                 for (int j = 0; j < Results[i].Count; j++)
                 {
                     PICTURE p = PictureFiles[Results[i][j]];
+
+                    CloseImage(p.Path, p.Name);
 
                     string sour = p.Full;
                     string dest = p.Path + "\\" + nextName + " " + (j + 1).ToString() + FileOperate.getExtension(p.Name);
@@ -1399,7 +1403,7 @@ namespace PictureViewer
         {
             for (int i = images.Count - 1; i >= 0; i--)
             {
-                if (images[i].Path == path && images[i].Name == name)
+                if (!images[i].IsDisposed && images[i].Path == path && images[i].Name == name)
                 {
                     images[i].Close();
                     images.RemoveAt(i);
@@ -1410,8 +1414,11 @@ namespace PictureViewer
         {
             for (int i = images.Count - 1; i >= 0; i--)
             {
-                images[i].Close();
-                images.RemoveAt(i);
+                if (!images[i].IsDisposed)
+                {
+                    images[i].Close();
+                    images.RemoveAt(i);
+                }
             }
         }
         private void CheckPictureFiles()
