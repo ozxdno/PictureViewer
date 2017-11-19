@@ -46,6 +46,7 @@
             // listBox1
             // 
             this.listBox1.FormattingEnabled = true;
+            this.listBox1.HorizontalScrollbar = true;
             this.listBox1.ItemHeight = 12;
             this.listBox1.Items.AddRange(new object[] {
             "1",

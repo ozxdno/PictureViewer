@@ -85,6 +85,10 @@ namespace PictureViewer
             /// 图片已经被加载了
             /// </summary>
             public bool Loaded;
+            /// <summary>
+            /// 上一次修改时间
+            /// </summary>
+            public long Time;
 
             /// <summary>
             /// 全称
@@ -269,7 +273,20 @@ namespace PictureViewer
             InitializeComponent();
             config.Mode = mode;
         }
-        
+
+        /// <summary>
+        /// 保存配置
+        /// </summary>
+        public void SaveConfig()
+        {
+            Class.Save.settings.Form_Main_Find_Full = this.fullToolStripMenuItem.Checked;
+            Class.Save.settings.Form_Main_Find_Part = this.partToolStripMenuItem.Checked;
+            Class.Save.settings.Form_Main_Find_Same = this.sameToolStripMenuItem.Checked;
+            Class.Save.settings.Form_Main_Find_Like = this.likeToolStripMenuItem.Checked;
+            Class.Save.settings.Form_Main_Find_Turn = this.turnToolStripMenuItem.Checked;
+            Class.Save.settings.Form_Find_Degree = config.Degree;
+            Class.Save.settings.Form_Find_Pixes = config.MinCmpPix;
+        }
 
         /////////////////////////////////////////////////////////// private method //////////////////////////////////////////////////
 
@@ -453,17 +470,26 @@ namespace PictureViewer
             if (indexS == -1 || indexD == -1) { return; }
             if (Results.Count <= indexS || Results[indexS].Count <= indexD) { return; }
 
-            int sh = Screen.PrimaryScreen.Bounds.Height;
-            int sw = Screen.PrimaryScreen.Bounds.Width;
-            int ph = this.pictureBox1.Height; try { ph = DestPic.Height; } catch { }
-            int pw = this.pictureBox1.Width; try { pw = DestPic.Width; } catch { }
-            double rate1 = (double)ph / sh * 100;
-            double rate2 = (double)pw / sw * 100;
-            double rate = Math.Max(rate1, rate2);
-
             PICTURE p = PictureFiles[config.Current[indexD]];
-            images.Add(new Form_Image(p.Path, p.Name, rate));
-            images[images.Count - 1].Show();
+            //Stop();
+
+            List<int> selectedfolders = new List<int>();
+            for (int i = 0; i < this.source2ToolStripMenuItem.DropDownItems.Count; i++)
+            {
+                ToolStripMenuItem iMenu = (ToolStripMenuItem)this.source2ToolStripMenuItem.DropDownItems[i];
+                if (iMenu.Checked) { selectedfolders.Add(i); }
+            }
+            int selected = 0;
+            for (int i = 0; i < p.FolderIndexes.Count; i++)
+            {
+                if (selectedfolders.IndexOf(p.FolderIndexes[i]) != -1) { selected = i; break; }
+            }
+
+            Form_Main.config.FolderIndex = p.FolderIndexes[selected];
+            Form_Main.config.FileIndex = p.FileIndexes[selected];
+            Form_Main.config.SubIndex = p.SubIndexes[selected];
+            IsSwitch = true;
+            //this.Close();
         }
 
         private void RightMenu_Start(object sender, EventArgs e)
@@ -623,6 +649,8 @@ namespace PictureViewer
             //Stop();
             config.MinCmpPix = MinCmpPixes;
             //Continue();
+
+            Class.Save.settings.Form_Find_Pixes = config.MinCmpPix;
         }
         private void RightMenu_Switch(object sender, EventArgs e)
         {
@@ -634,7 +662,7 @@ namespace PictureViewer
             if (Results.Count <= indexS || Results[indexS].Count <= indexD) { MessageBox.Show("文件不存在！", "提示"); return; }
 
             PICTURE p = PictureFiles[config.Current[indexD]];
-            Stop();
+            //Stop();
 
             List<int> selectedfolders = new List<int>();
             for (int i = 0; i < this.source2ToolStripMenuItem.DropDownItems.Count; i++)
@@ -652,7 +680,7 @@ namespace PictureViewer
             Form_Main.config.FileIndex = p.FileIndexes[selected];
             Form_Main.config.SubIndex = p.SubIndexes[selected];
             IsSwitch = true;
-            this.Close();
+            //this.Close();
         }
         private void RightMenu_Degree(object sender, EventArgs e)
         {
@@ -675,6 +703,8 @@ namespace PictureViewer
             //Stop();
             config.Degree = (int)Degree;
             //Continue();
+
+            Class.Save.settings.Form_Find_Degree = config.Degree;
         }
         private void RightMenu_Restart(object sender, EventArgs e)
         {
@@ -1261,6 +1291,7 @@ namespace PictureViewer
                             p.SubIndexes = new List<int>(); p.SubIndexes.Add(k);
                             FileInfo f = new FileInfo(p.Full);
                             p.Length = f.Length;
+                            p.Time = f.LastWriteTime.ToFileTime();
                             PictureFiles.Add(p);
                             IndexS++;
                             IndexD++;
@@ -1296,6 +1327,7 @@ namespace PictureViewer
                         p.SubIndexes = new List<int>(); p.SubIndexes.Add(-1);
                         FileInfo f = new FileInfo(p.Full);
                         p.Length = f.Length;
+                        p.Time = f.LastWriteTime.ToFileTime();
                         PictureFiles.Add(p);
                         IndexS++;
                         IndexD++;
@@ -1329,6 +1361,12 @@ namespace PictureViewer
             if (this.turnToolStripMenuItem.Checked) { mode |= (ushort)MODE.TURN; }
             
             config.Mode = (MODE)mode;
+
+            Class.Save.settings.Form_Main_Find_Full = this.fullToolStripMenuItem.Checked;
+            Class.Save.settings.Form_Main_Find_Part = this.partToolStripMenuItem.Checked;
+            Class.Save.settings.Form_Main_Find_Same = this.sameToolStripMenuItem.Checked;
+            Class.Save.settings.Form_Main_Find_Like = this.likeToolStripMenuItem.Checked;
+            Class.Save.settings.Form_Main_Find_Turn = this.turnToolStripMenuItem.Checked;
         }
         private int GetFileIndex(int folder, int file, int sub = -1)
         {

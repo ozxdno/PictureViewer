@@ -46,10 +46,14 @@
             this.removeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.exportToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.export2ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.exPathToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.exportPathToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.degreeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.pixesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.switchToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.openToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.renameToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.rename2ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.pictureBox2 = new System.Windows.Forms.PictureBox();
             this.label4 = new System.Windows.Forms.Label();
             this.label5 = new System.Windows.Forms.Label();
@@ -62,10 +66,6 @@
             this.comboBox1 = new System.Windows.Forms.ComboBox();
             this.label3 = new System.Windows.Forms.Label();
             this.label6 = new System.Windows.Forms.Label();
-            this.renameToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.rename2ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.exPathToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.exportPathToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.contextMenuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox2)).BeginInit();
@@ -102,19 +102,19 @@
             this.renameToolStripMenuItem,
             this.rename2ToolStripMenuItem});
             this.contextMenuStrip1.Name = "contextMenuStrip1";
-            this.contextMenuStrip1.Size = new System.Drawing.Size(153, 362);
+            this.contextMenuStrip1.Size = new System.Drawing.Size(131, 340);
             // 
             // source1ToolStripMenuItem
             // 
             this.source1ToolStripMenuItem.Name = "source1ToolStripMenuItem";
-            this.source1ToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.source1ToolStripMenuItem.Size = new System.Drawing.Size(130, 22);
             this.source1ToolStripMenuItem.Text = "Source1";
             this.source1ToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Source1);
             // 
             // source2ToolStripMenuItem
             // 
             this.source2ToolStripMenuItem.Name = "source2ToolStripMenuItem";
-            this.source2ToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.source2ToolStripMenuItem.Size = new System.Drawing.Size(130, 22);
             this.source2ToolStripMenuItem.Text = "Source2";
             this.source2ToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Source2);
             // 
@@ -127,7 +127,7 @@
             this.likeToolStripMenuItem,
             this.turnToolStripMenuItem});
             this.modeToolStripMenuItem.Name = "modeToolStripMenuItem";
-            this.modeToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.modeToolStripMenuItem.Size = new System.Drawing.Size(130, 22);
             this.modeToolStripMenuItem.Text = "Mode";
             // 
             // fullToolStripMenuItem
@@ -168,54 +168,70 @@
             // toolStripMenuItem1
             // 
             this.toolStripMenuItem1.Name = "toolStripMenuItem1";
-            this.toolStripMenuItem1.Size = new System.Drawing.Size(149, 6);
+            this.toolStripMenuItem1.Size = new System.Drawing.Size(127, 6);
             // 
             // startToolStripMenuItem
             // 
             this.startToolStripMenuItem.Name = "startToolStripMenuItem";
-            this.startToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.startToolStripMenuItem.Size = new System.Drawing.Size(130, 22);
             this.startToolStripMenuItem.Text = "Start";
             this.startToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Start);
             // 
             // restartToolStripMenuItem
             // 
             this.restartToolStripMenuItem.Name = "restartToolStripMenuItem";
-            this.restartToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.restartToolStripMenuItem.Size = new System.Drawing.Size(130, 22);
             this.restartToolStripMenuItem.Text = "Restart";
             this.restartToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Restart);
             // 
             // removeToolStripMenuItem
             // 
             this.removeToolStripMenuItem.Name = "removeToolStripMenuItem";
-            this.removeToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.removeToolStripMenuItem.Size = new System.Drawing.Size(130, 22);
             this.removeToolStripMenuItem.Text = "Remove";
             this.removeToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Remove);
             // 
             // exportToolStripMenuItem
             // 
             this.exportToolStripMenuItem.Name = "exportToolStripMenuItem";
-            this.exportToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.exportToolStripMenuItem.Size = new System.Drawing.Size(130, 22);
             this.exportToolStripMenuItem.Text = "Export";
             this.exportToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Export);
             // 
             // export2ToolStripMenuItem
             // 
             this.export2ToolStripMenuItem.Name = "export2ToolStripMenuItem";
-            this.export2ToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.export2ToolStripMenuItem.Size = new System.Drawing.Size(130, 22);
             this.export2ToolStripMenuItem.Text = "Export2";
             this.export2ToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Export2);
+            // 
+            // exPathToolStripMenuItem
+            // 
+            this.exPathToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.exportPathToolStripMenuItem});
+            this.exPathToolStripMenuItem.Name = "exPathToolStripMenuItem";
+            this.exPathToolStripMenuItem.Size = new System.Drawing.Size(130, 22);
+            this.exPathToolStripMenuItem.Text = "Ex Path";
+            this.exPathToolStripMenuItem.Visible = false;
+            // 
+            // exportPathToolStripMenuItem
+            // 
+            this.exportPathToolStripMenuItem.Name = "exportPathToolStripMenuItem";
+            this.exportPathToolStripMenuItem.Size = new System.Drawing.Size(139, 22);
+            this.exportPathToolStripMenuItem.Text = "ExportPath";
+            this.exportPathToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_ExportPath);
             // 
             // degreeToolStripMenuItem
             // 
             this.degreeToolStripMenuItem.Name = "degreeToolStripMenuItem";
-            this.degreeToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.degreeToolStripMenuItem.Size = new System.Drawing.Size(130, 22);
             this.degreeToolStripMenuItem.Text = "Degree";
             this.degreeToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Degree);
             // 
             // pixesToolStripMenuItem
             // 
             this.pixesToolStripMenuItem.Name = "pixesToolStripMenuItem";
-            this.pixesToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.pixesToolStripMenuItem.Size = new System.Drawing.Size(130, 22);
             this.pixesToolStripMenuItem.Text = "Pixes";
             this.pixesToolStripMenuItem.Visible = false;
             this.pixesToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Pixes);
@@ -223,16 +239,30 @@
             // switchToolStripMenuItem
             // 
             this.switchToolStripMenuItem.Name = "switchToolStripMenuItem";
-            this.switchToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.switchToolStripMenuItem.Size = new System.Drawing.Size(130, 22);
             this.switchToolStripMenuItem.Text = "Switch";
             this.switchToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Switch);
             // 
             // openToolStripMenuItem
             // 
             this.openToolStripMenuItem.Name = "openToolStripMenuItem";
-            this.openToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.openToolStripMenuItem.Size = new System.Drawing.Size(130, 22);
             this.openToolStripMenuItem.Text = "Open";
             this.openToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Open);
+            // 
+            // renameToolStripMenuItem
+            // 
+            this.renameToolStripMenuItem.Name = "renameToolStripMenuItem";
+            this.renameToolStripMenuItem.Size = new System.Drawing.Size(130, 22);
+            this.renameToolStripMenuItem.Text = "Rename";
+            this.renameToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Rename);
+            // 
+            // rename2ToolStripMenuItem
+            // 
+            this.rename2ToolStripMenuItem.Name = "rename2ToolStripMenuItem";
+            this.rename2ToolStripMenuItem.Size = new System.Drawing.Size(130, 22);
+            this.rename2ToolStripMenuItem.Text = "Rename2";
+            this.rename2ToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Rename2);
             // 
             // pictureBox2
             // 
@@ -274,6 +304,7 @@
             // listBox1
             // 
             this.listBox1.FormattingEnabled = true;
+            this.listBox1.HorizontalScrollbar = true;
             this.listBox1.ItemHeight = 12;
             this.listBox1.Location = new System.Drawing.Point(11, 186);
             this.listBox1.Name = "listBox1";
@@ -353,35 +384,6 @@
             this.label6.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.label6.Visible = false;
             this.label6.Click += new System.EventHandler(this.PreviousSour);
-            // 
-            // renameToolStripMenuItem
-            // 
-            this.renameToolStripMenuItem.Name = "renameToolStripMenuItem";
-            this.renameToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
-            this.renameToolStripMenuItem.Text = "Rename";
-            this.renameToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Rename);
-            // 
-            // rename2ToolStripMenuItem
-            // 
-            this.rename2ToolStripMenuItem.Name = "rename2ToolStripMenuItem";
-            this.rename2ToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
-            this.rename2ToolStripMenuItem.Text = "Rename2";
-            this.rename2ToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Rename2);
-            // 
-            // exPathToolStripMenuItem
-            // 
-            this.exPathToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.exportPathToolStripMenuItem});
-            this.exPathToolStripMenuItem.Name = "exPathToolStripMenuItem";
-            this.exPathToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
-            this.exPathToolStripMenuItem.Text = "Ex Path";
-            // 
-            // exportPathToolStripMenuItem
-            // 
-            this.exportPathToolStripMenuItem.Name = "exportPathToolStripMenuItem";
-            this.exportPathToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
-            this.exportPathToolStripMenuItem.Text = "ExportPath";
-            this.exportPathToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_ExportPath);
             // 
             // Form_Find
             // 

@@ -461,6 +461,10 @@ namespace PictureViewer.Class
             int side = Math.Min(sh * 10 / 100, sw * 10 / 100);
 
             if (!Found.Form_Main_UseSmallWindowOpen) { settings.Form_Main_UseSmallWindowOpen = false; }
+            if (settings.Form_Main_Height < 0 || settings.Form_Main_Height > sh)
+            { Found.Form_Main_Height = false; }
+            if (settings.Form_Main_Width < 0 || settings.Form_Main_Width > sw)
+            { Found.Form_Main_Width = false; }
             if (!Found.Form_Main_Height) { settings.Form_Main_Height = sh * 80 / 100; }
             if (!Found.Form_Main_Width) { settings.Form_Main_Width = sw * 80 / 100; }
             if (settings.Form_Main_UseSmallWindowOpen)
@@ -471,9 +475,13 @@ namespace PictureViewer.Class
             if (!Found.Form_Main_ShapeWindowRate) { settings.Form_Main_ShapeWindowRate = 80; }
             if (!Found.Form_Main_Lock) { settings.Form_Main_Lock = false; }
 
+            if (settings.Form_Main_Location_X < 0 || settings.Form_Main_Location_X >= sw)
+            { Found.Form_Main_Location_X = false; }
+            if (settings.Form_Main_Location_Y < 0 || settings.Form_Main_Location_Y >= sh)
+            { Found.Form_Main_Location_Y = false; }
             if (!Found.Form_Main_Location_X) { settings.Form_Main_Location_X = sw / 2 - settings.Form_Main_Width / 2; }
             if (!Found.Form_Main_Location_Y) { settings.Form_Main_Location_Y = sh / 2 - settings.Form_Main_Height / 2; }
-
+            
             if (!Found.Form_Main_MaxWindowSize) { settings.Form_Main_MaxWindowSize = 100; }
             if (!Found.Form_Main_MinWindowSize) { settings.Form_Main_MinWindowSize = 10; }
 
@@ -613,30 +621,36 @@ namespace PictureViewer.Class
             if (str == null || str.Length == 0) { return false; }
 
             string[] items = str.Split(new char[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
-            if (items.Length != 2 * settings.Form_Find_Pixes + 7) { return false; }
+            if (items.Length != 2 * settings.Form_Find_Pixes + 8) { return false; }
 
             p.Loaded = true;
             p.Path = items[0];
             p.Name = items[1];
-            p.Full = p.Path + "\\" + p.Name; //if (!File.Exists(p.Full)) { return false; }
+            p.Full = p.Path + "\\" + p.Name;
+            try { p.Time = long.Parse(items[2]); } catch { return false; }
+            FileInfo f;
+            try { f = new FileInfo(p.Full); } catch { return false; }
+            long time = f.LastWriteTime.ToFileTime();
+            if (time != p.Time) { return false; }
+
             p.FolderIndexes = new List<int>();
             p.FileIndexes = new List<int>();
             p.SubIndexes = new List<int>();
-            try { p.Height = int.Parse(items[2]); } catch { return false; }
-            try { p.Width = int.Parse(items[3]); } catch { return false; }
-            try { p.Length = long.Parse(items[4]); } catch { return false; }
-            try { p.Row = int.Parse(items[5]); } catch { return false; }
-            try { p.Col = int.Parse(items[6]); } catch { return false; }
+            try { p.Height = int.Parse(items[3]); } catch { return false; }
+            try { p.Width = int.Parse(items[4]); } catch { return false; }
+            try { p.Length = long.Parse(items[5]); } catch { return false; }
+            try { p.Row = int.Parse(items[6]); } catch { return false; }
+            try { p.Col = int.Parse(items[7]); } catch { return false; }
             p.GraysR = new int[settings.Form_Find_Pixes];
             p.GraysC = new int[settings.Form_Find_Pixes];
 
             for (int i = 0; i < settings.Form_Find_Pixes; i++)
             {
-                try { p.GraysR[i] = int.Parse(items[7 + i]); } catch { return false; }
+                try { p.GraysR[i] = int.Parse(items[8 + i]); } catch { return false; }
             }
             for (int i = 0; i < settings.Form_Find_Pixes; i++)
             {
-                try { p.GraysC[i] = int.Parse(items[7 + settings.Form_Find_Pixes + i]); } catch { return false; }
+                try { p.GraysC[i] = int.Parse(items[8 + settings.Form_Find_Pixes + i]); } catch { return false; }
             }
 
             return true;

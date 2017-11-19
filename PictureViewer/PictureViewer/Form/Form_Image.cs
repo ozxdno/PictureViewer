@@ -22,11 +22,16 @@ namespace PictureViewer
         /// 文件名
         /// </summary>
         public string Name;
+        /// <summary>
+        /// 初始位置
+        /// </summary>
+        public Point InitLoc = new Point(0, 0);
 
         /// <summary>
         /// 打开一个 图片/GIF 文件的副本。location - 打开位置：
         /// 0 - 当前鼠标位置位于图片中间；
         /// 1 - 当前鼠标位置位于图片左上角；
+        /// 2 - 自己设定位置；
         /// </summary>
         /// <param name="path">文件路径</param>
         /// <param name="name">文件名称</param>
@@ -60,6 +65,7 @@ namespace PictureViewer
         private bool isPic;
         private bool isGif;
         private int location;
+        private bool initLoc = true;
 
         private Image sour = null;
         private Image dest = null;
@@ -330,7 +336,12 @@ namespace PictureViewer
             int pw = (int)(sour.Width * x2x);
             
             this.Height = ph; this.Width = pw;
-            this.Location = new Point(centerw - pw / 2, centerh - ph / 2);
+            if (initLoc && location == 1) { initLoc = false; }
+            else if (initLoc && location == 2) { initLoc = false; this.Location = InitLoc; }
+            else
+            {
+                this.Location = new Point(centerw - pw / 2, centerh - ph / 2);
+            }
             this.pictureBox1.Height = isGif ? sour.Height : ph;
             this.pictureBox1.Width = isGif ? sour.Width : pw;
 

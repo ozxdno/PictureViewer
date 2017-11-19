@@ -210,10 +210,16 @@ namespace PictureViewer
             SelectedSub = SubIndexs[select];
 
             ShowToolTip();
+
+            FolderIndex = FolderIndexs[select];
+            FileIndex = FileIndexs[select];
+            SubIndex = SubIndexs[select];
+            Cancle = false;
         }
         private void listBox1_DoubleClick(object sender, EventArgs e)
         {
             if (IsInitialize) { return; }
+            //return;
 
             // 双击空列表
             int select = this.listBox1.SelectedIndex;
@@ -241,7 +247,7 @@ namespace PictureViewer
                         FileIndex = SelectedFile;
                         SubIndex = SelectedSub;
                         Cancle = false;
-                        this.Close();
+                        //this.Close();
                         return;
                     }
                 }
@@ -254,7 +260,7 @@ namespace PictureViewer
             FileIndex = SelectedFile;
             SubIndex = SelectedSub;
             Cancle = false;
-            this.Close();
+            //this.Close();
         }
         private void Form_Search_KeyDown(object sender, KeyEventArgs e)
         {

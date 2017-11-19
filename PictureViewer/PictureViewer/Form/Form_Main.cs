@@ -205,6 +205,15 @@ namespace PictureViewer
         /// </summary>
         private List<Form_Image> Images = new List<Form_Image>();
         /// <summary>
+        /// 搜索界面。
+        /// </summary>
+        private Form_Search Search = null;
+        /// <summary>
+        /// 查找界面。
+        /// </summary>
+        private Form_Find Find = null;
+
+        /// <summary>
         /// 鼠标信息
         /// </summary>
         private MOUSE mouse;
@@ -254,6 +263,9 @@ namespace PictureViewer
             public bool ResizeR;
             public bool ResizeU;
             public bool ResizeD;
+
+            public int xImage;
+            public int yImage;
         }
         /// <summary>
         /// 方向键信息
@@ -558,17 +570,21 @@ namespace PictureViewer
         }
         private void Form_Closed(object sender, FormClosedEventArgs e)
         {
+            if (Search != null && !Search.IsDisposed) { Search.Visible = false; }
+            if (Find != null && !Find.IsDisposed) { Find.Visible = false; }
+
             Class.Save.settings.Form_Main_Hide = this.hideToolStripMenuItem.Checked;
             Class.Save.settings.Form_Main_Hide_L = this.hideLToolStripMenuItem.Checked;
             Class.Save.settings.Form_Main_Hide_R = this.hideRToolStripMenuItem.Checked;
             Class.Save.settings.Form_Main_Hide_U = this.hideUToolStripMenuItem.Checked;
             Class.Save.settings.Form_Main_Hide_D = this.hideDToolStripMenuItem.Checked;
 
-            Class.Save.settings.Form_Main_Find_Full = this.fullToolStripMenuItem.Checked;
-            Class.Save.settings.Form_Main_Find_Part = this.partToolStripMenuItem.Checked;
-            Class.Save.settings.Form_Main_Find_Same = this.sameToolStripMenuItem.Checked;
-            Class.Save.settings.Form_Main_Find_Like = this.likeToolStripMenuItem.Checked;
-            Class.Save.settings.Form_Main_Find_Turn = this.turnToolStripMenuItem.Checked;
+            //Class.Save.settings.Form_Main_Find_Full = this.fullToolStripMenuItem.Checked;
+            //Class.Save.settings.Form_Main_Find_Part = this.partToolStripMenuItem.Checked;
+            //Class.Save.settings.Form_Main_Find_Same = this.sameToolStripMenuItem.Checked;
+            //Class.Save.settings.Form_Main_Find_Like = this.likeToolStripMenuItem.Checked;
+            //Class.Save.settings.Form_Main_Find_Turn = this.turnToolStripMenuItem.Checked;
+            if (Find != null && !Find.IsDisposed) { Find.SaveConfig(); }
 
             Class.Save.settings.Form_Main_UseSmallWindowOpen = UseSmallWindowOpen;
             Class.Save.settings.Form_Main_Height = this.Height;
@@ -596,7 +612,7 @@ namespace PictureViewer
             Class.Save.settings.Form_Main_Play_Circle = play.Circle;
             Class.Save.settings.Form_Main_Play_Rand = play.Rand;
             Class.Save.settings.Form_Main_Play_ShowTime = (int)play.ShowTime;
-
+            
             Timer.Close();
             Class.Save.Save_CFG();
             Class.Save.Save_PIC();
@@ -745,6 +761,7 @@ namespace PictureViewer
                 if (input.Input == "#hide hide") { FileSupport.SupportHide = false; FileOperate.Reload(); ShowCurrent();  return; }
                 if (input.Input == "#small") { UseSmallWindowOpen = true; return; }
                 if (input.Input == "#big") { UseSmallWindowOpen = false; return; }
+                if (input.Input.Length > 5 && input.Input.Substring(0, 5) == "#disk") { ReplaceDisk(input.Input); return; }
                 if (input.Input.Length != 0 && input.Input[0] != '-')
                 { ZipOperate.A_PassWord(input.Input); ShowCurrent(); }
                 if (input.Input.Length != 0 && input.Input[0] == '-')
@@ -762,10 +779,10 @@ namespace PictureViewer
                 int type = config.IsSub ? config.SubType : config.Type;
                 if (FileOperate.IsPicture(type) || FileOperate.IsGif(type))
                 {
-                    if (!UseBoard && Images.Count != 0)
+                    if (Images.Count != 0)
                     {
-                        if (DialogResult.Cancel == MessageBox.Show("该界面为主界面，是否退出？", "确认退出", MessageBoxButtons.OKCancel))
-                        { return; }
+                        //if (DialogResult.Cancel == MessageBox.Show("该界面为主界面，是否退出？", "确认退出", MessageBoxButtons.OKCancel))
+                        //{ return; }
                     }
                 }
 
@@ -798,6 +815,8 @@ namespace PictureViewer
                 string name = config.IsSub ? config.SubName : config.Name;
                 try { config.SourPicture.Save(path + "\\" + name); } catch { }
 
+                FilePicture.delete(FilePicture.getIndex(path, name));
+
                 ShowPicture(null, null, false);
                 return;
             }
@@ -818,6 +837,8 @@ namespace PictureViewer
                 string name = config.IsSub ? config.SubName : config.Name;
                 try { config.SourPicture.Save(path + "\\" + name); } catch { }
 
+                FilePicture.delete(FilePicture.getIndex(path, name));
+
                 ShowPicture(null, null, false);
                 return;
             }
@@ -837,6 +858,8 @@ namespace PictureViewer
                 string path = config.IsSub ? config.Path + "\\" + config.Name : config.Path;
                 string name = config.IsSub ? config.SubName : config.Name;
                 try { config.SourPicture.Save(path + "\\" + name); } catch { }
+
+                FilePicture.delete(FilePicture.getIndex(path, name));
 
                 ShowPicture(null, null, false);
                 return;
@@ -1038,6 +1061,12 @@ namespace PictureViewer
                 mouse.pDown2 = MousePosition;
                 mouse.tDown2 = TimeCount;
                 mouse.pWindow = this.Location;
+
+                if (this.pictureBox1.Visible)
+                {
+                    mouse.xImage = this.pictureBox1.PointToClient(MousePosition).X;
+                    mouse.yImage = this.pictureBox1.PointToClient(MousePosition).Y;
+                }
             }
         }
         private void Form_MouseUp(object sender, MouseEventArgs e)
@@ -1063,6 +1092,22 @@ namespace PictureViewer
                 bool showMenu = Math.Abs(mouse.pDown2.X - mouse.pUp2.X) < 10 &&
                     Math.Abs(mouse.pDown2.Y - mouse.pUp2.Y) < 10;
                 this.contextMenuStrip1.Visible = showMenu;
+
+                if (!showMenu && this.pictureBox1.Visible && !this.HorizontalScroll.Visible && !this.VerticalScroll.Visible)
+                {
+                    Point pt = this.pictureBox1.PointToClient(MousePosition);
+                    bool inPic = pt.X >= 0 && pt.X < this.pictureBox1.Width &&
+                        pt.Y >= 0 && pt.Y < this.pictureBox1.Height;
+                    if (inPic) { return; }
+
+                    int type = config.IsSub ? config.SubType : config.Type;
+                    if (!FileOperate.IsPicture(type) && !FileOperate.IsGif(type)) { return; }
+                    string path = config.IsSub ? config.Path + "\\" + config.Name : config.Path;
+                    string name = config.IsSub ? config.SubName : config.Name;
+                    Images.Add(new Form_Image(path, name, ShapeWindowRate, 2));
+                    Images[Images.Count - 1].InitLoc = new Point(MousePosition.X - mouse.xImage, MousePosition.Y - mouse.yImage);
+                    Images[Images.Count - 1].Show();
+                }
             }
         }
         private void Form_MouseWheel(object sender, MouseEventArgs e)
@@ -1135,7 +1180,7 @@ namespace PictureViewer
 
             if (FileOperate.IsGif(type))
             {
-                return; // 该功能会造成歧义，暂时取消。
+                //return; // 该功能会造成歧义，暂时取消。
                 if (this.lockToolStripMenuItem.Checked) { return; }
                 if (config.SourPicture == null) { return; }
                 if (!UseShapeWindow) { return; }
@@ -1220,6 +1265,32 @@ namespace PictureViewer
                 for (int i = Images.Count - 1; i >= 0; i--)
                 {
                     if (Images[i].IsDisposed) { Images.RemoveAt(i); }
+                }
+
+                #endregion
+
+                #region Search 窗口
+
+                if (Search != null && !Search.IsDisposed && !Search.Cancle)
+                {
+                    play.IsPlaying = false;
+                    Search.Cancle = true;
+
+                    config.FolderIndex = Search.FolderIndex;
+                    config.FileIndex = Search.FileIndex;
+                    config.SubIndex = Search.SubIndex;
+                    ShowCurrent();
+                }
+
+                #endregion
+
+                #region Find 窗口
+
+                if (Form_Find.IsSwitch)
+                {
+                    play.IsPlaying = false;
+                    Form_Find.IsSwitch = false;
+                    ShowCurrent();
                 }
 
                 #endregion
@@ -2186,9 +2257,9 @@ namespace PictureViewer
                 int shapew = shapeh;
 
                 SetScroll0();
-                this.axWindowsMediaPlayer1.Location = new Point((cw - shapew) / 2, (ch - shapeh) / 2);
                 this.axWindowsMediaPlayer1.Height = shapeh;
-                this.axWindowsMediaPlayer1.Width = shapew; 
+                this.axWindowsMediaPlayer1.Width = shapew;
+                this.axWindowsMediaPlayer1.Location = new Point((cw - shapew) / 2, (ch - shapeh) / 2);
             }
             if (isVideo)
             {
@@ -2199,9 +2270,9 @@ namespace PictureViewer
                 int shapew = cw - 2;
 
                 SetScroll0();
-                this.axWindowsMediaPlayer1.Location = new Point(1, 1);
                 this.axWindowsMediaPlayer1.Height = shapeh;
                 this.axWindowsMediaPlayer1.Width = shapew;
+                this.axWindowsMediaPlayer1.Location = new Point(1, 1);
             }
 
             #endregion
@@ -2298,7 +2369,7 @@ namespace PictureViewer
             this.pictureBox1.Height = config.SourPicture.Height;
             this.pictureBox1.Width = config.SourPicture.Width;
             this.pictureBox1.Image = config.SourPicture;
-
+            
             #endregion
 
             #region 获取移动量
@@ -2372,10 +2443,12 @@ namespace PictureViewer
 
                 // 填充
                 SetScroll0();
+                //this.pictureBox1.Visible = false;
                 this.pictureBox1.Location = new Point((cw - shapew) / 2, (ch - shapeh) / 2);
                 this.pictureBox1.Height = shapeh;
                 this.pictureBox1.Width = shapew;
                 this.pictureBox1.Image = config.DestPicture;
+                //this.pictureBox1.Visible = true;
             }
 
             #endregion
@@ -2479,7 +2552,10 @@ namespace PictureViewer
             bool VidWindowIsOK = !NeedCorrectWMP();
             int type = config.IsSub ? config.SubType : config.Type;
             string name = config.IsSub ? config.SubName : config.Name;
-            if (!FileOperate.IsStream(type) && !PicWindowIsOK) { ShowPictureS(); }
+            if (FileOperate.IsError(type) && !PicWindowIsOK) { ShowPictureS(); }
+            if (FileOperate.IsUnsupport(type) && !PicWindowIsOK) { ShowPictureS(); }
+            if (FileOperate.IsPicture(type) && !PicWindowIsOK) { ShowPictureS(); }
+            if (FileOperate.IsGif(type) && !PicWindowIsOK) { ShowGif(null, null, false); }
             if (FileOperate.IsStream(type) && !VidWindowIsOK) { ShowVideo(null, name, false); }
 
             #endregion
@@ -2827,6 +2903,34 @@ namespace PictureViewer
             // 显示
             ShowCurrent();
         }
+        private void ReplaceDisk(string input)
+        {
+            if (input.Length < 9) { return; }
+            input = input.ToUpper();
+
+            char sdisk = input[6];
+            char ddisk = input[8];
+
+            try
+            {
+                StreamWriter sw = new StreamWriter(Form_Main.config.ConfigPath + "\\$pvdata");
+                StreamReader sr = new StreamReader(Form_Main.config.ConfigPath + "\\pvdata");
+
+                while (!sr.EndOfStream)
+                {
+                    string line = sr.ReadLine();
+                    if (line.Length > 0 && line[0] == sdisk) { line = ddisk + line.Substring(1); }
+                    sw.WriteLine(line);
+                }
+
+                sw.Close();
+                sr.Close();
+            }
+            catch
+            {
+                MessageBox.Show("重新生成失败！", "提示");
+            }
+        }
 
         private void RightMenu_Refresh(object sender, EventArgs e)
         {
@@ -3152,6 +3256,11 @@ namespace PictureViewer
         }
         private void RightMenu_Search(object sender, EventArgs e)
         {
+            if (Search == null || Search.IsDisposed) { Search = new Form_Search(); }
+            Search.Show();
+            Search.Focus();
+            return;
+
             Form_Search search = new Form_Search();
             //search.Location = MousePosition;
             search.ShowDialog();
@@ -3221,46 +3330,16 @@ namespace PictureViewer
             
             // 计算模式
             ushort mode = 0;
-            if (this.fullToolStripMenuItem.Checked) { mode += (ushort)Form_Find.MODE.FULL; }
-            if (this.partToolStripMenuItem.Checked) { mode += (ushort)Form_Find.MODE.PART; }
-            if (this.sameToolStripMenuItem.Checked) { mode += (ushort)Form_Find.MODE.SAME; }
-            if (this.likeToolStripMenuItem.Checked) { mode += (ushort)Form_Find.MODE.LIKE; }
-            if (this.turnToolStripMenuItem.Checked) { mode += (ushort)Form_Find.MODE.TURN; }
-
-            // 关闭当前窗口，释放资源
-            int xscroll = this.HorizontalScroll.Value;
-            int yscroll = this.VerticalScroll.Value;
-            try { config.SourPicture.Dispose(); } catch { }
-            try { config.DestPicture.Dispose(); } catch { }
-            config.SourPicture = null;
-            config.DestPicture = null;
-            this.pictureBox1.Image = null;
-            if (this.axWindowsMediaPlayer1.playState == WMPLib.WMPPlayState.wmppsPlaying)
-            { this.axWindowsMediaPlayer1.Ctlcontrols.stop(); }
+            if (Class.Load.settings.Form_Main_Find_Full) { mode += (ushort)Form_Find.MODE.FULL; }
+            if (Class.Load.settings.Form_Main_Find_Part) { mode += (ushort)Form_Find.MODE.PART; }
+            if (Class.Load.settings.Form_Main_Find_Same) { mode += (ushort)Form_Find.MODE.SAME; }
+            if (Class.Load.settings.Form_Main_Find_Like) { mode += (ushort)Form_Find.MODE.LIKE; }
+            if (Class.Load.settings.Form_Main_Find_Turn) { mode += (ushort)Form_Find.MODE.TURN; }
 
             // 开始查询
-            this.Visible = false;
-            HideImages();
-            Form_Find find = new Form_Find((Form_Find.MODE)mode);
-            find.ShowDialog();
-            //int ch = find.Location.Y + find.Height / 2;
-            //int cw = find.Location.X + find.Width / 2;
-            //this.Location = new Point(cw - this.Width / 2, ch - this.Height / 2);
-            this.Visible = true;
-            ShowImages();
-
-            // 更新主界面
-            this.fullToolStripMenuItem.Checked = Class.Load.settings.Form_Main_Find_Full;
-            this.partToolStripMenuItem.Checked = Class.Load.settings.Form_Main_Find_Part;
-            this.sameToolStripMenuItem.Checked = Class.Load.settings.Form_Main_Find_Same;
-            this.likeToolStripMenuItem.Checked = Class.Load.settings.Form_Main_Find_Like;
-            this.turnToolStripMenuItem.Checked = Class.Load.settings.Form_Main_Find_Turn;
-            this.pathToolStripMenuItem.Text = config.ExportFolder;
-
-            // 是否跳转
-            //FileOperate.Reload();
-            ShowCurrent();
-            if (!Form_Find.IsSwitch) { SetScrollW(xscroll); SetScrollH(yscroll); }
+            if (Find == null || Find.IsDisposed) { Find = new Form_Find((Form_Find.MODE)mode); }
+            Find.Show();
+            Find.Focus();
         }
         private void RightMenu_Find_Full(object sender, EventArgs e)
         {

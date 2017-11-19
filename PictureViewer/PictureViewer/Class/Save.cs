@@ -251,6 +251,7 @@ namespace PictureViewer.Class
 
             pstr += p.Path + "|";
             pstr += p.Name + "|";
+            pstr += p.Time.ToString() + "|";
             pstr += p.Height.ToString() + "|";
             pstr += p.Width.ToString() + "|";
             pstr += p.Length.ToString() + "|";
