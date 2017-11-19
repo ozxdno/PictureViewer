@@ -211,10 +211,10 @@ namespace PictureViewer
 
             ShowToolTip();
 
-            FolderIndex = FolderIndexs[select];
-            FileIndex = FileIndexs[select];
-            SubIndex = SubIndexs[select];
-            Cancle = false;
+            //FolderIndex = FolderIndexs[select];
+            //FileIndex = FileIndexs[select];
+            //SubIndex = SubIndexs[select];
+            //Cancle = false;
         }
         private void listBox1_DoubleClick(object sender, EventArgs e)
         {
