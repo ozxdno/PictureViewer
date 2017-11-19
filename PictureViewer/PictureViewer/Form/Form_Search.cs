@@ -150,7 +150,7 @@ namespace PictureViewer
             IsSub = false;
 
             int select = this.comboBox1.SelectedIndex;
-            if (select == -1) { return; }
+            if (select == -1) { ShowEmpty(); return; }
 
             SelectedFolder = select;
             SelectedFile = -1;
@@ -166,37 +166,7 @@ namespace PictureViewer
         }
         private void comboBox1_KeyUp(object sender, KeyEventArgs e)
         {
-            if (e.KeyValue == Class.Load.settings.FastKey_Search_Esc) { Cancle = true; this.Close(); return; }
-            if (IsInitialize) { return; }
-            if (e.KeyValue != Class.Load.settings.FastKey_Search_Enter) { return; }
-            
-            IsSub = false;
-            if (this.comboBox1.SelectedIndex != -1) { return; }
 
-            SelectedFile = -1;
-            
-            string path = "", name = "";
-            FileOperate.getPathName(this.comboBox1.Text, ref path, ref name);
-            int type = FileOperate.getFileType(FileOperate.getExtension(name));
-            if (type != 1 && type != 5) { MessageBox.Show("路径或文件不存在！", "提示"); ShowToolTip(); return; }
-
-            int folderindex = -1;
-            for (int i = 0; i < this.comboBox1.Items.Count; i++)
-            {
-                if (this.comboBox1.Items[i].ToString() == path) { folderindex = i - 1; break; }
-            }
-            if (folderindex == -1) { MessageBox.Show("路径或文件不存在！", "提示"); ShowToolTip(); return; }
-            int fileindex = FileOperate.Search(FileNames, name);
-            if (fileindex == -1) { MessageBox.Show("路径或文件不存在！", "提示"); ShowToolTip(); return; }
-
-            IsSub = true;
-            SelectedFolder = folderindex + 1;
-            SelectedFile = fileindex;
-            SelectedSub = -1;
-
-            this.listBox1.SelectedIndex = fileindex;
-            ShowSelectSubFolder(); if (!IsSub) { HideToolTip(); MessageBox.Show("该文件为空文件！", "提示"); }
-            ShowToolTip();
         }
         private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
@@ -247,6 +217,7 @@ namespace PictureViewer
                         FileIndex = SelectedFile;
                         SubIndex = SelectedSub;
                         Cancle = false;
+                        IsInitialize = false;
                         //this.Close();
                         return;
                     }
@@ -280,6 +251,7 @@ namespace PictureViewer
             this.listBox1.Items.Clear();
             FolderIndexs.Clear();
             FileIndexs.Clear();
+            SubIndexs.Clear();
             FileNames.Clear();
             int cnt = 1;
 
@@ -302,6 +274,7 @@ namespace PictureViewer
             this.listBox1.Items.Clear();
             FolderIndexs.Clear();
             FileIndexs.Clear();
+            SubIndexs.Clear();
             FileNames.Clear();
             int cnt = 1;
 
@@ -343,6 +316,15 @@ namespace PictureViewer
                 FileIndexs.Add(SelectedFile);
                 SubIndexs.Add(i);
             }
+        }
+        private void ShowEmpty()
+        {
+            this.listBox1.Items.Clear();
+            FolderIndexs.Clear();
+            FileIndexs.Clear();
+            SubIndexs.Clear();
+            FileNames.Clear();
+            HideToolTip();
         }
         private void ShowToolTip()
         {

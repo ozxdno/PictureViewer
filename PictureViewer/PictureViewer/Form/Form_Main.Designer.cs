@@ -163,130 +163,130 @@
             // startToolStripMenuItem
             // 
             this.startToolStripMenuItem.Name = "startToolStripMenuItem";
-            this.startToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.startToolStripMenuItem.Size = new System.Drawing.Size(136, 22);
             this.startToolStripMenuItem.Text = "开始";
             this.startToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Play_Start);
             // 
             // toolStripMenuItem6
             // 
             this.toolStripMenuItem6.Name = "toolStripMenuItem6";
-            this.toolStripMenuItem6.Size = new System.Drawing.Size(149, 6);
+            this.toolStripMenuItem6.Size = new System.Drawing.Size(133, 6);
             // 
             // totalRootsToolStripMenuItem
             // 
             this.totalRootsToolStripMenuItem.Name = "totalRootsToolStripMenuItem";
-            this.totalRootsToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.totalRootsToolStripMenuItem.Size = new System.Drawing.Size(136, 22);
             this.totalRootsToolStripMenuItem.Text = "所有目录";
             this.totalRootsToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Play_TotalRoots);
             // 
             // rootToolStripMenuItem
             // 
             this.rootToolStripMenuItem.Name = "rootToolStripMenuItem";
-            this.rootToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.rootToolStripMenuItem.Size = new System.Drawing.Size(136, 22);
             this.rootToolStripMenuItem.Text = "当前目录";
             this.rootToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Play_Root);
             // 
             // subrootToolStripMenuItem
             // 
             this.subrootToolStripMenuItem.Name = "subrootToolStripMenuItem";
-            this.subrootToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.subrootToolStripMenuItem.Size = new System.Drawing.Size(136, 22);
             this.subrootToolStripMenuItem.Text = "当前子目录";
             this.subrootToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Play_Subroot);
             // 
             // toolStripMenuItem5
             // 
             this.toolStripMenuItem5.Name = "toolStripMenuItem5";
-            this.toolStripMenuItem5.Size = new System.Drawing.Size(149, 6);
+            this.toolStripMenuItem5.Size = new System.Drawing.Size(133, 6);
             // 
             // forwardToolStripMenuItem
             // 
             this.forwardToolStripMenuItem.Name = "forwardToolStripMenuItem";
-            this.forwardToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.forwardToolStripMenuItem.Size = new System.Drawing.Size(136, 22);
             this.forwardToolStripMenuItem.Text = "向前";
             this.forwardToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Play_Forward);
             // 
             // backwardToolStripMenuItem
             // 
             this.backwardToolStripMenuItem.Name = "backwardToolStripMenuItem";
-            this.backwardToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.backwardToolStripMenuItem.Size = new System.Drawing.Size(136, 22);
             this.backwardToolStripMenuItem.Text = "向后";
             this.backwardToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Play_Backward);
             // 
             // randToolStripMenuItem
             // 
             this.randToolStripMenuItem.Name = "randToolStripMenuItem";
-            this.randToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.randToolStripMenuItem.Size = new System.Drawing.Size(136, 22);
             this.randToolStripMenuItem.Text = "随机";
             this.randToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Play_Rand);
             // 
             // toolStripMenuItem4
             // 
             this.toolStripMenuItem4.Name = "toolStripMenuItem4";
-            this.toolStripMenuItem4.Size = new System.Drawing.Size(149, 6);
+            this.toolStripMenuItem4.Size = new System.Drawing.Size(133, 6);
             // 
             // pictureToolStripMenuItem
             // 
             this.pictureToolStripMenuItem.Name = "pictureToolStripMenuItem";
-            this.pictureToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.pictureToolStripMenuItem.Size = new System.Drawing.Size(136, 22);
             this.pictureToolStripMenuItem.Text = "图片";
             this.pictureToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Play_Picture);
             // 
             // gifToolStripMenuItem
             // 
             this.gifToolStripMenuItem.Name = "gifToolStripMenuItem";
-            this.gifToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.gifToolStripMenuItem.Size = new System.Drawing.Size(136, 22);
             this.gifToolStripMenuItem.Text = "动图";
             this.gifToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Play_Gif);
             // 
             // musicToolStripMenuItem
             // 
             this.musicToolStripMenuItem.Name = "musicToolStripMenuItem";
-            this.musicToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.musicToolStripMenuItem.Size = new System.Drawing.Size(136, 22);
             this.musicToolStripMenuItem.Text = "音乐";
             this.musicToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Play_Music);
             // 
             // videoToolStripMenuItem
             // 
             this.videoToolStripMenuItem.Name = "videoToolStripMenuItem";
-            this.videoToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.videoToolStripMenuItem.Size = new System.Drawing.Size(136, 22);
             this.videoToolStripMenuItem.Text = "视频";
             this.videoToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Play_Video);
             // 
             // toolStripMenuItem3
             // 
             this.toolStripMenuItem3.Name = "toolStripMenuItem3";
-            this.toolStripMenuItem3.Size = new System.Drawing.Size(149, 6);
+            this.toolStripMenuItem3.Size = new System.Drawing.Size(133, 6);
             // 
             // singleToolStripMenuItem
             // 
             this.singleToolStripMenuItem.Name = "singleToolStripMenuItem";
-            this.singleToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.singleToolStripMenuItem.Size = new System.Drawing.Size(136, 22);
             this.singleToolStripMenuItem.Text = "单曲播放";
             this.singleToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Play_Single);
             // 
             // orderToolStripMenuItem
             // 
             this.orderToolStripMenuItem.Name = "orderToolStripMenuItem";
-            this.orderToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.orderToolStripMenuItem.Size = new System.Drawing.Size(136, 22);
             this.orderToolStripMenuItem.Text = "列表播放";
             this.orderToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Play_Order);
             // 
             // circleToolStripMenuItem
             // 
             this.circleToolStripMenuItem.Name = "circleToolStripMenuItem";
-            this.circleToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.circleToolStripMenuItem.Size = new System.Drawing.Size(136, 22);
             this.circleToolStripMenuItem.Text = "循环播放";
             this.circleToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Play_Circle);
             // 
             // toolStripMenuItem7
             // 
             this.toolStripMenuItem7.Name = "toolStripMenuItem7";
-            this.toolStripMenuItem7.Size = new System.Drawing.Size(149, 6);
+            this.toolStripMenuItem7.Size = new System.Drawing.Size(133, 6);
             // 
             // showTimeToolStripMenuItem
             // 
             this.showTimeToolStripMenuItem.Name = "showTimeToolStripMenuItem";
-            this.showTimeToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.showTimeToolStripMenuItem.Size = new System.Drawing.Size(136, 22);
             this.showTimeToolStripMenuItem.Text = "时间";
             this.showTimeToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Play_ShowTime);
             // 
@@ -317,15 +317,15 @@
             // pathToolStripMenuItem
             // 
             this.pathToolStripMenuItem.Name = "pathToolStripMenuItem";
-            this.pathToolStripMenuItem.Size = new System.Drawing.Size(172, 22);
+            this.pathToolStripMenuItem.Size = new System.Drawing.Size(304, 22);
             this.pathToolStripMenuItem.Text = "Path";
             this.pathToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Export_Path);
             // 
             // exportFolderToolStripMenuItem
             // 
             this.exportFolderToolStripMenuItem.Name = "exportFolderToolStripMenuItem";
-            this.exportFolderToolStripMenuItem.Size = new System.Drawing.Size(172, 22);
-            this.exportFolderToolStripMenuItem.Text = "导出子目录文件夹";
+            this.exportFolderToolStripMenuItem.Size = new System.Drawing.Size(304, 22);
+            this.exportFolderToolStripMenuItem.Text = "导出子目录文件夹以及该文件夹中所有文件";
             this.exportFolderToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Export_ExportFolder);
             // 
             // gotoToolStripMenuItem
@@ -393,28 +393,28 @@
             // 
             this.hideUToolStripMenuItem.CheckOnClick = true;
             this.hideUToolStripMenuItem.Name = "hideUToolStripMenuItem";
-            this.hideUToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.hideUToolStripMenuItem.Size = new System.Drawing.Size(124, 22);
             this.hideUToolStripMenuItem.Text = "隐藏向上";
             // 
             // hideDToolStripMenuItem
             // 
             this.hideDToolStripMenuItem.CheckOnClick = true;
             this.hideDToolStripMenuItem.Name = "hideDToolStripMenuItem";
-            this.hideDToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.hideDToolStripMenuItem.Size = new System.Drawing.Size(124, 22);
             this.hideDToolStripMenuItem.Text = "隐藏向下";
             // 
             // hideLToolStripMenuItem
             // 
             this.hideLToolStripMenuItem.CheckOnClick = true;
             this.hideLToolStripMenuItem.Name = "hideLToolStripMenuItem";
-            this.hideLToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.hideLToolStripMenuItem.Size = new System.Drawing.Size(124, 22);
             this.hideLToolStripMenuItem.Text = "隐藏向左";
             // 
             // hideRToolStripMenuItem
             // 
             this.hideRToolStripMenuItem.CheckOnClick = true;
             this.hideRToolStripMenuItem.Name = "hideRToolStripMenuItem";
-            this.hideRToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.hideRToolStripMenuItem.Size = new System.Drawing.Size(124, 22);
             this.hideRToolStripMenuItem.Text = "隐藏向右";
             // 
             // toolStripMenuItem2
@@ -451,7 +451,7 @@
             // fullToolStripMenuItem
             // 
             this.fullToolStripMenuItem.Name = "fullToolStripMenuItem";
-            this.fullToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.fullToolStripMenuItem.Size = new System.Drawing.Size(108, 22);
             this.fullToolStripMenuItem.Text = "Full";
             this.fullToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Find_Full);
             // 
@@ -460,7 +460,7 @@
             this.partToolStripMenuItem.Checked = true;
             this.partToolStripMenuItem.CheckState = System.Windows.Forms.CheckState.Checked;
             this.partToolStripMenuItem.Name = "partToolStripMenuItem";
-            this.partToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.partToolStripMenuItem.Size = new System.Drawing.Size(108, 22);
             this.partToolStripMenuItem.Text = "Part";
             this.partToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Find_Part);
             // 
@@ -469,14 +469,14 @@
             this.sameToolStripMenuItem.Checked = true;
             this.sameToolStripMenuItem.CheckState = System.Windows.Forms.CheckState.Checked;
             this.sameToolStripMenuItem.Name = "sameToolStripMenuItem";
-            this.sameToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.sameToolStripMenuItem.Size = new System.Drawing.Size(108, 22);
             this.sameToolStripMenuItem.Text = "Same";
             this.sameToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Find_Same);
             // 
             // likeToolStripMenuItem
             // 
             this.likeToolStripMenuItem.Name = "likeToolStripMenuItem";
-            this.likeToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.likeToolStripMenuItem.Size = new System.Drawing.Size(108, 22);
             this.likeToolStripMenuItem.Text = "Like";
             this.likeToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Find_Like);
             // 
@@ -485,7 +485,7 @@
             this.turnToolStripMenuItem.Checked = true;
             this.turnToolStripMenuItem.CheckState = System.Windows.Forms.CheckState.Checked;
             this.turnToolStripMenuItem.Name = "turnToolStripMenuItem";
-            this.turnToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.turnToolStripMenuItem.Size = new System.Drawing.Size(108, 22);
             this.turnToolStripMenuItem.Text = "Turn";
             this.turnToolStripMenuItem.Click += new System.EventHandler(this.RightMenu_Find_Turn);
             // 

@@ -1228,6 +1228,9 @@ namespace PictureViewer
         }
         private void GetFiles()
         {
+            // 等待初始化结束
+            while (config.Initializing && Class.Load.Initialize.ThreadState == ThreadState.Running) ;
+
             IndexS = 0; // Result 中文件个数
             IndexD = 0; // PictureFiles 中文件个数
 

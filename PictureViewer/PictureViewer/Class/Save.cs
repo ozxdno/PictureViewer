@@ -220,6 +220,9 @@ namespace PictureViewer.Class
         /// <returns></returns>
         public static bool Save_PIC()
         {
+            // 必须等到加载完成。
+            while (Load.Initialize.ThreadState == System.Threading.ThreadState.Running) ;
+
             try
             {
                 string fullpath = Form_Main.config.ConfigPath + "\\pvdata";

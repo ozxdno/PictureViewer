@@ -59,7 +59,12 @@ namespace PictureViewer.Class
             ShowExtensions.Add(".avi"); HideExtensions.Add(".pv6"); Types.Add(4); VideoExtensions.Add(".avi");
             ShowExtensions.Add(".mp4"); HideExtensions.Add(".pv7"); Types.Add(4); VideoExtensions.Add(".mp4");
             ShowExtensions.Add(".webm"); HideExtensions.Add(".pv8"); Types.Add(0); VideoExtensions.Add(".webm");
-            ShowExtensions.Add(".zip"); HideExtensions.Add(".pv9"); Types.Add(5);
+
+            if (ZipOperate.SupportZip)
+            {
+                ShowExtensions.Add(".zip"); HideExtensions.Add(".pv9"); Types.Add(5);
+            }
+            
             ShowExtensions.Add(".mp3"); HideExtensions.Add(".pv10"); Types.Add(4); MusicExtensions.Add(".mp3");
             ShowExtensions.Add(".wav"); HideExtensions.Add(".pv11"); Types.Add(4); MusicExtensions.Add(".wav");
             ShowExtensions.Add(".m4a"); HideExtensions.Add(".pv12"); Types.Add(4); MusicExtensions.Add(".m4a");

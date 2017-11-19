@@ -103,6 +103,11 @@ namespace PictureViewer.Class
             public int FastKey_Image_FlipY;
         }
 
+        /// <summary>
+        /// 初始化线程
+        /// </summary>
+        public static System.Threading.Thread Initialize = new System.Threading.Thread(Init);
+
         ///////////////////////////////////////////////////// private attribute ///////////////////////////////////////////////
 
         private static FOUND Found;
@@ -417,20 +422,34 @@ namespace PictureViewer.Class
         {
             Form_Find.PictureFiles.Clear();
 
-            string fullpath = Form_Main.config.ConfigPath + "\\pvdata";
-            if (!File.Exists(fullpath)) { return false; }
-
-            srPIC = new StreamReader(fullpath);
-            while (!srPIC.EndOfStream)
+            try
             {
-                Form_Find.PICTURE p = new Form_Find.PICTURE();
-                bool ok = ToPicture(srPIC.ReadLine(), ref p);
-                if (ok) { Form_Find.PictureFiles.Add(p); }
-            }
+                string fullpath = Form_Main.config.ConfigPath + "\\pvdata";
+                if (!File.Exists(fullpath)) { return false; }
 
+                srPIC = new StreamReader(fullpath);
+                while (!srPIC.EndOfStream)
+                {
+                    Form_Find.PICTURE p = new Form_Find.PICTURE();
+                    bool ok = ToPicture(srPIC.ReadLine(), ref p);
+                    if (ok) { Form_Find.PictureFiles.Add(p); }
+                }
+            }
+            catch { }
+            
             try { srPIC.Close(); } catch { }
 
             return true;
+        }
+
+        /// <summary>
+        /// 把文件初始化工作作为一个新线程函数，另开线程进行初始化。
+        /// </summary>
+        public static void Init()
+        {
+            Form_Find.config.Initializing = true;
+            Load_PIC();
+            Form_Find.config.Initializing = false;
         }
 
         ///////////////////////////////////////////////////// private method ///////////////////////////////////////////////

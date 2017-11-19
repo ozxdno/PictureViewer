@@ -398,7 +398,8 @@ namespace PictureViewer
             config.ConfigName = "pv.pvini";
             Class.Load.Load_CFG();
 
-            Class.Load.Load_PIC();
+            //Class.Load.Load_PIC();
+            Class.Load.Initialize.Start();
 
             #endregion
 
@@ -572,6 +573,7 @@ namespace PictureViewer
         {
             if (Search != null && !Search.IsDisposed) { Search.Visible = false; }
             if (Find != null && !Find.IsDisposed) { Find.Visible = false; }
+            CloseImages();
 
             Class.Save.settings.Form_Main_Hide = this.hideToolStripMenuItem.Checked;
             Class.Save.settings.Form_Main_Hide_L = this.hideLToolStripMenuItem.Checked;
@@ -762,10 +764,11 @@ namespace PictureViewer
                 if (input.Input == "#small") { UseSmallWindowOpen = true; return; }
                 if (input.Input == "#big") { UseSmallWindowOpen = false; return; }
                 if (input.Input.Length > 5 && input.Input.Substring(0, 5) == "#disk") { ReplaceDisk(input.Input); return; }
-                if (input.Input.Length != 0 && input.Input[0] != '-')
+
+                if (ZipOperate.SupportZip && input.Input.Length != 0 && input.Input[0] != '-')
                 { ZipOperate.A_PassWord(input.Input); ShowCurrent(); }
-                if (input.Input.Length != 0 && input.Input[0] == '-')
-                { ZipOperate.D_PassWord(input.Input); }
+                if (ZipOperate.SupportZip && input.Input.Length != 0 && input.Input[0] == '-')
+                { ZipOperate.D_PassWord(input.Input); ShowCurrent(); }
 
                 return;
             }
@@ -1259,7 +1262,7 @@ namespace PictureViewer
                 TimeCount++;
 
                 #endregion
-
+                
                 #region 整理 Image 窗口
 
                 for (int i = Images.Count - 1; i >= 0; i--)
@@ -1492,146 +1495,140 @@ namespace PictureViewer
                 bool hideD = this.hideDToolStripMenuItem.Checked;
                 bool hideL = this.hideLToolStripMenuItem.Checked;
                 bool hideR = this.hideRToolStripMenuItem.Checked;
-                this.hideToolStripMenuItem.Checked = hideL && hideR && hideU && hideD;
+                this.hideToolStripMenuItem.Checked = hideL || hideR || hideU || hideD;
 
                 #endregion
-
-                #region 是否使用大图（源图）
-
-                //this.bigPicToolStripMenuItem.Checked = NextShowBigPicture;
-
-                #endregion
-
-                #region 是否显示详细信息
-
-                //this.infoToolStripMenuItem.Visible = !UseBoard;
-
-                #endregion
-
-                #region 鼠标位置，是否允许翻页
-
-                int ptX = MousePosition.X - this.Location.X; if (!UseBoard) { ptX += 10; }
-                int ptY = MousePosition.Y - this.Location.Y; if (!UseBoard) { ptY += 30; }
-
-                bool showPageMark = this.Width > 150 && this.Height > 150 && !mouse.Down;
-                    //&& !this.HorizontalScroll.Visible
-                    //&& !this.VerticalScroll.Visible;
-
-                #endregion
-
+                
                 int scrollw = this.HorizontalScroll.Value;
                 int scrollh = this.VerticalScroll.Value;
 
                 #region 左翻页
 
-                int setW = this.Width / 20;
-                int setH = this.Height / 5;
-                int font = setW * 3 / 4;
-                int bgW = this.Width / 20; if (!UseBoard) { bgW += 5; }
-                int edW = bgW + setW;
-                int bgH = this.Height / 2 - setH / 2; if (!UseBoard) { bgH += 15; }
-                int edH = bgH + setH;
-                if (showPageMark && !hideL && bgW <= ptX && ptX <= edW && bgH <= ptY && ptY <= edH)
+                bool hidePageMark =
+                    mouse.Down || 
+                    mouse.Down2 || 
+                    this.Width < 150 ||
+                    this.Height < 150 ||
+                    this.contextMenuStrip1.Visible ||
+                    !IsActive;
+
+                if (this.hideLToolStripMenuItem.Checked || hidePageMark) { this.label1.Visible = false; } else
                 {
-                    //int xvalue = this.HorizontalScroll.Value;
-                    //int yvalue = this.VerticalScroll.Value;
+                    int h = ClientHeight / 5;
+                    int w = ClientWidth / 20;
+                    int f = w * 3 / 4;
 
-                    this.label1.Location = new Point(bgW - 10, bgH - 30);
-                    this.label1.Width = setW;
-                    this.label1.Height = setH;
-                    this.label1.Visible = true;
-                    this.label1.Font = new Font("宋体", font);
+                    int xbg = ClientWidth / 20;
+                    int xed = xbg + w;
+                    int ybg = ClientHeight / 2 - h / 2;
+                    int yed = ybg + h;
 
-                    //this.HorizontalScroll.Value = xvalue;
-                    //this.VerticalScroll.Value = yvalue;
+                    int xm = this.PointToClient(MousePosition).X;
+                    int ym = this.PointToClient(MousePosition).Y;
+
+                    bool inRange = xbg <= xm && xm <= xed && ybg <= ym && ym <= yed;
+                    if (!inRange) { this.label1.Visible = false; } else
+                    {
+                        this.label1.Height = h;
+                        this.label1.Width = w;
+                        this.label1.Font = new Font("宋体", f);
+                        this.label1.Location = new Point(xbg, ybg);
+                        this.label1.Visible = true;
+                    }
                 }
-                else { this.label1.Visible = false; }
 
                 #endregion
 
                 #region 右翻页
 
-                setW = this.Width / 20;
-                setH = this.Height / 5;
-                font = setW * 3 / 4;
-                bgW = this.Width - setW - this.Width / 20; if (!UseBoard) { bgW += 15; }
-                if (this.VerticalScroll.Visible) { bgW -= 15; }
-                edW = bgW + setW;
-                bgH = this.Height / 2 - setH / 2; if (!UseBoard) { bgH += 15; }
-                edH = bgH + setH;
-                if (showPageMark && !hideR && bgW <= ptX && ptX <= edW && bgH <= ptY && ptY <= edH)
+                if (this.hideRToolStripMenuItem.Checked || hidePageMark) { this.label2.Visible = false; } else
                 {
-                    //int xvalue = this.HorizontalScroll.Value;
-                    //int yvalue = this.VerticalScroll.Value;
+                    int h = ClientHeight / 5;
+                    int w = ClientWidth / 20;
+                    int f = w * 3 / 4;
 
-                    this.label2.Location = new Point(bgW - 10, bgH - 30);
-                    this.label2.Width = setW;
-                    this.label2.Height = setH;
-                    this.label2.Visible = true;
-                    this.label2.Font = new Font("宋体", font);
+                    int xbg = ClientWidth - ClientWidth / 20 - w; if (this.VerticalScroll.Visible) { xbg -= 15; }
+                    int xed = xbg + w;
+                    int ybg = ClientHeight / 2 - h / 2;
+                    int yed = ybg + h;
 
-                    //SetScrollW(xvalue); SetScrollH(yvalue);
+                    int xm = this.PointToClient(MousePosition).X;
+                    int ym = this.PointToClient(MousePosition).Y;
+
+                    bool inRange = xbg <= xm && xm <= xed && ybg <= ym && ym <= yed;
+                    if (!inRange) { this.label2.Visible = false; } else
+                    {
+                        this.label2.Height = h;
+                        this.label2.Width = w;
+                        this.label2.Font = new Font("宋体", f);
+                        this.label2.Location = new Point(xbg, ybg);
+                        this.label2.Visible = true;
+                    }
                 }
-                else { this.label2.Visible = false; }
 
                 #endregion
 
                 #region 上翻页
 
-                setW = this.Width / 8;
-                setH = this.Height / 12;
-                font = setH * 3 / 4;
-                bgW = this.Width / 2 - setW / 2; if (!UseBoard) { bgW += 5; }
-                edW = bgW + setW;
-                bgH = this.Height / 20 + 30; //if (!UseBoard) { bgH += 15; }
-                edH = bgH + setH;
-                if (showPageMark && !hideU && bgW <= ptX && ptX <= edW && bgH <= ptY && ptY <= edH)
+                if (this.hideUToolStripMenuItem.Checked || hidePageMark) { this.label3.Visible = false; } else
                 {
-                    //int xvalue = this.HorizontalScroll.Value;
-                    //int yvalue = this.VerticalScroll.Value;
+                    int h = ClientHeight / 12;
+                    int w = ClientWidth / 8;
+                    int f = h * 3 / 4;
 
-                    this.label3.Location = new Point(bgW - 10, bgH - 30);
-                    this.label3.Width = setW;
-                    this.label3.Height = setH;
-                    this.label3.Visible = true;
-                    this.label3.Font = new Font("宋体", font);
+                    int xbg = ClientWidth / 2 - w / 2;
+                    int xed = xbg + w;
+                    int ybg = ClientHeight / 20;
+                    int yed = ybg + h;
 
-                    //this.HorizontalScroll.Value = xvalue;
-                    //this.VerticalScroll.Value = yvalue;
+                    int xm = this.PointToClient(MousePosition).X;
+                    int ym = this.PointToClient(MousePosition).Y;
+
+                    bool inRange = xbg <= xm && xm <= xed && ybg <= ym && ym <= yed;
+                    if (!inRange) { this.label3.Visible = false; } else
+                    {
+                        this.label3.Height = h;
+                        this.label3.Width = w;
+                        this.label3.Font = new Font("宋体", f);
+                        this.label3.Location = new Point(xbg, ybg);
+                        this.label3.Visible = true;
+                    }
                 }
-                else { this.label3.Visible = false; }
 
                 #endregion
 
                 #region 下翻页
 
-                setW = this.Width / 8;
-                setH = this.Height / 12;
-                font = setH * 3 / 4;
-                bgW = this.Width / 2 - setW / 2; if (!UseBoard) { bgW += 5; }
-                edW = bgW + setW;
-                bgH = this.Height - this.Height / 20 - setH - 10; if (!UseBoard) { bgH += 39; }
-                if (this.HorizontalScroll.Visible) { bgH -= 10; }
-                edH = bgH + setH;
-                if (showPageMark && !hideD && bgW <= ptX && ptX <= edW && bgH <= ptY && ptY <= edH)
+                if (this.hideDToolStripMenuItem.Checked || hidePageMark) { this.label4.Visible = false; } else
                 {
-                    //int xvalue = this.HorizontalScroll.Value;
-                    //int yvalue = this.VerticalScroll.Value;
+                    int h = ClientHeight / 12;
+                    int w = ClientWidth / 8;
+                    int f = h * 3 / 4;
 
-                    this.label4.Location = new Point(bgW - 10, bgH - 30);
-                    this.label4.Width = setW;
-                    this.label4.Height = setH;
-                    this.label4.Visible = true;
-                    this.label4.Font = new Font("宋体", font);
+                    int xbg = ClientWidth / 2 - w / 2;
+                    int xed = xbg + w;
+                    int ybg = ClientHeight - ClientHeight / 20 - h; if (this.HorizontalScroll.Visible) { ybg -= 15; }
+                    int yed = ybg + h;
 
-                    //this.HorizontalScroll.Value = xvalue;
-                    //this.VerticalScroll.Value = yvalue;
+                    int xm = this.PointToClient(MousePosition).X;
+                    int ym = this.PointToClient(MousePosition).Y;
+
+                    bool inRange = xbg <= xm && xm <= xed && ybg <= ym && ym <= yed;
+                    if (!inRange) { this.label4.Visible = false; } else
+                    {
+                        this.label4.Height = h;
+                        this.label4.Width = w;
+                        this.label4.Font = new Font("宋体", f);
+                        this.label4.Location = new Point(xbg, ybg);
+                        this.label4.Visible = true;
+                    }
                 }
-                else { this.label4.Visible = false; }
 
                 #endregion
 
                 SetScrollW(scrollw); SetScrollH(scrollh);
+
+                #region 鼠标距边框距离
 
                 int disL = MousePosition.X - this.Location.X;
                 int disR = this.Location.X + this.Width - MousePosition.X;
@@ -1644,7 +1641,13 @@ namespace PictureViewer
                     ((disR >= -dis0 && disR <= dis0) && !this.VerticalScroll.Visible) ||
                     (disU >= -dis0 && disU <= dis0) ||
                     ((disD >= -dis0 && disD <= dis0) && !this.HorizontalScroll.Visible);
-                Resizable = Resizable && !UseBoard && IsActive;
+                Resizable =
+                    Resizable &&
+                    !UseBoard &&
+                    !this.contextMenuStrip1.Visible &&
+                    IsActive;
+
+                #endregion
 
                 #region 图标 - 可以调整窗体大小
 
@@ -3030,6 +3033,7 @@ namespace PictureViewer
             
             // 是否已经存在文件或文件夹
             string expath = config.ExportFolder;
+            if (expath == null || expath.Length == 0) { expath = FileOperate.getExePath(); }
             if (File.Exists(expath + "\\" + name)) { MessageBox.Show("本文件已经存在于输出文件夹中：" + expath, "提示"); return; }
 
             // zip 文件不能导出内部文件
@@ -3074,7 +3078,9 @@ namespace PictureViewer
             if (!config.ExistFolder || !config.ExistFile) { MessageBox.Show("文件夹不存在或者当前项目不是文件夹！", "提示"); return; }
             if (config.Type != 1) { MessageBox.Show("文件夹不存在或者当前项目不是文件夹！", "提示"); return; }
 
-            string exportpath = config.ExportFolder + "\\" + config.Name;
+            string exportpath = config.ExportFolder;
+            if (exportpath == null || exportpath.Length == 0) { exportpath = FileOperate.getExePath(); }
+            exportpath = exportpath + "\\" + config.Name;
             if (Directory.Exists(exportpath))
             { MessageBox.Show("输出目录已经存在：\n" + exportpath + "！", "错误"); return; }
 
