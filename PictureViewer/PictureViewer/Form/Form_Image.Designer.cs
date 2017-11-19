@@ -59,7 +59,7 @@
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.KeyPreview = true;
             this.Name = "Form_Image";
-            this.Text = "Form_Image";
+            this.Text = "图片文件";
             this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.Form_Image_Close);
             this.Load += new System.EventHandler(this.Form_Image_Load);
             this.KeyUp += new System.Windows.Forms.KeyEventHandler(this.Form_Image_KeyUp);

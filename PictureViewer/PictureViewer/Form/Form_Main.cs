@@ -515,7 +515,7 @@ namespace PictureViewer
             this.orderToolStripMenuItem.Checked = play.Order;
             this.circleToolStripMenuItem.Checked = play.Circle;
             this.randToolStripMenuItem.Checked = play.Rand;
-            this.showTimeToolStripMenuItem.Text = "Time: " + play.ShowTime.ToString();
+            this.showTimeToolStripMenuItem.Text = "时间：" + play.ShowTime.ToString();
 
             #endregion
 
@@ -1419,7 +1419,7 @@ namespace PictureViewer
                 #region 菜单栏刷新
 
                 this.playToolStripMenuItem.Checked = play.IsPlaying = play.IsPlaying && play.PlayIndexes.Count != 0;
-                this.startToolStripMenuItem.Text = play.IsPlaying ? "Stop" : "Start";
+                this.startToolStripMenuItem.Text = play.IsPlaying ? "结束" : "开始";
 
                 #endregion
 
@@ -1585,7 +1585,7 @@ namespace PictureViewer
                 edW = bgW + setW;
                 bgH = this.Height / 20 + 30; //if (!UseBoard) { bgH += 15; }
                 edH = bgH + setH;
-                if (showPageMark && !hideU && bgW <= ptX && ptX <= edW && bgH <= ptY && ptY <= edH && config.SubFiles.Count > 1)
+                if (showPageMark && !hideU && bgW <= ptX && ptX <= edW && bgH <= ptY && ptY <= edH)
                 {
                     //int xvalue = this.HorizontalScroll.Value;
                     //int yvalue = this.VerticalScroll.Value;
@@ -1613,7 +1613,7 @@ namespace PictureViewer
                 bgH = this.Height - this.Height / 20 - setH - 10; if (!UseBoard) { bgH += 39; }
                 if (this.HorizontalScroll.Visible) { bgH -= 10; }
                 edH = bgH + setH;
-                if (showPageMark && !hideD && bgW <= ptX && ptX <= edW && bgH <= ptY && ptY <= edH && config.SubFiles.Count > 1)
+                if (showPageMark && !hideD && bgW <= ptX && ptX <= edW && bgH <= ptY && ptY <= edH)
                 {
                     //int xvalue = this.HorizontalScroll.Value;
                     //int yvalue = this.VerticalScroll.Value;
@@ -1940,12 +1940,12 @@ namespace PictureViewer
                 "[" + (config.SubIndex + 1).ToString() + "/" + config.SubFiles.Count.ToString() + "]" :
                 "";
             
-            if (FileOperate.RootFiles.Count == 0) { this.Text = "[Empty] You can click right button to input a folder to start"; ShowNot(); return; }
-            if (!config.ExistFolder) { this.Text = "[Not Exist] " + config.Path; ShowErr(); return; }
-            if (FileOperate.RootFiles[config.FolderIndex].Name.Count == 0) { this.Text = "[0/0] [Empty Folder] Current Root Folder Is Empty !"; ShowNot(); return; }
-            if (!config.ExistFile) { this.Text = index + " [Not Exist] " + config.Name; ShowErr(); return; }
-            if (FileOperate.IsFolder(config.Type) && config.SubFiles.Count == 0) { this.Text = index + " " + subindex + " [Empty Folder] " + config.Name; ShowNot(); return; }
-            if (FileOperate.IsZip(config.Type) && config.SubFiles.Count == 0) { this.Text = index + " " + subindex + " [Empty File] " + config.Name; ShowNot(); return; }
+            if (FileOperate.RootFiles.Count == 0) { this.Text = "[不存在任何文件] 右键窗体，导入文件夹来开始！"; ShowNot(); return; }
+            if (!config.ExistFolder) { this.Text = "[文件夹不存在] " + config.Path; ShowErr(); return; }
+            if (FileOperate.RootFiles[config.FolderIndex].Name.Count == 0) { this.Text = "[0/0] [空文件夹]当前文件夹不存在任何文件！"; ShowNot(); return; }
+            if (!config.ExistFile) { this.Text = index + " [文件/文件夹不存在] " + config.Name; ShowErr(); return; }
+            if (FileOperate.IsFolder(config.Type) && config.SubFiles.Count == 0) { this.Text = index + " " + subindex + " [空文件夹] " + config.Name; ShowNot(); return; }
+            if (FileOperate.IsZip(config.Type) && config.SubFiles.Count == 0) { this.Text = index + " " + subindex + " [空文件] " + config.Name; ShowNot(); return; }
 
             #endregion
 
@@ -1954,8 +1954,8 @@ namespace PictureViewer
             if (!FileSupport.SupportHide && (!config.IsSub ? config.Hide : config.SubHide))
             {
                 this.Text = config.IsSub ?
-                    index + " " + subindex + " [Unknow] " + config.Name + " : " + config.SubName :
-                    index + " [Unknow] " + config.Name;
+                    index + " " + subindex + " [未知文件] " + config.Name + " : " + config.SubName :
+                    index + " [未知文件] " + config.Name;
 
                 config.Type = -1; config.SubType = -1; ShowUnk(); return;
             }
@@ -1967,8 +1967,8 @@ namespace PictureViewer
             if (FileOperate.IsUnsupport(config.Type))
             {
                 this.Text = config.IsSub ?
-                    index + " " + subindex + " [Unsupport] " + config.Name + " : " + config.SubName :
-                    index + " [Unsupport] " + config.Name;
+                    index + " " + subindex + " [不支持] " + config.Name + " : " + config.SubName :
+                    index + " [不支持] " + config.Name;
                 ShowUnp(); return;
             }
 
@@ -1986,7 +1986,7 @@ namespace PictureViewer
                 if (FileOperate.IsGif(config.SubType)) { ShowGif(config.Path + "\\" + config.Name, config.SubName); return; }
                 if (FileOperate.IsStream(config.SubType)) { ShowVideo(config.Path + "\\" + config.Name, config.SubName); return; }
 
-                this.Text = index + " " + subindex + " [Unsupport] " + config.Name + " : " + config.SubName;
+                this.Text = index + " " + subindex + " [不支持] " + config.Name + " : " + config.SubName;
                 config.SubType = -1;
                 ShowUnp();
                 return;
@@ -2030,7 +2030,7 @@ namespace PictureViewer
             {
                 if (!ZipOperate.Known)
                 {
-                    this.Text = index + " " + subindex + " [Wrong Password] " + config.Name + " : " + config.SubName;
+                    this.Text = index + " " + subindex + " [密码错误] " + config.Name + " : " + config.SubName;
                     ShowErr(); return;
                 }
 
@@ -2039,7 +2039,7 @@ namespace PictureViewer
                 if (FileOperate.IsPicture(config.SubType) && ZipOperate.LoadPictureEX()) { ShowPicture(null, null, false); return; }
                 if (FileOperate.IsGif(config.SubType) && ZipOperate.LoadGifEX()) { ShowGif(null, null, false); return; }
 
-                this.Text = index + " " + subindex + " [Unsupport] " + config.Name + " : " + config.SubName;
+                this.Text = index + " " + subindex + " [不支持] " + config.Name + " : " + config.SubName;
                 config.SubType = -1;
                 ShowUnp();
                 return;
@@ -2049,7 +2049,7 @@ namespace PictureViewer
 
             #region 其他文件（不支持）
 
-            this.Text = index + " [Unsupport] " + config.Name;
+            this.Text = index + " [不支持] " + config.Name;
             ShowUnp();
             config.Type = -1;
 
@@ -3669,7 +3669,7 @@ namespace PictureViewer
             if (showtime < 0 || showtime > 0x0FFFFFFF) { return; }
 
             play.ShowTime = (ulong)showtime;
-            this.showTimeToolStripMenuItem.Text = "Time: " + play.ShowTime.ToString();
+            this.showTimeToolStripMenuItem.Text = "时间：" + play.ShowTime.ToString();
         }
         private void RightMenu_Play_Start(object sender, EventArgs e)
         {

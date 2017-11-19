@@ -266,6 +266,7 @@ namespace PictureViewer.Class
 
             if (mode == Form_Find.MODE.FULL_LIKE_NOTURN)
             {
+                if (sour.Height != dest.Height || sour.Width != dest.Width) { return false; }
                 return cmpRow000();
             }
 
@@ -275,6 +276,10 @@ namespace PictureViewer.Class
 
             if (mode == Form_Find.MODE.FULL_LIKE_TURN)
             {
+                bool isForm1 = sour.Height == dest.Height && sour.Width == dest.Width;
+                bool isForm2 = sour.Height == dest.Width && sour.Width == dest.Height;
+                if (!isForm1 && !isForm2) { return false; }
+
                 if (cmpRow000()) { return true; }
                 if (cmpRow090()) { return true; }
                 if (cmpRow180()) { return true; }
@@ -410,6 +415,7 @@ namespace PictureViewer.Class
 
             if (mode == Form_Find.MODE.FULL_LIKE_NOTURN)
             {
+                if (sour.Height != dest.Height || sour.Width != dest.Width) { return false; }
                 return cmpCol000();
             }
 
@@ -419,6 +425,10 @@ namespace PictureViewer.Class
 
             if (mode == Form_Find.MODE.FULL_LIKE_TURN)
             {
+                bool isForm1 = sour.Height == dest.Height && sour.Width == dest.Width;
+                bool isForm2 = sour.Height == dest.Width && sour.Width == dest.Height;
+                if (!isForm1 && !isForm2) { return false; }
+
                 if (cmpCol000()) { return true; }
                 if (cmpCol090()) { return true; }
                 if (cmpCol180()) { return true; }

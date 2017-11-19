@@ -48,11 +48,6 @@
             this.listBox1.FormattingEnabled = true;
             this.listBox1.HorizontalScrollbar = true;
             this.listBox1.ItemHeight = 12;
-            this.listBox1.Items.AddRange(new object[] {
-            "1",
-            "2",
-            "3",
-            "4"});
             this.listBox1.Location = new System.Drawing.Point(12, 39);
             this.listBox1.Name = "listBox1";
             this.listBox1.Size = new System.Drawing.Size(342, 208);
@@ -89,7 +84,7 @@
             this.MaximizeBox = false;
             this.Name = "Form_Search";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "Form_Search";
+            this.Text = "文件列表";
             this.Load += new System.EventHandler(this.Form_Search_Load);
             this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.Form_Search_KeyDown);
             this.ResumeLayout(false);

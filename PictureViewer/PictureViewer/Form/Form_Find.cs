@@ -328,11 +328,11 @@ namespace PictureViewer
                 
                 if (config.Initializing)
                 {
-                    this.Text = "[Preparing Files]: " + IndexS.ToString();
+                    this.Text = "[读取文件中]: " + IndexS.ToString() + " 个文件";
                 }
                 if (!config.Initializing && config.Method == -1)
                 {
-                    this.Text = "[Prepared Files]: " + PictureFiles.Count.ToString();
+                    this.Text = "[读取完成]: 共 " + PictureFiles.Count.ToString() + " 个文件";
                 }
 
                 for (int i = images.Count - 1; i >= 0; i--)
@@ -363,12 +363,12 @@ namespace PictureViewer
                         (Results.Count == 0 ? "0" : Results[0].Count.ToString()) :
                         Results.Count.ToString();
 
-                    this.Text = "[Find]: " + sourIndex + " " + destIndex + " [Used]: " + usedtime + " s [Result]: " + cntResult;
+                    this.Text = "[查找]: " + sourIndex + " " + destIndex + " 个文件 [耗时]: " + usedtime + " 秒 [结果]: " + cntResult + " 项";
                 }
 
                 ShowCombo();
                 ShowList();
-                if (IsFinish && !PM.Abort) { this.startToolStripMenuItem.Text = "Start"; }
+                if (IsFinish && !PM.Abort) { this.startToolStripMenuItem.Text = "开始"; }
 
                 Point ptMouse;
                 ptMouse = this.label6.PointToClient(MousePosition);
@@ -496,10 +496,10 @@ namespace PictureViewer
         {
             if (config.Initializing) { return; }
 
-            if (this.startToolStripMenuItem.Text == "Start") { Start(); return; }
-            if (this.startToolStripMenuItem.Text == "Continue") { Continue(); return; }
-            if (this.startToolStripMenuItem.Text == "Stop") { Stop(); return; }
-            this.startToolStripMenuItem.Text = "Start";
+            if (this.startToolStripMenuItem.Text == "开始") { Start(); return; }
+            if (this.startToolStripMenuItem.Text == "继续") { Continue(); return; }
+            if (this.startToolStripMenuItem.Text == "结束") { Stop(); return; }
+            this.startToolStripMenuItem.Text = "开始";
         }
         private void RightMenu_Export(object sender, EventArgs e)
         {
@@ -1142,19 +1142,19 @@ namespace PictureViewer
             PM.Initialize();
             TH.Start();
 
-            this.startToolStripMenuItem.Text = "Stop";
+            this.startToolStripMenuItem.Text = "结束";
         }
         private void Stop()
         {
             while (TH != null && TH.ThreadState == ThreadState.Running) { PM.Abort = true; }
-            this.startToolStripMenuItem.Text = "Continue";
+            this.startToolStripMenuItem.Text = "继续";
         }
         private void Continue()
         {
             TH = new Thread(PM.Start);
             TH.Start();
 
-            this.startToolStripMenuItem.Text = "Stop";
+            this.startToolStripMenuItem.Text = "结束";
         }
         
         private void InitializeForm()

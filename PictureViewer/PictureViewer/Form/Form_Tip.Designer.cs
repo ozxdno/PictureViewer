@@ -55,7 +55,7 @@
             this.KeyPreview = true;
             this.Name = "Form_Tip";
             this.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
-            this.Text = "Form_Tip";
+            this.Text = "文件信息";
             this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.Form_Tip_KeyDown);
             this.KeyUp += new System.Windows.Forms.KeyEventHandler(this.Form_Tip_KeyUp);
             this.ResumeLayout(false);
