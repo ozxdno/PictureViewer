@@ -411,6 +411,11 @@ namespace PictureViewer.Class
         /// </summary>
         public static void Reload()
         {
+            for (int i = RootFiles.Count - 1; i >= 0; i--)
+            {
+                if (!Directory.Exists(RootFiles[i].Path)) { RootFiles.RemoveAt(i); }
+            }
+
             for (int i = 0; i < RootFiles.Count; i++)
             {
                 RootFiles[i].Name.Clear();

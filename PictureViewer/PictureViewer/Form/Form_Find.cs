@@ -262,6 +262,31 @@ namespace PictureViewer
 
         private static List<Form_Image> images = new List<Form_Image>();
 
+        private static bool fixedDisk = false;
+
+        private static MOUSE mouse;
+        private struct MOUSE
+        {
+            public bool Down1;
+            public bool Down2;
+            public bool Down3;
+            public bool Up1;
+            public bool Up2;
+            public bool Up3;
+
+            public int cntDown1;
+            public int cntDown2;
+            public int cntDown3;
+            public int cntUp1;
+            public int cntUp2;
+            public int cntUp3;
+
+            public Point ptMouse;
+            public Point ptBox1;
+            public Point ptBox2;
+            public Point ptForm;
+        }
+
         /////////////////////////////////////////////////////////// public method //////////////////////////////////////////////////
 
         /// <summary>
@@ -402,7 +427,110 @@ namespace PictureViewer
             if (e.KeyValue == Class.Load.settings.FastKey_Find_R) { Next(null, null); return; }
             if (e.KeyValue == Class.Load.settings.FastKey_Find_Export) { RightMenu_Export(null, null); return; }
         }
-        
+        private void Form_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left && !mouse.Down2)
+            {
+                mouse.Down1 = true;
+                mouse.Up1 = false;
+            }
+            if (e.Button == MouseButtons.Right && !mouse.Down1)
+            {
+                mouse.Down2 = true;
+                mouse.Up2 = false;
+            }
+
+            mouse.ptMouse = MousePosition;
+            mouse.ptBox1 = this.pictureBox1.PointToClient(mouse.ptMouse);
+            mouse.ptBox2 = this.pictureBox2.PointToClient(mouse.ptMouse);
+            mouse.ptForm = this.Location;
+
+            if (DestPic != null && this.listBox1.SelectedIndex != -1)
+            {
+                int L = (DestPic.Width - this.pictureBox1.Width) / 2;
+                int U = (DestPic.Height - this.pictureBox1.Height) / 2;
+                mouse.ptBox1.X += L;
+                mouse.ptBox1.Y += U;
+            }
+            if (SourPic != null && this.listBox1.SelectedIndex != -1)
+            {
+                int L = (SourPic.Width - this.pictureBox2.Width) / 2;
+                int U = (SourPic.Height - this.pictureBox2.Height) / 2;
+                mouse.ptBox2.X += L;
+                mouse.ptBox2.Y += U;
+            }
+        }
+        private void Form_MouseUp(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left && !mouse.Down2)
+            {
+                mouse.Down1 = false;
+                mouse.Up1 = true;
+            }
+            if (e.Button == MouseButtons.Right && !mouse.Down1)
+            {
+                mouse.Down2 = false;
+                mouse.Up2 = true;
+
+                int xMove = MousePosition.X - mouse.ptMouse.X;
+                int yMove = MousePosition.Y - mouse.ptMouse.Y;
+
+                bool showMenu = Math.Abs(xMove) < 10 && Math.Abs(yMove) < 10;
+                if (!showMenu) { this.contextMenuStrip1.Hide(); }
+
+                bool inBox1 = 0 <= mouse.ptBox1.X && mouse.ptBox1.X < this.pictureBox1.Width &&
+                    0 <= mouse.ptBox1.Y && mouse.ptBox1.Y < this.pictureBox1.Height;
+                bool inBox2 = 0 <= mouse.ptBox2.X && mouse.ptBox2.X < this.pictureBox2.Width &&
+                    0 <= mouse.ptBox2.Y && mouse.ptBox2.Y < this.pictureBox2.Height;
+                
+                if (!showMenu && inBox1)
+                {
+                    if (DestPic != null && this.listBox1.SelectedIndex != -1 && File.Exists(DestFile.Full))
+                    {
+                        Point ptBox = this.pictureBox1.PointToClient(MousePosition);
+                        bool outBox = Math.Abs(this.pictureBox1.Width / 2 - ptBox.X) > DestPic.Width / 2 ||
+                            Math.Abs(this.pictureBox1.Height / 2 - ptBox.Y) > DestPic.Height / 2;
+                        if (outBox)
+                        {
+                            double rate1 = (double)DestPic.Height / Screen.PrimaryScreen.Bounds.Height;
+                            double rate2 = (double)DestPic.Width / Screen.PrimaryScreen.Bounds.Width;
+                            double rate = Math.Max(rate1, rate2) * 100;
+                            images.Add(new Form_Image(DestFile.Path, DestFile.Name, rate, 2));
+                            images[images.Count - 1].InitLoc = new Point(MousePosition.X - mouse.ptBox1.X, MousePosition.Y - mouse.ptBox1.Y);
+                            images[images.Count - 1].Show();
+                        }
+                    }
+                }
+                else if (!showMenu && inBox2)
+                {
+                    if (SourPic != null && this.listBox1.SelectedIndex != -1 && File.Exists(SourFile.Full))
+                    {
+                        Point ptBox = this.pictureBox2.PointToClient(MousePosition);
+                        bool outBox = Math.Abs(this.pictureBox2.Width / 2 - ptBox.X) > SourPic.Width / 2 ||
+                            Math.Abs(this.pictureBox2.Height / 2 - ptBox.Y) > SourPic.Height / 2;
+                        if (outBox)
+                        {
+                            double rate1 = (double)SourPic.Height / Screen.PrimaryScreen.Bounds.Height;
+                            double rate2 = (double)SourPic.Width / Screen.PrimaryScreen.Bounds.Width;
+                            double rate = Math.Max(rate1, rate2) * 100;
+                            images.Add(new Form_Image(SourFile.Path, SourFile.Name, rate, 2));
+                            images[images.Count - 1].InitLoc = new Point(MousePosition.X - mouse.ptBox2.X, MousePosition.Y - mouse.ptBox2.Y);
+                            images[images.Count - 1].Show();
+                        }
+                    }
+                }
+            }
+        }
+        private void Form_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (mouse.Down1)
+            {
+                int xMove = MousePosition.X - mouse.ptMouse.X;
+                int yMove = MousePosition.Y - mouse.ptMouse.Y;
+                this.Location = new Point(mouse.ptForm.X + xMove, mouse.ptForm.Y + yMove);
+            }
+        }
+
         private void Previous(object sender, EventArgs e)
         {
             if (config.Initializing) { return; }
@@ -491,7 +619,7 @@ namespace PictureViewer
             IsSwitch = true;
             //this.Close();
         }
-
+        
         private void RightMenu_Start(object sender, EventArgs e)
         {
             if (config.Initializing) { return; }
@@ -1238,13 +1366,49 @@ namespace PictureViewer
             
             for (int i = PictureFiles.Count - 1; config.Initializing && i >= 0; i--)
             {
-                if (!File.Exists(PictureFiles[i].Full)) { PictureFiles.RemoveAt(i); continue; }
+                if (PictureFiles[i].Full == null || PictureFiles[i].Full.Length == 0)
+                { PictureFiles.RemoveAt(i); continue; }
 
-                PictureFiles[i].FolderIndexes.Clear();
-                PictureFiles[i].FileIndexes.Clear();
-                PictureFiles[i].SubIndexes.Clear();
+                try
+                {
+                    FileInfo f = new FileInfo(PictureFiles[i].Full);
+                    if (!f.Exists)
+                    {
+                        if (!fixedDisk)
+                        {
+                            bool toFix = DialogResult.OK ==
+                                MessageBox.Show(
+                                    "文件不存在，确认盘符是否被修改？\n盘符：" + PictureFiles[i].Full[0],
+                                    "确认",
+                                    MessageBoxButtons.OKCancel);
+                            
+                            if (toFix) { fixedDisk = false; return; } else { fixedDisk = true; }
+                        }
+
+                        PictureFiles.RemoveAt(i);
+                        continue;
+                    }
+                    long time = f.LastWriteTime.ToFileTime();
+                    if (time == PictureFiles[i].Time)
+                    {
+                        IndexS++; IndexD++;
+                        PictureFiles[i].FolderIndexes.Clear();
+                        PictureFiles[i].FileIndexes.Clear();
+                        PictureFiles[i].SubIndexes.Clear();
+                    }
+                    else
+                    {
+                        PictureFiles.RemoveAt(i);
+                    }
+
+                }
+                catch
+                {
+                    PictureFiles.RemoveAt(i);
+                }
             }
-
+            
+            IndexS = 0;
             IndexD = PictureFiles.Count;
 
             #endregion

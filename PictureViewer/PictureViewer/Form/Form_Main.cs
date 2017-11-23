@@ -2913,25 +2913,23 @@ namespace PictureViewer
 
             char sdisk = input[6];
             char ddisk = input[8];
+            char _disk = ' ';
+            if (sdisk == ddisk) { return; }
 
-            try
+            if (Class.Load.Initialize.ThreadState == System.Threading.ThreadState.Running)
+            { MessageBox.Show("尚未读取完成！", "提示"); return; }
+
+            for (int i = 0; i < Form_Find.PictureFiles.Count; i++)
             {
-                StreamWriter sw = new StreamWriter(Form_Main.config.ConfigPath + "\\$pvdata");
-                StreamReader sr = new StreamReader(Form_Main.config.ConfigPath + "\\pvdata");
+                Form_Find.PICTURE p = Form_Find.PictureFiles[i];
+                if (p.Path == null || p.Path.Length == 0) { continue; }
+                _disk = p.Path.ToUpper()[0];
+                if (_disk != sdisk) { continue; }
 
-                while (!sr.EndOfStream)
-                {
-                    string line = sr.ReadLine();
-                    if (line.Length > 0 && line[0] == sdisk) { line = ddisk + line.Substring(1); }
-                    sw.WriteLine(line);
-                }
+                p.Path = ddisk + p.Path.Substring(1);
+                p.Full = ddisk + p.Full.Substring(1);
 
-                sw.Close();
-                sr.Close();
-            }
-            catch
-            {
-                MessageBox.Show("重新生成失败！", "提示");
+                Form_Find.PictureFiles[i] = p;
             }
         }
 

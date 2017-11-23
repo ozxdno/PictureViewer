@@ -647,10 +647,10 @@ namespace PictureViewer.Class
             p.Name = items[1];
             p.Full = p.Path + "\\" + p.Name;
             try { p.Time = long.Parse(items[2]); } catch { return false; }
-            FileInfo f;
-            try { f = new FileInfo(p.Full); } catch { return false; }
-            long time = f.LastWriteTime.ToFileTime();
-            if (time != p.Time) { return false; }
+            //FileInfo f;
+            //try { f = new FileInfo(p.Full); } catch { return false; }
+            //long time = f.LastWriteTime.ToFileTime();
+            //if (time != p.Time) { return false; }
 
             p.FolderIndexes = new List<int>();
             p.FileIndexes = new List<int>();
