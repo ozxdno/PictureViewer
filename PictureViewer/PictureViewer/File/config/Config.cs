@@ -11,17 +11,20 @@ namespace PictureViewer.Files
         /// <summary>
         /// 文件总集（文件序列表）
         /// </summary>
-        public static List<BaseFileInfo> Files = new List<BaseFileInfo>();
+        public static List<BaseFileInfo> Files
+        {
+            get;
+            set;
+        }
         /// <summary>
         /// 文件总集（文件树形表）
         /// </summary>
-        public static List<List<List<int>>> Trees = new List<List<List<int>>>();
-
-        /// <summary>
-        /// 文件序号总集
-        /// </summary>
-        public static List<Index> Indexes = new List<Index>();
-
+        public static List<List<List<int>>> Trees
+        {
+            get;
+            set;
+        }
+        
         /// <summary>
         /// 是否需要加载隐藏文件
         /// </summary>
@@ -31,14 +34,31 @@ namespace PictureViewer.Files
             set;
         }
         /// <summary>
+        /// 是否需要加载 ZIP 文件
+        /// </summary>
+        public static bool IsSupportZip
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
         /// 支持文件列表
         /// </summary>
-        public static List<Support> Supports = new List<Support>();
+        public static List<Support> Supports
+        {
+            set;
+            get;
+        }
 
         /// <summary>
         /// 必要的常量文件
         /// </summary>
-        public static ConstFiles ConstFiles = new ConstFiles();
+        public static ConstFiles ConstFiles
+        {
+            set;
+            get;
+        }
 
         /// <summary>
         /// 输出路径
@@ -51,28 +71,85 @@ namespace PictureViewer.Files
         /// <summary>
         /// 根目录
         /// </summary>
-        public static List<string> RootPathes = new List<string>();
+        public static List<string> RootPathes
+        {
+            set;
+            get;
+        }
 
         /// <summary>
         /// 提示：错误
         /// </summary>
-        public static System.Drawing.Bitmap ErrTip = null;
+        public static System.Drawing.Bitmap ErrTip
+        {
+            set;
+            get;
+        }
         /// <summary>
         /// 提示：文件不支持
         /// </summary>
-        public static System.Drawing.Bitmap UnpTip = null;
+        public static System.Drawing.Bitmap UnpTip
+        {
+            set;
+            get;
+        }
         /// <summary>
         /// 提示：未知错误
         /// </summary>
-        public static System.Drawing.Bitmap UnkTip = null;
+        public static System.Drawing.Bitmap UnkTip
+        {
+            set;
+            get;
+        }
         /// <summary>
         /// 提示：文件不存在
         /// </summary>
-        public static System.Drawing.Bitmap NotTip = null;
+        public static System.Drawing.Bitmap NotTip
+        {
+            set;
+            get;
+        }
 
         /// <summary>
         /// 加载文件专用线程
         /// </summary>
-        public static System.Threading.Thread Loading;
+        public static System.Threading.Thread Loading
+        {
+            set;
+            get;
+        }
+
+        /// <summary>
+        /// 初始化
+        /// </summary>
+        public static void Initialize()
+        {
+            Files = new List<BaseFileInfo>();
+            Trees = new List<List<List<int>>>();
+
+            IsSupportHide = false;
+            IsSupportZip = false;
+
+            Supports = new List<Support>();
+            ConstFiles = new ConstFiles();
+
+            ExportPath = "";
+            RootPathes = new List<string>();
+
+            ErrTip = null;
+            UnkTip = null;
+            UnpTip = null;
+            NotTip = null;
+
+            Loading = null;
+
+            new Load_pvini();
+            Support.SetDefault();
+        }
+
+        /// <summary>
+        /// 互斥锁
+        /// </summary>
+        private static object Lock = new object();
     }
 }

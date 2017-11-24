@@ -15,18 +15,11 @@ namespace PictureViewer.Files
             if (exist) { value = str; } else { value = ""; }
             return value;
         }
-        /// <summary>
-        /// 把读入字符串转换为 BOOL 值
-        /// </summary>
-        /// <param name="str">读入字符串</param>
-        /// <param name="value">转换值</param>
-        /// <returns></returns>
-        public static bool ToBool(string str, ref bool value)
+        public static bool ToBool(string str)
         {
             try
             {
-                value = int.Parse(str) != 0;
-                return true;
+                return int.Parse(str) != 0;
             }
             catch
             {
@@ -45,103 +38,68 @@ namespace PictureViewer.Files
                 return 0;
             }
         }
-        /// <summary>
-        /// 把读入字符串转换为 LONG 值
-        /// </summary>
-        /// <param name="str">读入字符串</param>
-        /// <param name="value">转换值</param>
-        /// <returns></returns>
-        public static bool ToLong(string str, ref long value)
+        public static long ToLong(string str)
         {
             try
             {
-                value = long.Parse(str);
-                return true;
+                return long.Parse(str);
             }
             catch
             {
-                return false;
+                return 0;
             }
         }
-        /// <summary>
-        /// 把读入字符串转换为 DOUBLE 值
-        /// </summary>
-        /// <param name="str">读入字符串</param>
-        /// <param name="value">转换值</param>
-        /// <returns></returns>
-        public static bool ToDouble(string str, ref double value)
+        public static double ToDouble(string str)
         {
             try
             {
-                value = double.Parse(str);
-                return true;
+                return double.Parse(str);
             }
             catch
             {
-                return false;
-            }
-        }
-        /// <summary>
-        /// 把读入字符串转换为表
-        /// </summary>
-        /// <param name="str">读入字符串</param>
-        /// <param name="value">转换值</param>
-        /// <returns></returns>
-        public static bool ToIntList(string str, ref List<int> value)
-        {
-            try
-            {
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-        /// <summary>
-        /// 把读入字符串转换为数组
-        /// </summary>
-        /// <param name="str">读入字符串</param>
-        /// <param name="value">转换值</param>
-        /// <returns></returns>
-        public static bool ToIntArray(string str, ref List<int> value)
-        {
-            try
-            {
-                return true;
-            }
-            catch
-            {
-                return false;
+                return 0;
             }
         }
 
         public static List<string> ToStringList(string str)
         {
-            List<string> temp = str.Split(new char[] { '|' }, StringSplitOptions.RemoveEmptyEntries).ToList();
-            return temp;
+            return str.Split(new char[] { '|' }, StringSplitOptions.RemoveEmptyEntries).ToList();
         }
-        public static List<Support> ToSupportList(string str)
+        public static List<int> ToIntList(string str)
         {
-            List<string> temp = str.Split(new char[] { '|' }, StringSplitOptions.RemoveEmptyEntries).ToList();
-            return temp;
+            List<string> tempStr = ToStringList(str);
+            List<int> tempInt = new List<int>();
+
+            for (int i = 0; i < tempStr.Count; i++)
+            {
+                try
+                {
+                    tempInt.Add(int.Parse(tempStr[i]));
+                }
+                catch
+                {
+                    return new List<int>();
+                }
+            }
+
+            return tempInt;
         }
-        /// <summary>
-        /// 把读入字符串转换为文件信息
-        /// </summary>
-        /// <param name="str">读入字符串</param>
-        /// <param name="value">转换值</param>
-        /// <returns></returns>
-        public static bool ToFileInfo(string str, ref BaseFileInfo value)
+
+        public static void ToSupport(Support.TYPE type, string str)
         {
-            try
-            {
-                return value.ToBaseFileInfo(str);
-            }
-            catch
-            {
-                return false;
-            }
+            Support support = new Support();
+            bool ok = support.ToSupport(type, str);
+            if (!ok) { return; }
+
+            Config.Supports.Add(support);
+        }
+        public static void ToBaseFileInfo(string str)
+        {
+            BaseFileInfo file = new BaseFileInfo();
+            bool ok = file.ToBaseFileInfo(str);
+            if (!ok) { return; }
+
+            Config.Files.Add(file);
         }
     }
 }

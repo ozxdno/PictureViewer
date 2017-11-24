@@ -24,8 +24,6 @@ namespace PictureViewer.Files
         /// <returns></returns>
         public void LoadFile()
         {
-            Config.RootPathes.Clear();
-
             try
             {
                 StreamReader sr = new StreamReader(Config.ConstFiles.pviniFull);
@@ -44,35 +42,33 @@ namespace PictureViewer.Files
                         case "FileIndex": MainForm.Config.TreeIndex.File = Load_vars.ToInt(vars); break;
                         case "SubIndex": MainForm.Config.TreeIndex.Sub = Load_vars.ToInt(vars); break;
                         case "RootPath": Config.RootPathes.AddRange(Load_vars.ToStringList(vars)); break;
-                        case "SupportPicture": Config.Supports.AddRange(Load_vars.ToStringList(vars)); break;
-                        //case "SupportGif": ToStringEx(Item[1], ref SupportGif); break;
-                        //case "SupportMusic": ToStringEx(Item[1], ref SupportMusic); break;
-                        //case "SupportVideo": ToStringEx(Item[1], ref SupportVideo); break;
-                        //case "SupportZip": ToStringEx(Item[1], ref SupportZip); break;
-                        //case "Form_Main_Hide": Found.Form_Main_Hide = ToBool(Item[1], ref settings.Form_Main_Hide); break;
-                        //case "Form_Main_Hide_L": Found.Form_Main_Hide_L = ToBool(Item[1], ref settings.Form_Main_Hide_L); break;
-                        //case "Form_Main_Hide_R": Found.Form_Main_Hide_R = ToBool(Item[1], ref settings.Form_Main_Hide_R); break;
-                        //case "Form_Main_Hide_U": Found.Form_Main_Hide_U = ToBool(Item[1], ref settings.Form_Main_Hide_U); break;
-                        //case "Form_Main_Hide_D": Found.Form_Main_Hide_D = ToBool(Item[1], ref settings.Form_Main_Hide_D); break;
-                        //case "Form_Main_Find_Full": Found.Form_Main_Find_Full = ToBool(Item[1], ref settings.Form_Main_Find_Full); break;
-                        //case "Form_Main_Find_Part": Found.Form_Main_Find_Part = ToBool(Item[1], ref settings.Form_Main_Find_Part); break;
-                        //case "Form_Main_Find_Same": Found.Form_Main_Find_Same = ToBool(Item[1], ref settings.Form_Main_Find_Same); break;
-                        //case "Form_Main_Find_Like": Found.Form_Main_Find_Like = ToBool(Item[1], ref settings.Form_Main_Find_Like); break;
-                        //case "Form_Main_Find_Turn": Found.Form_Main_Find_Turn = ToBool(Item[1], ref settings.Form_Main_Find_Turn); break;
-                        //case "Form_Find_Degree": Found.Form_Find_Degree = ToInt(Item[1], ref settings.Form_Find_Degree); break;
-                        //case "Form_Find_Pixes": Found.Form_Find_Pixes = ToInt(Item[1], ref settings.Form_Find_Pixes); break;
-                        //case "Form_Main_UseSmallWindowOpen": Found.Form_Main_UseSmallWindowOpen = ToBool(Item[1], ref settings.Form_Main_UseSmallWindowOpen); break;
-                        //case "Form_Main_Height": Found.Form_Main_Height = ToInt(Item[1], ref settings.Form_Main_Height); break;
-                        //case "Form_Main_Width": Found.Form_Main_Width = ToInt(Item[1], ref settings.Form_Main_Width); break;
-                        //case "Form_Main_Location_X": Found.Form_Main_Location_X = ToInt(Item[1], ref settings.Form_Main_Location_X); break;
-                        //case "Form_Main_Location_Y": Found.Form_Main_Location_Y = ToInt(Item[1], ref settings.Form_Main_Location_Y); break;
-                        //case "Form_Main_UseBoard": Found.Form_Main_UseBoard = ToBool(Item[1], ref settings.Form_Main_UseBoard); break;
-                        //case "Form_Main_ShapeWindow": Found.Form_Main_ShapeWindow = ToBool(Item[1], ref settings.Form_Main_ShapeWindow); break;
-                        //case "Form_Main_ShapeWindowRate": Found.Form_Main_ShapeWindowRate = ToDouble(Item[1], ref settings.Form_Main_ShapeWindowRate); break;
-                        //case "Form_Main_Lock": Found.Form_Main_Lock = ToBool(Item[1], ref settings.Form_Main_Lock); break;
-                        //case "Form_Main_MaxWindowSize": Found.Form_Main_MaxWindowSize = ToInt(Item[1], ref settings.Form_Main_MaxWindowSize); break;
-                        //case "Form_Main_MinWindowSize": Found.Form_Main_MinWindowSize = ToInt(Item[1], ref settings.Form_Main_MinWindowSize); break;
-                        //case "Form_Main_Tip": Found.Form_Main_Tip = ToBool(Item[1], ref settings.Form_Main_Tip); break;
+                        case "SupportPicture": Load_vars.ToSupport(Support.TYPE.PICTURE, vars); break;
+                        case "SupportGif": Load_vars.ToSupport(Support.TYPE.GIF, vars); break;
+                        case "SupportMusic": Load_vars.ToSupport(Support.TYPE.MUSIC, vars); break;
+                        case "SupportVideo": Load_vars.ToSupport(Support.TYPE.VIDEO, vars); break;
+                        case "Form_Main_HideL": MainForm.Config.HideL = Load_vars.ToBool(vars); break;
+                        case "Form_Main_HideR": MainForm.Config.HideR = Load_vars.ToBool(vars); break;
+                        case "Form_Main_HideU": MainForm.Config.HideU = Load_vars.ToBool(vars); break;
+                        case "Form_Main_HideD": MainForm.Config.HideD = Load_vars.ToBool(vars); break;
+                        case "Form_Main_Find_Full": FindForm.Config.Find_Full = Load_vars.ToBool(vars); break;
+                        case "Form_Main_Find_Part": FindForm.Config.Find_Part = Load_vars.ToBool(vars); break;
+                        case "Form_Main_Find_Same": FindForm.Config.Find_Same = Load_vars.ToBool(vars); break;
+                        case "Form_Main_Find_Like": FindForm.Config.Find_Like = Load_vars.ToBool(vars); break;
+                        case "Form_Main_Find_Turn": FindForm.Config.Find_Turn = Load_vars.ToBool(vars); break;
+                        case "Form_Find_Degree": FindForm.Config.Degree = Load_vars.ToInt(vars); break;
+                        case "Form_Find_Pixes": FindForm.Config.Pixes = Load_vars.ToInt(vars); break;
+                        case "Form_Main_UseSmallWindowOpen": MainForm.Config.SmallWindow = Load_vars.ToBool(vars); break;
+                        case "Form_Main_Height": MainForm.Config.Height = Load_vars.ToInt(vars); break;
+                        case "Form_Main_Width": MainForm.Config.Width = Load_vars.ToInt(vars); break;
+                        case "Form_Main_Location_X": MainForm.Config.LocationX = Load_vars.ToInt(vars); break;
+                        case "Form_Main_Location_Y": MainForm.Config.LocationY = Load_vars.ToInt(vars); break;
+                        case "Form_Main_UseBoard": MainForm.Config.UseBoard = Load_vars.ToBool(vars); break;
+                        case "Form_Main_ShapeWindow": MainForm.Config.ShapeWindow = Load_vars.ToBool(vars); break;
+                        case "Form_Main_ShapeWindowRate": MainForm.Config.ShapeWindowRate = Load_vars.ToDouble(vars); break;
+                        case "Form_Main_Lock": MainForm.Config.LockOpreate = Load_vars.ToBool(vars); break;
+                        case "Form_Main_MaxWindowSize": MainForm.Config.MaxRate = Load_vars.ToDouble(vars); break;
+                        case "Form_Main_MinWindowSize": MainForm.Config.MinRate = Load_vars.ToDouble(vars); break;
+                        case "Form_Main_Tip": MainForm.Config.Tip = Load_vars.ToBool(vars); break;
                         //case "Form_Main_Play_Forward": Found.Form_Main_Play_Forward = ToBool(Item[1], ref settings.Form_Main_Play_Forward); break;
                         //case "Form_Main_Play_Backward": Found.Form_Main_Play_Backward = ToBool(Item[1], ref settings.Form_Main_Play_Backward); break;
                         //case "Form_Main_Play_TotalRoots": Found.Form_Main_Play_TotalRoots = ToBool(Item[1], ref settings.Form_Main_Play_TotalRoots); break;

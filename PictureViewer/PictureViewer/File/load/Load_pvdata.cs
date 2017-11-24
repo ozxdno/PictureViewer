@@ -35,10 +35,7 @@ namespace PictureViewer.Files
                 while (!sr.EndOfStream)
                 {
                     string line = sr.ReadLine();
-                    BaseFileInfo file = new BaseFileInfo();
-                    bool ok = Load_vars.ToFileInfo(line, ref file);
-                    if (!ok) { continue; }
-                    Config.Files.Add(file);
+                    Load_vars.ToBaseFileInfo(line);
                 }
             }
             catch

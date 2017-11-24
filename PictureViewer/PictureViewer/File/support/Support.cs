@@ -12,6 +12,46 @@ namespace PictureViewer.Files
     class Support
     {
         /// <summary>
+        /// 是否支持隐藏文件
+        /// </summary>
+        public static bool IsSupportHide
+        {
+            set;
+            get;
+        }
+
+        /// <summary>
+        /// 文件类型
+        /// </summary>
+        public enum TYPE
+        {
+            /// <summary>
+            /// 暂不支持
+            /// </summary>
+            UNSUPPORT,
+            /// <summary>
+            /// 图片
+            /// </summary>
+            PICTURE,
+            /// <summary>
+            /// GIF
+            /// </summary>
+            GIF,
+            /// <summary>
+            /// 音频
+            /// </summary>
+            MUSIC,
+            /// <summary>
+            /// 视频
+            /// </summary>
+            VIDEO,
+            /// <summary>
+            /// 压缩文件
+            /// </summary>
+            ZIP
+        }
+
+        /// <summary>
         /// 本文件是否是图片文件
         /// </summary>
         public bool IsPicture
@@ -90,16 +130,96 @@ namespace PictureViewer.Files
         /// </summary>
         public Support()
         {
+            IsPicture = false;
+            IsGif = false;
+            IsMusic = false;
+            IsVideo = false;
+            IsZip = false;
+            IsUnsupport = true;
+            IsUserDefine = false;
 
+            ShowExtension = "";
+            HideExtension = "";
         }
         /// <summary>
         /// 初始化
         /// </summary>
+        /// <param name="showExtension"></param>
+        /// <param name="hideExtension"></param>
+        public Support(TYPE type, string showExtension, string hideExtension = "")
+        {
+            IsPicture = false;
+            IsGif = false;
+            IsMusic = false;
+            IsVideo = false;
+            IsZip = false;
+            IsUnsupport = false;
+            IsUserDefine = false;
+
+            ShowExtension = showExtension;
+            HideExtension = hideExtension;
+
+            if (type == TYPE.PICTURE) { IsPicture = true; return; }
+            if (type == TYPE.GIF) { IsGif = true; return; }
+            if (type == TYPE.MUSIC) { IsMusic = true; return; }
+            if (type == TYPE.VIDEO) { IsVideo = true; return; }
+
+            IsUnsupport = true;
+        }
+
+        /// <summary>
+        /// 填充 Support 变量
+        /// </summary>
         /// <param name="type">类型</param>
         /// <param name="extraExtension">额外的扩展名</param>
-        public Support(string type, string extraExtension)
+        /// <returns></returns>
+        public bool ToSupport(TYPE type, string extraExtension)
         {
+            IsPicture = false;
+            IsGif = false;
+            IsMusic = false;
+            IsVideo = false;
+            IsZip = false;
+            IsUnsupport = false;
+            IsUserDefine = true;
 
+            ShowExtension = extraExtension;
+            HideExtension = "";
+
+            if (type == TYPE.PICTURE) { IsPicture = true; return true; }
+            if (type == TYPE.GIF) { IsGif = true; return true; }
+            if (type == TYPE.MUSIC) { IsMusic = true; return true; }
+            if (type == TYPE.VIDEO) { IsVideo = true; return true; }
+
+            IsUnsupport = true;
+            return false;
+        }
+        /// <summary>
+        /// 把当前类型转换为字符串
+        /// </summary>
+        /// <returns></returns>
+        public string ToString()
+        {
+            return ShowExtension;
+        }
+
+
+        /// <summary>
+        /// 默认的支持项
+        /// </summary>
+        public static void SetDefault()
+        {
+            Support support = null;
+
+            support = new Support(TYPE.PICTURE, ".jpg", ".pv1"); Config.Supports.Add(support);
+            support = new Support(TYPE.PICTURE, ".jpeg", ".pv2"); Config.Supports.Add(support);
+            support = new Support(TYPE.PICTURE, ".png", ".pv3"); Config.Supports.Add(support);
+            support = new Support(TYPE.PICTURE, ".bmp", ".pv4"); Config.Supports.Add(support);
+            support = new Support(TYPE.GIF, ".gif", ".pv5"); Config.Supports.Add(support);
+            support = new Support(TYPE.VIDEO, ".avi", ".pv6"); Config.Supports.Add(support);
+            support = new Support(TYPE.VIDEO, ".mp4", ".pv7"); Config.Supports.Add(support);
+            support = new Support(TYPE.VIDEO, ".webm", ".pv8"); Config.Supports.Add(support);
+            support = new Support(TYPE.ZIP, ".zip", ".pv9"); Config.Supports.Add(support);
         }
     }
 }

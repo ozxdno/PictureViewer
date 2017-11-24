@@ -360,7 +360,7 @@ namespace PictureViewer.Files
             if (str == null || str.Length == 0) { return false; }
 
             string[] items = str.Split(new char[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
-            if (items.Length != 2 * Find.Config.Pixes + 8) { return false; }
+            if (items.Length != 2 * FindForm.Config.Pixes + 8) { return false; }
 
 
             return true;

@@ -106,6 +106,7 @@
       <DependentUpon>Form_Input.cs</DependentUpon>
     </Compile>
     <Compile Include="Form\main\Play.cs" />
+    <Compile Include="Form\main\Tip.cs" />
     <Compile Include="Form\search\Form_Search.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -133,6 +134,7 @@
     <Compile Include="PictureViewer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Resource\Strings.cs" />
+    <Compile Include="Resource\Tools.cs" />
     <EmbeddedResource Include="Form\find\Form_Find.resx">
       <DependentUpon>Form_Find.cs</DependentUpon>
     </EmbeddedResource>

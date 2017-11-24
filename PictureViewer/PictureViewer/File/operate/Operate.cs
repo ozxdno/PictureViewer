@@ -143,7 +143,7 @@ namespace PictureViewer.Files
             {
                 if (showConfirm)
                 {
-                    if (!OK(Strings.FileMove_Confirm)) { return FILE_MOVE_RESULT.CANCLED; }
+                    if (!OK(Strings.ConfirmFileMove)) { return FILE_MOVE_RESULT.CANCLED; }
                 }
 
                 try
@@ -182,7 +182,7 @@ namespace PictureViewer.Files
             return System.Windows.Forms.DialogResult.OK ==
                 System.Windows.Forms.MessageBox.Show(
                     text,
-                    Strings.MessageBox_Title_Confirm,
+                    Strings.Confirm + Strings.Exclamation,
                     System.Windows.Forms.MessageBoxButtons.OKCancel
                     );
         }
