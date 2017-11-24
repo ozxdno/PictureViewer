@@ -78,60 +78,77 @@
     <Compile Include="Class\PicMatch.cs" />
     <Compile Include="Class\Save.cs" />
     <Compile Include="Class\ZipOperate.cs" />
-    <Compile Include="Form\Form_Main.cs">
+    <Compile Include="File\base\BaseFileInfo.cs" />
+    <Compile Include="File\config\Config.cs" />
+    <Compile Include="File\Index\Index.cs" />
+    <Compile Include="File\load\Load_pvdata.cs" />
+    <Compile Include="File\load\Load_pvini.cs" />
+    <Compile Include="File\load\Load_tip.cs" />
+    <Compile Include="File\load\Load_vars.cs" />
+    <Compile Include="File\operate\Operate.cs" />
+    <Compile Include="File\const\ConstFiles.cs" />
+    <Compile Include="File\support\Support.cs" />
+    <Compile Include="Form\common\Mouse.cs" />
+    <Compile Include="Form\find\Config.cs" />
+    <Compile Include="Form\image\Config.cs" />
+    <Compile Include="Form\main\Config.cs" />
+    <Compile Include="Form\main\DirectionKey.cs" />
+    <Compile Include="Form\main\Form_Main.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Form\Form_Main.Designer.cs">
+    <Compile Include="Form\main\Form_Main.Designer.cs">
       <DependentUpon>Form_Main.cs</DependentUpon>
     </Compile>
-    <Compile Include="Form\Form_Input.cs">
+    <Compile Include="Form\input\Form_Input.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Form\Form_Input.Designer.cs">
+    <Compile Include="Form\input\Form_Input.Designer.cs">
       <DependentUpon>Form_Input.cs</DependentUpon>
     </Compile>
-    <Compile Include="Form\Form_Search.cs">
+    <Compile Include="Form\main\Play.cs" />
+    <Compile Include="Form\search\Form_Search.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Form\Form_Search.Designer.cs">
+    <Compile Include="Form\search\Form_Search.Designer.cs">
       <DependentUpon>Form_Search.cs</DependentUpon>
     </Compile>
-    <Compile Include="Form\Form_Find.cs">
+    <Compile Include="Form\find\Form_Find.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Form\Form_Find.Designer.cs">
+    <Compile Include="Form\find\Form_Find.Designer.cs">
       <DependentUpon>Form_Find.cs</DependentUpon>
     </Compile>
-    <Compile Include="Form\Form_Tip.cs">
+    <Compile Include="Form\tip\Form_Tip.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Form\Form_Tip.Designer.cs">
+    <Compile Include="Form\tip\Form_Tip.Designer.cs">
       <DependentUpon>Form_Tip.cs</DependentUpon>
     </Compile>
-    <Compile Include="Form\Form_Image.cs">
+    <Compile Include="Form\image\Form_Image.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Form\Form_Image.Designer.cs">
+    <Compile Include="Form\image\Form_Image.Designer.cs">
       <DependentUpon>Form_Image.cs</DependentUpon>
     </Compile>
     <Compile Include="PictureViewer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <EmbeddedResource Include="Form\Form_Find.resx">
+    <Compile Include="Resource\Strings.cs" />
+    <EmbeddedResource Include="Form\find\Form_Find.resx">
       <DependentUpon>Form_Find.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Form\Form_Image.resx">
+    <EmbeddedResource Include="Form\image\Form_Image.resx">
       <DependentUpon>Form_Image.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Form\Form_Input.resx">
+    <EmbeddedResource Include="Form\input\Form_Input.resx">
       <DependentUpon>Form_Input.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Form\Form_Main.resx">
+    <EmbeddedResource Include="Form\main\Form_Main.resx">
       <DependentUpon>Form_Main.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Form\Form_Search.resx">
+    <EmbeddedResource Include="Form\search\Form_Search.resx">
       <DependentUpon>Form_Search.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Form\Form_Tip.resx">
+    <EmbeddedResource Include="Form\tip\Form_Tip.resx">
       <DependentUpon>Form_Tip.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
@@ -191,6 +208,10 @@
       <ProductName>.NET Framework 3.5 SP1</ProductName>
       <Install>false</Install>
     </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Class\match\" />
+    <Folder Include="File\save\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
