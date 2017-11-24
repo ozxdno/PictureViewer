@@ -21,6 +21,14 @@ namespace PictureViewer.Files
         }
 
         /// <summary>
+        /// 本文件的文件类型
+        /// </summary>
+        public TYPE Type
+        {
+            get;
+            set;
+        }
+        /// <summary>
         /// 文件类型
         /// </summary>
         public enum TYPE
@@ -130,6 +138,7 @@ namespace PictureViewer.Files
         /// </summary>
         public Support()
         {
+            Type = TYPE.UNSUPPORT;
             IsPicture = false;
             IsGif = false;
             IsMusic = false;
@@ -148,6 +157,7 @@ namespace PictureViewer.Files
         /// <param name="hideExtension"></param>
         public Support(TYPE type, string showExtension, string hideExtension = "")
         {
+            Type = type;
             IsPicture = false;
             IsGif = false;
             IsMusic = false;
@@ -163,6 +173,7 @@ namespace PictureViewer.Files
             if (type == TYPE.GIF) { IsGif = true; return; }
             if (type == TYPE.MUSIC) { IsMusic = true; return; }
             if (type == TYPE.VIDEO) { IsVideo = true; return; }
+            if (type == TYPE.ZIP) { IsZip = true; return; }
 
             IsUnsupport = true;
         }
@@ -175,6 +186,7 @@ namespace PictureViewer.Files
         /// <returns></returns>
         public bool ToSupport(TYPE type, string extraExtension)
         {
+            Type = type;
             IsPicture = false;
             IsGif = false;
             IsMusic = false;
@@ -203,7 +215,13 @@ namespace PictureViewer.Files
             return ShowExtension;
         }
 
+        /// <summary>
+        /// 初始化
+        /// </summary>
+        public static void Initialize()
+        {
 
+        }
         /// <summary>
         /// 默认的支持项
         /// </summary>
@@ -220,6 +238,88 @@ namespace PictureViewer.Files
             support = new Support(TYPE.VIDEO, ".mp4", ".pv7"); Config.Supports.Add(support);
             support = new Support(TYPE.VIDEO, ".webm", ".pv8"); Config.Supports.Add(support);
             support = new Support(TYPE.ZIP, ".zip", ".pv9"); Config.Supports.Add(support);
+            support = new Support(TYPE.MUSIC, ".mp3", ".pv10"); Config.Supports.Add(support);
+            support = new Support(TYPE.MUSIC, ".wav", ".pv11"); Config.Supports.Add(support);
+            support = new Support(TYPE.MUSIC, ".m4a", ".pv12"); Config.Supports.Add(support);
+            support = new Support(TYPE.MUSIC, ".flac", ".pv13"); Config.Supports.Add(support);
+        }
+
+        /// <summary>
+        /// 判断某后缀是否被支持
+        /// </summary>
+        /// <param name="extension">后缀</param>
+        public static bool IsSupport(string extension)
+        {
+            for (int i = 0; i < Config.Supports.Count; i++)
+            {
+                if (Config.Supports[i].ShowExtension == extension) { return true; }
+                if (!IsSupportHide) { continue; }
+                if (Config.Supports[i].HideExtension == extension) { return true; }
+            }
+
+            return false;
+        }
+        /// <summary>
+        /// 获取某后缀的类型
+        /// </summary>
+        /// <param name="extension"></param>
+        /// <returns></returns>
+        public static TYPE GetType(string extension)
+        {
+            TYPE type = TYPE.UNSUPPORT;
+
+            for (int i = 0; i < Config.Supports.Count; i++)
+            {
+                if (Config.Supports[i].ShowExtension == extension) { return Config.Supports[i].Type; }
+                if (Config.Supports[i].HideExtension == extension) { return Config.Supports[i].Type; }
+            }
+
+            return type;
+        }
+        /// <summary>
+        /// 判断某后缀的文件是不是图片文件
+        /// </summary>
+        /// <param name="extension">后缀</param>
+        /// <returns></returns>
+        public static bool IsPictureExtension(string extension)
+        {
+            return GetType(extension) == TYPE.PICTURE;
+        }
+        /// <summary>
+        /// 判断某后缀的文件是不是 GIF 文件
+        /// </summary>
+        /// <param name="extension">后缀</param>
+        /// <returns></returns>
+        public static bool IsGifExtension(string extension)
+        {
+            return GetType(extension) == TYPE.GIF;
+        }
+        /// <summary>
+        /// 判断某后缀的文件是不是音频文件
+        /// </summary>
+        /// <param name="extension">后缀</param>
+        /// <returns></returns>
+        public static bool IsMusicExtension(string extension)
+        {
+            return GetType(extension) == TYPE.MUSIC;
+        }
+        /// <summary>
+        /// 判断某后缀的文件是不是视频文件
+        /// </summary>
+        /// <param name="extension">后缀</param>
+        /// <returns></returns>
+        public static bool IsVideoExtension(string extension)
+        {
+            return GetType(extension) == TYPE.VIDEO;
+        }
+        /// <summary>
+        /// 判断某后缀的文件是不是 ZIP 文件
+        /// </summary>
+        /// <param name="extension">后缀</param>
+        /// <returns></returns>
+        public static bool IsZipExtension(string extension)
+        {
+            return GetType(extension) == TYPE.ZIP;
         }
     }
 }

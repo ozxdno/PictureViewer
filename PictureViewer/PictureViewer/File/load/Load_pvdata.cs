@@ -10,25 +10,23 @@ namespace PictureViewer.Files
     class Load_pvdata
     {
         /// <summary>
-        /// 初始化（在新线程中读取缓存数据）
+        /// 在新线程中读取缓存数据
         /// </summary>
-        public Load_pvdata()
+        public static void thread()
         {
             // 等待读取完毕
             while (Config.Loading != null && Config.Loading.ThreadState == System.Threading.ThreadState.Running) ;
 
             // 开始新的线程
-            Config.Loading = new System.Threading.Thread(LoadFile);
+            Config.Loading = new System.Threading.Thread(load);
             Config.Loading.Start();
         }
 
         /// <summary>
         /// 加载文件
         /// </summary>
-        public void LoadFile()
+        public static void load()
         {
-            Config.Files.Clear();
-
             try
             {
                 StreamReader sr = new StreamReader(Config.ConstFiles.pvdataFull);

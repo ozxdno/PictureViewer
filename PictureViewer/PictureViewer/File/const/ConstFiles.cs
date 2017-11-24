@@ -16,7 +16,7 @@ namespace PictureViewer.Files
         /// </summary>
         public string pviniPath
         {
-            get { return Operate.getExePath(); }
+            get { return Tools.Tools.getExePath(); }
         }
         /// <summary>
         /// 配置文件名称
@@ -38,7 +38,7 @@ namespace PictureViewer.Files
         /// </summary>
         public string pvdataPath
         {
-            get { return Operate.getExePath(); }
+            get { return Tools.Tools.getExePath(); }
         }
         /// <summary>
         /// 缓存数据文件的文件名称
@@ -60,7 +60,7 @@ namespace PictureViewer.Files
         /// </summary>
         public string errTipPath
         {
-            get { return Operate.getExePath(); }
+            get { return Tools.Tools.getExePath(); }
         }
         /// <summary>
         /// 错误提示图片的名称
@@ -82,7 +82,7 @@ namespace PictureViewer.Files
         /// </summary>
         public string unpTipPath
         {
-            get { return Operate.getExePath(); }
+            get { return Tools.Tools.getExePath(); }
         }
         /// <summary>
         /// 错误提示图片的名称
@@ -104,7 +104,7 @@ namespace PictureViewer.Files
         /// </summary>
         public string unkTipPath
         {
-            get { return Operate.getExePath(); }
+            get { return Tools.Tools.getExePath(); }
         }
         /// <summary>
         /// 错误提示图片的名称
@@ -126,7 +126,7 @@ namespace PictureViewer.Files
         /// </summary>
         public string notTipPath
         {
-            get { return Operate.getExePath(); }
+            get { return Tools.Tools.getExePath(); }
         }
         /// <summary>
         /// 错误提示图片的名称
@@ -141,6 +141,28 @@ namespace PictureViewer.Files
         public string notTipFull
         {
             get { return notTipPath + "\\" + notTipName; }
+        }
+
+        /// <summary>
+        /// 正在加载提示图片的路径
+        /// </summary>
+        public string iniTipPath
+        {
+            get { return Tools.Tools.getExePath(); }
+        }
+        /// <summary>
+        /// 正在加载提示图片的名称
+        /// </summary>
+        public string iniTipName
+        {
+            get { return "ini.tip"; }
+        }
+        /// <summary>
+        /// 正在加载提示图片的全称
+        /// </summary>
+        public string iniTipFull
+        {
+            get { return iniTipPath + "\\" + iniTipName; }
         }
     }
 }

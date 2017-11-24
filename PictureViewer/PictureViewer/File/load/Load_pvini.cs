@@ -10,19 +10,21 @@ namespace PictureViewer.Files
     class Load_pvini
     {
         /// <summary>
-        /// 初始化，包含读入文件（LoadFile）、设置默认值（SetDefault）两个过程。
+        /// 用单独的线程加载文件
         /// </summary>
-        public Load_pvini()
+        public static void thread()
         {
-            LoadFile();
-            SetDefault();
+            while (Config.Loading != null && Config.Loading.ThreadState == System.Threading.ThreadState.Running) ;
+
+            Config.Loading = new System.Threading.Thread(load);
+            Config.Loading.Start();
         }
 
         /// <summary>
         /// 读入文件
         /// </summary>
         /// <returns></returns>
-        public void LoadFile()
+        public static void load()
         {
             try
             {
@@ -34,6 +36,8 @@ namespace PictureViewer.Files
                     string item = line.Substring(0, indexEq);
                     string vars = line.Substring(indexEq + 1);
                     if (item.Length == 0 || vars.Length == 0) { continue; }
+
+                    #region 文本
 
                     switch (item)
                     {
@@ -69,67 +73,67 @@ namespace PictureViewer.Files
                         case "Form_Main_MaxWindowSize": MainForm.Config.MaxRate = Load_vars.ToDouble(vars); break;
                         case "Form_Main_MinWindowSize": MainForm.Config.MinRate = Load_vars.ToDouble(vars); break;
                         case "Form_Main_Tip": MainForm.Config.Tip = Load_vars.ToBool(vars); break;
-                        //case "Form_Main_Play_Forward": Found.Form_Main_Play_Forward = ToBool(Item[1], ref settings.Form_Main_Play_Forward); break;
-                        //case "Form_Main_Play_Backward": Found.Form_Main_Play_Backward = ToBool(Item[1], ref settings.Form_Main_Play_Backward); break;
-                        //case "Form_Main_Play_TotalRoots": Found.Form_Main_Play_TotalRoots = ToBool(Item[1], ref settings.Form_Main_Play_TotalRoots); break;
-                        //case "Form_Main_Play_Root": Found.Form_Main_Play_Root = ToBool(Item[1], ref settings.Form_Main_Play_Root); break;
-                        //case "Form_Main_Play_Subroot": Found.Form_Main_Play_Subroot = ToBool(Item[1], ref settings.Form_Main_Play_Subroot); break;
-                        //case "Form_Main_Play_Picture": Found.Form_Main_Play_Picture = ToBool(Item[1], ref settings.Form_Main_Play_Picture); break;
-                        //case "Form_Main_Play_Gif": Found.Form_Main_Play_Gif = ToBool(Item[1], ref settings.Form_Main_Play_Gif); break;
-                        //case "Form_Main_Play_Music": Found.Form_Main_Play_Music = ToBool(Item[1], ref settings.Form_Main_Play_Music); break;
-                        //case "Form_Main_Play_Video": Found.Form_Main_Play_Video = ToBool(Item[1], ref settings.Form_Main_Play_Video); break;
-                        //case "Form_Main_Play_Single": Found.Form_Main_Play_Single = ToBool(Item[1], ref settings.Form_Main_Play_Single); break;
-                        //case "Form_Main_Play_Order": Found.Form_Main_Play_Order = ToBool(Item[1], ref settings.Form_Main_Play_Order); break;
-                        //case "Form_Main_Play_Circle": Found.Form_Main_Play_Circle = ToBool(Item[1], ref settings.Form_Main_Play_Circle); break;
-                        //case "Form_Main_Play_Rand": Found.Form_Main_Play_Rand = ToBool(Item[1], ref settings.Form_Main_Play_Rand); break;
-                        //case "Form_Main_Play_ShowTime": Found.Form_Main_Play_ShowTime = ToInt(Item[1], ref settings.Form_Main_Play_ShowTime); break;
-                        //case "FastKey_Find_Esc": Found.FastKey_Find_Esc = ToInt(Item[1], ref settings.FastKey_Find_Esc); break;
-                        //case "FastKey_Find_Export": Found.FastKey_Find_Export = ToInt(Item[1], ref settings.FastKey_Find_Export); break;
-                        //case "FastKey_Find_L": Found.FastKey_Find_L = ToInt(Item[1], ref settings.FastKey_Find_L); break;
-                        //case "FastKey_Find_R": Found.FastKey_Find_R = ToInt(Item[1], ref settings.FastKey_Find_R); break;
-                        //case "FastKey_Find_U": Found.FastKey_Find_U = ToInt(Item[1], ref settings.FastKey_Find_U); break;
-                        //case "FastKey_Find_D": Found.FastKey_Find_D = ToInt(Item[1], ref settings.FastKey_Find_D); break;
-                        //case "FastKey_Main_D": Found.FastKey_Main_D = ToInt(Item[1], ref settings.FastKey_Main_D); break;
-                        //case "FastKey_Main_L": Found.FastKey_Main_L = ToInt(Item[1], ref settings.FastKey_Main_L); break;
-                        //case "FastKey_Main_PageD": Found.FastKey_Main_PageD = ToInt(Item[1], ref settings.FastKey_Main_PageD); break;
-                        //case "FastKey_Main_PageU": Found.FastKey_Main_PageU = ToInt(Item[1], ref settings.FastKey_Main_PageU); break;
-                        //case "FastKey_Main_R": Found.FastKey_Main_R = ToInt(Item[1], ref settings.FastKey_Main_R); break;
-                        //case "FastKey_Main_U": Found.FastKey_Main_U = ToInt(Item[1], ref settings.FastKey_Main_U); break;
-                        //case "FastKey_Main_Board": Found.FastKey_Main_Board = ToInt(Item[1], ref settings.FastKey_Main_Board); break;
-                        //case "FastKey_Main_Enter": Found.FastKey_Main_Enter = ToInt(Item[1], ref settings.FastKey_Main_Enter); break;
-                        //case "FastKey_Main_Esc": Found.FastKey_Main_Esc = ToInt(Item[1], ref settings.FastKey_Main_Esc); break;
-                        //case "FastKey_Main_Export": Found.FastKey_Main_Export = ToInt(Item[1], ref settings.FastKey_Main_Export); break;
-                        //case "FastKey_Main_OpenComic": Found.FastKey_Main_OpenComic = ToInt(Item[1], ref settings.FastKey_Main_OpenComic); break;
-                        //case "FastKey_Main_OpenCurrent": Found.FastKey_Main_OpenCurrent = ToInt(Item[1], ref settings.FastKey_Main_OpenCurrent); break;
-                        //case "FastKey_Main_OpenExport": Found.FastKey_Main_OpenExport = ToInt(Item[1], ref settings.FastKey_Main_OpenExport); break;
-                        //case "FastKey_Main_OpenRoot": Found.FastKey_Main_OpenRoot = ToInt(Item[1], ref settings.FastKey_Main_OpenRoot); break;
-                        //case "FastKey_Main_Password": Found.FastKey_Main_Password = ToInt(Item[1], ref settings.FastKey_Main_Password); break;
-                        //case "FastKey_Main_Rotate": Found.FastKey_Main_Rotate = ToInt(Item[1], ref settings.FastKey_Main_Rotate); break;
-                        //case "FastKey_Search_Esc": Found.FastKey_Search_Esc = ToInt(Item[1], ref settings.FastKey_Search_Esc); break;
-                        //case "FastKey_Search_Enter": Found.FastKey_Search_Enter = ToInt(Item[1], ref settings.FastKey_Search_Enter); break;
-                        //case "FastKey_Input_Enter": Found.FastKey_Input_Enter = ToInt(Item[1], ref settings.FastKey_Input_Enter); break;
-                        //case "FastKey_Image_Esc": Found.FastKey_Image_Esc = ToInt(Item[1], ref settings.FastKey_Image_Esc); break;
-                        //case "FastKey_Image_Enter": Found.FastKey_Image_Enter = ToInt(Item[1], ref settings.FastKey_Image_Enter); break;
-                        //case "FastKey_Image_Rotate": Found.FastKey_Image_Rotate = ToInt(Item[1], ref settings.FastKey_Image_Rotate); break;
-                        //case "FastKey_Image_FlipX": Found.FastKey_Image_FlipX = ToInt(Item[1], ref settings.FastKey_Image_FlipX); break;
-                        //case "FastKey_Main_FlipX": Found.FastKey_Main_FlipX = ToInt(Item[1], ref settings.FastKey_Main_FlipX); break;
-                        //case "FastKey_Image_FlipY": Found.FastKey_Image_FlipY = ToInt(Item[1], ref settings.FastKey_Image_FlipY); break;
-                        //case "FastKey_Main_FlipY": Found.FastKey_Main_FlipY = ToInt(Item[1], ref settings.FastKey_Main_FlipY); break;
+                        case "Form_Main_Play_Forward": MainForm.Config.Play.Forward = Load_vars.ToBool(vars); break;
+                        case "Form_Main_Play_Backward": MainForm.Config.Play.Backward = Load_vars.ToBool(vars); break;
+                        case "Form_Main_Play_TotalRoots": MainForm.Config.Play.Total = Load_vars.ToBool(vars); break;
+                        case "Form_Main_Play_Root": MainForm.Config.Play.Root = Load_vars.ToBool(vars); break;
+                        case "Form_Main_Play_Subroot": MainForm.Config.Play.Subroot = Load_vars.ToBool(vars); break;
+                        case "Form_Main_Play_Picture": MainForm.Config.Play.Picture = Load_vars.ToBool(vars); break;
+                        case "Form_Main_Play_Gif": MainForm.Config.Play.Gif = Load_vars.ToBool(vars); break;
+                        case "Form_Main_Play_Music": MainForm.Config.Play.Music = Load_vars.ToBool(vars); break;
+                        case "Form_Main_Play_Video": MainForm.Config.Play.Video = Load_vars.ToBool(vars); break;
+                        case "Form_Main_Play_Single": MainForm.Config.Play.Single = Load_vars.ToBool(vars); break;
+                        case "Form_Main_Play_Order": MainForm.Config.Play.Order = Load_vars.ToBool(vars); break;
+                        case "Form_Main_Play_Circle": MainForm.Config.Play.Circle = Load_vars.ToBool(vars); break;
+                        case "Form_Main_Play_Rand": MainForm.Config.Play.Rand = Load_vars.ToBool(vars); break;
+                        case "Form_Main_Play_ShowTime": MainForm.Config.Play.Lasting = Load_vars.ToInt(vars); ; break;
+                        case "FastKey_Find_Esc": FindForm.Config.FastKey_Esc = Load_vars.ToInt(vars); break;
+                        case "FastKey_Find_Export": FindForm.Config.FastKey_Export = Load_vars.ToInt(vars); break;
+                        case "FastKey_Find_L": FindForm.Config.FastKey_L = Load_vars.ToInt(vars); break;
+                        case "FastKey_Find_R": FindForm.Config.FastKey_R = Load_vars.ToInt(vars); break;
+                        case "FastKey_Find_U": FindForm.Config.FastKey_U = Load_vars.ToInt(vars); break;
+                        case "FastKey_Find_D": FindForm.Config.FastKey_D = Load_vars.ToInt(vars); break;
+                        case "FastKey_Main_D": MainForm.Config.FastKey_D = Load_vars.ToInt(vars); break;
+                        case "FastKey_Main_L": MainForm.Config.FastKey_L = Load_vars.ToInt(vars); break;
+                        case "FastKey_Main_PageD": MainForm.Config.FastKey_PageD = Load_vars.ToInt(vars); break;
+                        case "FastKey_Main_PageU": MainForm.Config.FastKey_PageU = Load_vars.ToInt(vars); break;
+                        case "FastKey_Main_R": MainForm.Config.FastKey_R = Load_vars.ToInt(vars); break;
+                        case "FastKey_Main_U": MainForm.Config.FastKey_U = Load_vars.ToInt(vars); break;
+                        case "FastKey_Main_Board": MainForm.Config.FastKey_Board = Load_vars.ToInt(vars); break;
+                        case "FastKey_Main_Enter": MainForm.Config.FastKey_Enter = Load_vars.ToInt(vars); break;
+                        case "FastKey_Main_Esc": MainForm.Config.FastKey_ESC = Load_vars.ToInt(vars); break;
+                        case "FastKey_Main_Export": MainForm.Config.FastKey_Export = Load_vars.ToInt(vars); break;
+                        case "FastKey_Main_OpenComic": MainForm.Config.FastKey_OpenComic = Load_vars.ToInt(vars); break;
+                        case "FastKey_Main_OpenCurrent": MainForm.Config.FastKey_OpenCurrent = Load_vars.ToInt(vars); break;
+                        case "FastKey_Main_OpenExport": MainForm.Config.FastKey_OpenExport = Load_vars.ToInt(vars); break;
+                        case "FastKey_Main_OpenRoot": MainForm.Config.FastKey_OpenRoot = Load_vars.ToInt(vars); break;
+                        case "FastKey_Main_Password": MainForm.Config.FastKey_Password = Load_vars.ToInt(vars); break;
+                        case "FastKey_Main_Rotate": MainForm.Config.FastKey_Rotate = Load_vars.ToInt(vars); break;
+                        case "FastKey_Search_Esc": SearchForm.Config.FastKey_Esc = Load_vars.ToInt(vars); break;
+                        case "FastKey_Search_Enter": SearchForm.Config.FastKey_Enter = Load_vars.ToInt(vars); break;
+                        case "FastKey_Input_Enter": InputForm.Config.FastKey_Enter = Load_vars.ToInt(vars); break;
+                        case "FastKey_Image_Esc": ImageForm.Config.FastKey_Esc = Load_vars.ToInt(vars); break;
+                        case "FastKey_Image_Enter": ImageForm.Config.FastKey_Enter = Load_vars.ToInt(vars); break;
+                        case "FastKey_Image_Rotate": ImageForm.Config.FastKey_Rotate = Load_vars.ToInt(vars); break;
+                        case "FastKey_Image_FlipX": ImageForm.Config.FastKey_FlipX = Load_vars.ToInt(vars); break;
+                        case "FastKey_Main_FlipX": MainForm.Config.FastKey_FlipX = Load_vars.ToInt(vars); break;
+                        case "FastKey_Image_FlipY": ImageForm.Config.FastKey_FlipY = Load_vars.ToInt(vars); break;
+                        case "FastKey_Main_FlipY": MainForm.Config.FastKey_FlipY = Load_vars.ToInt(vars); break;
+                        case "Form_Main_ShapeControlRate": MainForm.Config.ShapeControlRate = Load_vars.ToDouble(vars); break;
                         default: break;
                     }
+
+                    #endregion
                 }
+                sr.Close();
             }
             catch
             {
 
             }
-        }
-        /// <summary>
-        /// 读入信息有误时，自动更新为默认值。
-        /// </summary>
-        public void SetDefault()
-        {
 
+            for (int i = 0; i < Config.RootPathes.Count; i++) { Config.Trees.Add(new List<List<int>>()); }
+            Load_files.load();
         }
     }
 }

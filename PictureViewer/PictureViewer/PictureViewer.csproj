@@ -49,7 +49,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup>
-    <ApplicationIcon>miku256.ico</ApplicationIcon>
+    <ApplicationIcon>Resource\icos\miku256.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="ICSharpCode.SharpZipLib, Version=0.5.0.0, Culture=neutral, PublicKeyToken=1b03e6acf1164f73">
@@ -75,22 +75,23 @@
     <Compile Include="Class\FilePicture.cs" />
     <Compile Include="Class\FileSupport.cs" />
     <Compile Include="Class\Load.cs" />
-    <Compile Include="Class\PicMatch.cs" />
+    <Compile Include="Class\match\PicMatch.cs" />
     <Compile Include="Class\Save.cs" />
     <Compile Include="Class\ZipOperate.cs" />
     <Compile Include="File\base\BaseFileInfo.cs" />
     <Compile Include="File\config\Config.cs" />
-    <Compile Include="File\Index\Index.cs" />
+    <Compile Include="File\index\Index.cs" />
+    <Compile Include="File\load\Load_files.cs" />
     <Compile Include="File\load\Load_pvdata.cs" />
     <Compile Include="File\load\Load_pvini.cs" />
     <Compile Include="File\load\Load_tip.cs" />
     <Compile Include="File\load\Load_vars.cs" />
-    <Compile Include="File\operate\Operate.cs" />
     <Compile Include="File\const\ConstFiles.cs" />
     <Compile Include="File\support\Support.cs" />
     <Compile Include="Form\common\Mouse.cs" />
     <Compile Include="Form\find\Config.cs" />
     <Compile Include="Form\image\Config.cs" />
+    <Compile Include="Form\input\Config.cs" />
     <Compile Include="Form\main\Config.cs" />
     <Compile Include="Form\main\DirectionKey.cs" />
     <Compile Include="Form\main\Form_Main.cs">
@@ -107,6 +108,7 @@
     </Compile>
     <Compile Include="Form\main\Play.cs" />
     <Compile Include="Form\main\Tip.cs" />
+    <Compile Include="Form\search\Config.cs" />
     <Compile Include="Form\search\Form_Search.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -133,8 +135,11 @@
     </Compile>
     <Compile Include="PictureViewer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Resource\Strings.cs" />
-    <Compile Include="Resource\Tools.cs" />
+    <Compile Include="Resource\strings\file\FileStrings.cs" />
+    <Compile Include="Resource\strings\main\MainStrings.cs" />
+    <Compile Include="Resource\strings\language\Language.cs" />
+    <Compile Include="Resource\strings\messagebox\BoxStrings.cs" />
+    <Compile Include="Resource\tools\Tools.cs" />
     <EmbeddedResource Include="Form\find\Form_Find.resx">
       <DependentUpon>Form_Find.cs</DependentUpon>
     </EmbeddedResource>
@@ -177,8 +182,8 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="128.ico" />
-    <Content Include="miku256.ico" />
+    <Content Include="Resource\icos\128.ico" />
+    <Content Include="Resource\icos\miku256.ico" />
   </ItemGroup>
   <ItemGroup>
     <COMReference Include="AxWMPLib">
@@ -212,8 +217,9 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Class\match\" />
     <Folder Include="File\save\" />
+    <Folder Include="Resource\strings\find\" />
+    <Folder Include="Resource\strings\search\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

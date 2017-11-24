@@ -20,21 +20,25 @@ namespace PictureViewer.Files
             set;
         }
         /// <summary>
-        /// 文件的索引号（getIndex 以后才能使用）
+        /// 文件的索引号
         /// </summary>
-        public int Index
+        public int Base
         {
-            get;
-            set;
+            get
+            {
+                if (Indexes.Count == 0) { return -1; }
+                return Indexes[0].Base;
+            }
         }
         /// <summary>
         /// 使用次数计数
         /// </summary>
         public int Count
         {
-            get { return Count < 0 ? 0 : Count; }
-            set { Count = value; }
+            get { return count < 0 ? 0 : count; }
+            set { count = value; }
         }
+        private int count;
         /// <summary>
         /// 请求释放该文件
         /// </summary>
@@ -49,17 +53,19 @@ namespace PictureViewer.Files
         /// </summary>
         public string Path
         {
-            set { }
-            get { return Path == null ? "" : Path; }
+            set { path = value; }
+            get { return path == null ? "" : path; }
         }
+        private string path;
         /// <summary>
         /// 文件名
         /// </summary>
         public string Name
         {
-            set { Name = value; }
-            get { return Name == null ? "" : Name; }
+            set { name = value; }
+            get { return name == null ? "" : name; }
         }
+        private string name;
         /// <summary>
         /// 文件全路径
         /// </summary>
@@ -72,14 +78,14 @@ namespace PictureViewer.Files
         /// </summary>
         public string NameWithoutExtension
         {
-            get { return Operate.getNameWithoutExtension(Name); }
+            get { return Tools.Tools.getNameWithoutExtension(Name); }
         }
         /// <summary>
         /// 文件后缀
         /// </summary>
         public string Extension
         {
-            get { return Operate.getExtension(Name); }
+            get { return Tools.Tools.getExtension(Name); }
         }
 
         /// <summary>
@@ -113,78 +119,56 @@ namespace PictureViewer.Files
             get;
             set;
         }
-
+        
         /// <summary>
-        /// 本文件是否具有隐藏属性
+        /// 类型
         /// </summary>
-        public bool IsHide
+        public Support.TYPE Type
         {
-            set;
             get;
-        }
-        /// <summary>
-        /// 本文件是否是子目录中的文件
-        /// </summary>
-        public bool IsSub
-        {
             set;
-            get;
         }
         /// <summary>
         /// 本文件是否是图片文件
         /// </summary>
         public bool IsPicture
         {
-            set;
-            get;
+            get { return Type == Support.TYPE.PICTURE; }
         }
         /// <summary>
         /// 本文件是否是 GIF 文件
         /// </summary>
         public bool IsGif
         {
-            set;
-            get;
+            get { return Type == Support.TYPE.GIF; }
         }
         /// <summary>
         /// 本文件是否是音频文件
         /// </summary>
         public bool IsMusic
         {
-            set;
-            get;
+            get { return Type == Support.TYPE.MUSIC; }
         }
         /// <summary>
         /// 本文件是否是视频文件
         /// </summary>
         public bool IsVideo
         {
-            set;
-            get;
+            get { return Type == Support.TYPE.VIDEO; }
         }
         /// <summary>
         /// 本文件是否是 ZIP 文件中的文件
         /// </summary>
         public bool IsZip
         {
-            set;
-            get;
+            get { return Type == Support.TYPE.ZIP; }
         }
         /// <summary>
         /// 本文件是不是不支持类型
         /// </summary>
         public bool IsUnsupport
         {
-            set;
-            get;
-        }
-        /// <summary>
-        /// 本文件是不是错误的文件
-        /// </summary>
-        public bool IsError
-        {
-            set;
-            get;
+            get { return Type == Support.TYPE.UNSUPPORT; }
         }
 
         /// <summary>
@@ -227,18 +211,18 @@ namespace PictureViewer.Files
         {
             Indexes = new List<Files.Index>();
 
+            Count = 0;
+            Dispose = false;
+
             Path = "";
             Name = "";
 
             Time = 0;
             Loaded = false;
-            IsHide = false;
-            IsSub = false;
-            IsPicture = false;
-            IsGif = false;
-            IsMusic = false;
-            IsVideo = false;
-            IsZip = false;
+            Height = 0;
+            Width = 0;
+            GraysR = null;
+            GraysC = null;
         }
         /// <summary>
         /// 初始化
@@ -263,12 +247,21 @@ namespace PictureViewer.Files
         /// <param name="file"></param>
         public BaseFileInfo(System.IO.FileInfo file)
         {
+            Indexes = new List<Index>();
+            Count = 0;
+            Dispose = false;
             Path = file.DirectoryName;
             Name = file.Name;
 
             Time = file.LastWriteTime.ToFileTime();
             Loaded = false;
             Length = file.Length;
+            Type = Support.GetType(Extension);
+
+            Height = 0;
+            Width = 0;
+            GraysR = null;
+            GraysC = null;
         }
         /// <summary>
         /// 初始化
@@ -282,65 +275,252 @@ namespace PictureViewer.Files
         }
 
         /// <summary>
-        /// 导出该文件
+        /// 文件操作的结果
         /// </summary>
-        /// <param name="failedReason"></param>
-        /// <param name="showConfirm"></param>
-        /// <param name="showError"></param>
-        /// <returns></returns>
-        public bool Export(ref string failedReason, bool showConfirm = false, bool showError = false)
+        public enum FILE_MOVE_RESULT
         {
-            Operate.FILE_MOVE_RESULT res = Operate.FileMove(Full, Config.ExportPath + "\\" + Name);
+            /// <summary>
+            /// 成功操作
+            /// </summary>
+            SUCCESSED,
+            /// <summary>
+            /// 取消操作
+            /// </summary>
+            CANCLED,
 
-            return false;
+            /// <summary>
+            /// 源文件已存在
+            /// </summary>
+            SOUR_FILE_EXISTED,
+            /// <summary>
+            /// 源文件不存在
+            /// </summary>
+            SOUR_FILE_NOT,
+            /// <summary>
+            /// 源文件正在使用
+            /// </summary>
+            SOUR_FILE_USING,
+            /// <summary>
+            /// 源文件非法命名
+            /// </summary>
+            SOUR_FILE_ILLEGAL,
+            /// <summary>
+            /// 源路径已存在
+            /// </summary>
+            SOUR_PATH_EXISTED,
+            /// <summary>
+            /// 源路径不存在
+            /// </summary>
+            SOUR_PATH_NOT,
+            /// <summary>
+            /// 源路径非法
+            /// </summary>
+            SOUR_PATH_ILLEGAL,
+            /// <summary>
+            /// 源文件的文件名称已存在
+            /// </summary>
+            SOUR_NAME_EXISTED,
+            /// <summary>
+            /// 源文件的文件名称不存在
+            /// </summary>
+            SOUR_NAME_NOT,
+            /// <summary>
+            /// 源文件的文件名称非法
+            /// </summary>
+            SOUR_NAME_ILLEGAL,
+
+            /// <summary>
+            /// 目标文件已存在
+            /// </summary>
+            DEST_FILE_EXISTED,
+            /// <summary>
+            /// 目标文件不存在
+            /// </summary>
+            DEST_FILE_NOT,
+            /// <summary>
+            /// 目标文件正在使用
+            /// </summary>
+            DEST_FILE_USING,
+            /// <summary>
+            /// 目标文件非法命名
+            /// </summary>
+            DEST_FILE_ILLEGAL,
+            /// <summary>
+            /// 目标路径已存在
+            /// </summary>
+            DEST_PATH_EXISTED,
+            /// <summary>
+            /// 目标路径不存在
+            /// </summary>
+            DEST_PATH_NOT,
+            /// <summary>
+            /// 目标路径非法
+            /// </summary>
+            DEST_PATH_ILLEGAL,
+            /// <summary>
+            /// 目标文件的文件名称已存在
+            /// </summary>
+            DEST_NAME_EXISTED,
+            /// <summary>
+            /// 目标文件的文件名称不存在
+            /// </summary>
+            DEST_NAME_NOT,
+            /// <summary>
+            /// 目标文件的文件名称非法
+            /// </summary>
+            DEST_NAME_ILLEGAL
         }
         /// <summary>
         /// 导出该文件
         /// </summary>
-        /// <param name="dest"></param>
-        /// <param name="failedReason"></param>
-        /// <param name="showConfirm"></param>
-        /// <param name="showError"></param>
+        /// <param name="showConfirm">显示确认界面</param>
+        /// <param name="showError">显示错误信息</param>
         /// <returns></returns>
-        public bool Export(string dest, ref string failedReason, bool showConfirm = false, bool showError = false)
+        public FILE_MOVE_RESULT Export(bool showConfirm = false, bool showError = false)
         {
-            if (dest == null) { dest = ""; }
-            Operate.FILE_MOVE_RESULT res = Operate.FileMove(Full, dest + Name);
-
-            return false;
+            string dest = Config.ExportPath + "\\" + Name;
+            return MoveTo(dest, showConfirm, showError);
         }
         /// <summary>
         /// 重命名
         /// </summary>
-        /// <param name="dest"></param>
-        /// <param name="failedReason"></param>
+        /// <param name="dest">新名称</param>
+        /// <param name="showConfirm">显示确认界面</param>
+        /// <param name="showError">显示错误信息</param>
         /// <returns></returns>
-        public bool Rename(string dest, ref string failedReason, bool showConfirm = false, bool showError = false)
+        public FILE_MOVE_RESULT Rename(string dest, bool showConfirm = false, bool showError = false)
         {
             if (dest == null) { dest = ""; }
-            string destExtension = Operate.getExtension(dest);
+            string destExtension = Tools.Tools.getExtension(dest);
             if (destExtension != Extension) { dest += Extension; }
 
-            Operate.FILE_MOVE_RESULT res = Operate.FileMove(Full, Path + dest);
+            if (Tools.Tools.IsCorrectFile(dest))
+            {
+                if (showError)
+                {
+                    System.Windows.Forms.MessageBox.Show(
+                        Strings.FileStrings.Dest_Name_Illegal + "\n" +
+                        Strings.FileStrings.Dest_Name + dest,
+                        Strings.BoxStrings.Title_Warning
+                        );
+                }
+                return FILE_MOVE_RESULT.DEST_NAME_ILLEGAL;
+            }
 
-            return false;
+            return MoveTo(Path + "\\" + dest, showConfirm, showError);
         }
         /// <summary>
-        /// 永久删除
+        /// 移动文件到目标位置
         /// </summary>
-        /// <param name="failedReason"></param>
+        /// <param name="dest">目标位置</param>
+        /// <param name="showConfirm">显示确认界面</param>
+        /// <param name="showError">显示错误信息</param>
         /// <returns></returns>
-        public bool Delete(ref string failedReason, bool showConfirm = false, bool showError = false)
+        public FILE_MOVE_RESULT MoveTo(string dest, bool showConfirm = false, bool showError = false)
         {
-            return false;
+            if (dest == null) { dest = ""; }
+            if (!Tools.Tools.IsCorrectFile(dest))
+            {
+                if (showError)
+                {
+                    System.Windows.Forms.MessageBox.Show(
+                        Strings.FileStrings.Dest_File_Illegal + "\n" +
+                        Strings.FileStrings.Dest_File + dest,
+                        Strings.BoxStrings.Title_Warning
+                        );
+                }
+                return FILE_MOVE_RESULT.DEST_FILE_ILLEGAL;
+            }
+
+            if (!System.IO.File.Exists(Full))
+            {
+                if (showError)
+                {
+                    System.Windows.Forms.MessageBox.Show(
+                        Strings.FileStrings.Sour_File_Not + "\n" +
+                        Strings.FileStrings.Sour_File + Full,
+                        Strings.BoxStrings.Title_Warning
+                        );
+                }
+                return FILE_MOVE_RESULT.SOUR_FILE_NOT;
+            }
+
+            if (System.IO.File.Exists(dest))
+            {
+                if (showError)
+                {
+                    System.Windows.Forms.MessageBox.Show(
+                        Strings.FileStrings.Dest_File_Existed + "\n" +
+                        Strings.FileStrings.Dest_File + dest,
+                        Strings.BoxStrings.Title_Warning
+                        );
+                }
+                return FILE_MOVE_RESULT.DEST_FILE_EXISTED;
+            }
+
+            if (showConfirm)
+            {
+                bool ok = System.Windows.Forms.DialogResult.OK ==
+                    System.Windows.Forms.MessageBox.Show(
+                        Strings.FileStrings.Ask_Confirm_Move + "\n" +
+                        Strings.FileStrings.Sour_File + Full + "\n" +
+                        Strings.FileStrings.Dest_File + dest,
+                        Strings.BoxStrings.Title_Confirm,
+                        System.Windows.Forms.MessageBoxButtons.OKCancel
+                        );
+                if (!ok) { return FILE_MOVE_RESULT.CANCLED; }
+            }
+
+            try
+            {
+                System.IO.File.Move(Full, dest);
+            }
+            catch
+            {
+                if (showError)
+                {
+                    System.Windows.Forms.MessageBox.Show(
+                        Strings.FileStrings.Sour_File_Using + "\n" +
+                        Strings.FileStrings.Sour_File + Full,
+                        Strings.BoxStrings.Title_Warning
+                        );
+                }
+                return FILE_MOVE_RESULT.SOUR_FILE_USING;
+            }
+
+            return FILE_MOVE_RESULT.SUCCESSED;
+        }
+        /// <summary>
+        ///  删除，成功删除返回 TRUE
+        /// </summary>
+        /// <returns></returns>
+        public bool Delete()
+        {
+            if (Base == -1) { return false; }
+
+            Config.Files.RemoveAt(Base);
+
+            return true;
         }
 
         /// <summary>
-        /// 获取该文件在文件总集中的索引号
+        /// 添加索引号
         /// </summary>
-        public void getIndex()
+        /// <param name="index">树形索引</param>
+        public void addTreeIndex(Index index)
         {
-            Index = Operate.getIndex(Path, Name);
+            for (int i = 0; i < Indexes.Count; i++) { if (index == Indexes[i]) { return; } }
+            Indexes.Add(index);
+        }
+        /// <summary>
+        /// 添加索引号
+        /// </summary>
+        /// <param name="folder">根目录索引号</param>
+        /// <param name="file">文件索引号</param>
+        /// <param name="sub">子目录索引号</param>
+        public void addTreeIndex(int folder, int file, int sub)
+        {
+            addTreeIndex(new Index(folder, file, sub));
         }
 
         /// <summary>
@@ -357,6 +537,8 @@ namespace PictureViewer.Files
         /// <param name="str">文本记录</param>
         public bool ToBaseFileInfo(string str)
         {
+            return false;
+
             if (str == null || str.Length == 0) { return false; }
 
             string[] items = str.Split(new char[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
@@ -385,6 +567,21 @@ namespace PictureViewer.Files
         public static bool operator !=(BaseFileInfo left, BaseFileInfo right)
         {
             return left.Full != right.Full;
+        }
+
+        /// <summary>
+        /// 利用文件名来获取该文件的索引号。
+        /// </summary>
+        /// <param name="full">全称</param>
+        /// <returns></returns>
+        public static int getBaseIndex(string full)
+        {
+            for (int i = 0; i < Config.Files.Count; i++)
+            {
+                if (Config.Files[i].Full == full) { return i; }
+            }
+
+            return -1;
         }
     }
 }

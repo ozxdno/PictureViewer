@@ -65,9 +65,10 @@ namespace PictureViewer.Files
         /// </summary>
         public static string ExportPath
         {
-            get { return (ExportPath == null || ExportPath.Length == 0) ? Operate.getExePath() : ExportPath; }
-            set { ExportPath = value; }
+            get { return (exportpath == null || exportpath.Length == 0) ? Tools.Tools.getExePath() : exportpath; }
+            set { exportpath = value; }
         }
+        private static string exportpath;
         /// <summary>
         /// 根目录
         /// </summary>
@@ -109,15 +110,24 @@ namespace PictureViewer.Files
             set;
             get;
         }
+        /// <summary>
+        /// 提示：正在加载
+        /// </summary>
+        public static System.Drawing.Bitmap IniTip
+        {
+            set;
+            get;
+        }
 
         /// <summary>
         /// 加载文件专用线程
         /// </summary>
         public static System.Threading.Thread Loading
         {
-            set;
-            get;
+            set { loading = value; }
+            get { return loading; }
         }
+        private static System.Threading.Thread loading;
 
         /// <summary>
         /// 初始化
@@ -140,11 +150,19 @@ namespace PictureViewer.Files
             UnkTip = null;
             UnpTip = null;
             NotTip = null;
+            IniTip = null;
 
             Loading = null;
 
             new Load_pvini();
             Support.SetDefault();
+        }
+        /// <summary>
+        /// 默认值
+        /// </summary>
+        public static void SetDefault()
+        {
+
         }
 
         /// <summary>

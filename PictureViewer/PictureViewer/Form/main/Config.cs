@@ -28,7 +28,11 @@ namespace PictureViewer.MainForm
         /// <summary>
         /// 源图
         /// </summary>
-        public static System.Drawing.Image SourPicture;
+        public static System.Drawing.Image SourPicture
+        {
+            get;
+            set;
+        }
         /// <summary>
         /// 目标图
         /// </summary>
@@ -58,15 +62,27 @@ namespace PictureViewer.MainForm
         /// <summary>
         /// 鼠标信息
         /// </summary>
-        public static CommonForm.Mouse Mouse = new CommonForm.Mouse();
+        public static CommonForm.Mouse Mouse
+        {
+            set;
+            get;
+        }
         /// <summary>
         /// 播放设置
         /// </summary>
-        public static Play Play = new Play();
+        public static Play Play
+        {
+            set;
+            get;
+        }
         /// <summary>
         /// 方向键
         /// </summary>
-        public static DirectionKey DirKey = new DirectionKey();
+        public static DirectionKey DirKey
+        {
+            set;
+            get;
+        }
 
         /// <summary>
         /// 隐藏左翻页键
@@ -264,15 +280,92 @@ namespace PictureViewer.MainForm
             set;
             get;
         }
-        public static int FastKey_PageUp
+        public static int FastKey_PageU
         {
             set;
             get;
         }
-        public static int FastKey_PageDown
+        public static int FastKey_PageD
         {
             set;
             get;
+        }
+        public static int FastKey_Board
+        {
+            set;
+            get;
+        }
+        public static int FastKey_Enter
+        {
+            set;
+            get;
+        }
+        public static int FastKey_OpenComic
+        {
+            set;
+            get;
+        }
+        public static int FastKey_OpenCurrent
+        {
+            set;
+            get;
+        }
+        public static int FastKey_OpenRoot
+        {
+            set;
+            get;
+        }
+        public static int FastKey_OpenExport
+        {
+            set;
+            get;
+        }
+        public static int FastKey_Password
+        {
+            set;
+            get;
+        }
+        public static int FastKey_Rotate
+        {
+            set;
+            get;
+        }
+        public static int FastKey_FlipX
+        {
+            set;
+            get;
+        }
+        public static int FastKey_FlipY
+        {
+            set;
+            get;
+        }
+
+        /// <summary>
+        /// 初始化
+        /// </summary>
+        public static void Initialize()
+        {
+            TreeIndex = new Files.Index();
+            FileIndex = 0;
+            SourPicture = null;
+            DestPicture = null;
+            FileInfo = new Files.BaseFileInfo();
+            ImageForms = new List<Form_Image>();
+            Mouse = new CommonForm.Mouse();
+            Play = new Play();
+            DirKey = new DirectionKey();
+            HideL = false;
+            HideR = false;
+            HideU = false;
+            HideD = false;
+        }
+        /// <summary>
+        /// 默认值
+        /// </summary>
+        public static void SetDefault()
+        {
+
         }
 
         /// <summary>
