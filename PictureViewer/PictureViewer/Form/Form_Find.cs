@@ -1241,6 +1241,11 @@ namespace PictureViewer
         {
             Stop();
 
+            if (config.Sour == null) { config.Sour = new List<int>(); }
+            if (config.Dest == null) { config.Dest = new List<int>(); }
+            config.Sour.Clear();
+            config.Dest.Clear();
+
             bool cmp1 = this.source1ToolStripMenuItem.Checked && !this.source2ToolStripMenuItem.Checked;
             bool cmp2 = this.source1ToolStripMenuItem.Checked && this.source2ToolStripMenuItem.Checked;
             bool cmp0 = !this.source1ToolStripMenuItem.Checked && this.source2ToolStripMenuItem.Checked;
@@ -1249,7 +1254,11 @@ namespace PictureViewer
 
             int type = Form_Main.config.IsSub ? Form_Main.config.SubType : Form_Main.config.Type;
             if (cmp0 && !FileOperate.IsPicture(type) && !FileOperate.IsGif(type))
-            { MessageBox.Show("不能比较图片/GIF以外的文件！", "提示"); return; }
+            {
+                IsFinish = true;
+                MessageBox.Show("不能比较图片/GIF以外的文件！", "提示");
+                return;
+            }
 
             CheckPictureFiles();
             GetSourList();
@@ -1289,7 +1298,7 @@ namespace PictureViewer
         {
             config.Initializing = true;
 
-            IsFinish = false;
+            IsFinish = true;
             IsSwitch = false;
             Results.Clear();
             IndexS = 0;
