@@ -249,6 +249,14 @@ namespace PictureViewer.MainForm
             get;
             set;
         }
+        /// <summary>
+        /// 下一个是否显示源图
+        /// </summary>
+        public static bool NextShowBig
+        {
+            set;
+            get;
+        }
 
         public static int FastKey_ESC
         {
@@ -347,7 +355,7 @@ namespace PictureViewer.MainForm
         public static void Initialize()
         {
             TreeIndex = new Files.Index();
-            FileIndex = 0;
+            FileIndex = -1;
             SourPicture = null;
             DestPicture = null;
             FileInfo = new Files.BaseFileInfo();
@@ -359,13 +367,51 @@ namespace PictureViewer.MainForm
             HideR = false;
             HideU = false;
             HideD = false;
+            ShapeControlRate = 0;
+            ShapeWindowRate = 0;
+            SmallWindow = false;
+            UseBoard = false;
+            ShapeWindow = true;
+            LockOpreate = false;
+            MinRate = 0;
+            MaxRate = 0;
+            Height = 0;
+            Width = 0;
+            LocationX = 0;
+            LocationY = 0;
+            Switch = false;
+            Tip = false;
+            IsActive = true;
+
+            FastKey_ESC = 0;
+            FastKey_Export = 0;
+            FastKey_L = 0;
+            FastKey_R = 0;
+            FastKey_U = 0;
+            FastKey_D = 0;
+            FastKey_PageU = 0;
+            FastKey_PageD = 0;
+            FastKey_Board = 0;
+            FastKey_Enter = 0;
+            FastKey_OpenComic = 0;
+            FastKey_OpenCurrent = 0;
+            FastKey_OpenExport = 0;
+            FastKey_OpenRoot = 0;
+            FastKey_Password = 0;
+            FastKey_Rotate = 0;
+            FastKey_FlipX = 0;
+            FastKey_FlipY = 0;
         }
         /// <summary>
         /// 默认值
         /// </summary>
         public static void SetDefault()
         {
+            if (MinRate < 1) { MinRate = 1; }
+            if (MaxRate < MinRate) { MaxRate = MinRate; }
 
+            if (ShapeControlRate < MinRate) { ShapeControlRate = MinRate; }
+            if (ShapeControlRate > MaxRate) { ShapeControlRate = MaxRate; }
         }
 
         /// <summary>

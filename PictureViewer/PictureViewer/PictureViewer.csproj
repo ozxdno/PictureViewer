@@ -87,7 +87,10 @@
     <Compile Include="File\load\Load_tip.cs" />
     <Compile Include="File\load\Load_vars.cs" />
     <Compile Include="File\const\ConstFiles.cs" />
+    <Compile Include="File\save\Save_pvdata.cs" />
+    <Compile Include="File\save\Save_pvini.cs" />
     <Compile Include="File\support\Support.cs" />
+    <Compile Include="File\zip\Zip.cs" />
     <Compile Include="Form\common\Mouse.cs" />
     <Compile Include="Form\find\Config.cs" />
     <Compile Include="Form\image\Config.cs" />
@@ -217,7 +220,6 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="File\save\" />
     <Folder Include="Resource\strings\find\" />
     <Folder Include="Resource\strings\search\" />
   </ItemGroup>

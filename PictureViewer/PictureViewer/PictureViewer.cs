@@ -22,9 +22,17 @@ namespace PictureViewer
             SearchForm.Config.Initialize();
             InputForm.Config.Initialize();
             Strings.Language.Initialize();
-            
-            Files.Load_pvdata.thread();
+
+            //Files.Load_pvdata.thread();
             Files.Load_pvini.thread();
+
+            Files.Config.SetDefault();
+            MainForm.Config.SetDefault();
+            FindForm.Config.SetDefault();
+            ImageForm.Config.SetDefault();
+            SearchForm.Config.SetDefault();
+            InputForm.Config.SetDefault();
+            Strings.Language.SetDefault();
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);

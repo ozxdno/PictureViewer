@@ -33,14 +33,6 @@ namespace PictureViewer.Files
             get;
             set;
         }
-        /// <summary>
-        /// 是否需要加载 ZIP 文件
-        /// </summary>
-        public static bool IsSupportZip
-        {
-            get;
-            set;
-        }
 
         /// <summary>
         /// 支持文件列表
@@ -128,6 +120,13 @@ namespace PictureViewer.Files
             get { return loading; }
         }
         private static System.Threading.Thread loading;
+        /// <summary>
+        /// 是否正在加载文件
+        /// </summary>
+        public static bool IsLoading
+        {
+            get { return Loading != null && Loading.ThreadState == System.Threading.ThreadState.Running; }
+        }
 
         /// <summary>
         /// 初始化
@@ -138,7 +137,6 @@ namespace PictureViewer.Files
             Trees = new List<List<List<int>>>();
 
             IsSupportHide = false;
-            IsSupportZip = false;
 
             Supports = new List<Support>();
             ConstFiles = new ConstFiles();

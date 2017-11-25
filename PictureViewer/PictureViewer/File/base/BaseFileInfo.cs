@@ -93,7 +93,11 @@ namespace PictureViewer.Files
         /// </summary>
         public bool Exist
         {
-            get { return System.IO.File.Exists(Full); }
+            get
+            {
+                if (IsZip) { return System.IO.File.Exists(Path); }
+                return System.IO.File.Exists(Full);
+            }
         }
         /// <summary>
         /// 最后一次的修改时间
@@ -161,7 +165,11 @@ namespace PictureViewer.Files
         /// </summary>
         public bool IsZip
         {
-            get { return Type == Support.TYPE.ZIP; }
+            get
+            {
+                return System.IO.File.Exists(Path) &&
+                    Support.GetType(Tools.Tools.getExtension(Path)) == Support.TYPE.ZIP;
+            }
         }
         /// <summary>
         /// 本文件是不是不支持类型
@@ -169,6 +177,17 @@ namespace PictureViewer.Files
         public bool IsUnsupport
         {
             get { return Type == Support.TYPE.UNSUPPORT; }
+        }
+
+        /// <summary>
+        /// 本文件是不是子目录中的文件
+        /// </summary>
+        public bool IsSub
+        {
+            get
+            {
+                return Config.RootPathes.IndexOf(Path) == -1;
+            }
         }
 
         /// <summary>
@@ -230,7 +249,22 @@ namespace PictureViewer.Files
         /// <param name="full"></param>
         public BaseFileInfo(string full)
         {
+            Indexes = new List<Index>();
+            Count = 0;
+            Dispose = false;
+            Path = Tools.Tools.getPath(full);
+            Name = Tools.Tools.getName(full);
 
+            System.IO.FileInfo file = new System.IO.FileInfo(Full);
+            Time = file.LastWriteTime.ToFileTime();
+            Loaded = false;
+            Length = file.Length;
+            Type = Support.GetType(Extension);
+
+            Height = 0;
+            Width = 0;
+            GraysR = null;
+            GraysC = null;
         }
         /// <summary>
         /// 初始化
@@ -239,7 +273,22 @@ namespace PictureViewer.Files
         /// <param name="name"></param>
         public BaseFileInfo(string path, string name)
         {
+            Indexes = new List<Index>();
+            Count = 0;
+            Dispose = false;
+            Path = path;
+            Name = name;
 
+            System.IO.FileInfo file = new System.IO.FileInfo(Full);
+            Time = file.LastWriteTime.ToFileTime();
+            Loaded = false;
+            Length = file.Length;
+            Type = Support.GetType(Extension);
+
+            Height = 0;
+            Width = 0;
+            GraysR = null;
+            GraysC = null;
         }
         /// <summary>
         /// 初始化
@@ -262,16 +311,6 @@ namespace PictureViewer.Files
             Width = 0;
             GraysR = null;
             GraysC = null;
-        }
-        /// <summary>
-        /// 初始化
-        /// </summary>
-        /// <param name="folder"></param>
-        /// <param name="file"></param>
-        /// <param name="sub"></param>
-        public BaseFileInfo(int folder, int file, int sub = -1)
-        {
-
         }
 
         /// <summary>
@@ -458,6 +497,19 @@ namespace PictureViewer.Files
                 return FILE_MOVE_RESULT.DEST_FILE_EXISTED;
             }
 
+            if (Count > 0)
+            {
+                if (showError)
+                {
+                    System.Windows.Forms.MessageBox.Show(
+                        Strings.FileStrings.Sour_File_Using + "\n" +
+                        Strings.FileStrings.Sour_File + Full,
+                        Strings.BoxStrings.Title_Warning
+                        );
+                }
+                return FILE_MOVE_RESULT.SOUR_FILE_USING;
+            }
+
             if (showConfirm)
             {
                 bool ok = System.Windows.Forms.DialogResult.OK ==
@@ -488,6 +540,7 @@ namespace PictureViewer.Files
                 return FILE_MOVE_RESULT.SOUR_FILE_USING;
             }
 
+            Reload();
             return FILE_MOVE_RESULT.SUCCESSED;
         }
         /// <summary>
@@ -499,6 +552,18 @@ namespace PictureViewer.Files
             if (Base == -1) { return false; }
 
             Config.Files.RemoveAt(Base);
+            bool[] loaded = new bool[Indexes.Count];
+            for (int i = 0; i < Indexes.Count; i++) { loaded[i] = false; }
+
+            for (int i = 0; i < Indexes.Count; i++)
+            {
+                if (loaded[i]) { continue; }
+                Load_files.load(Indexes[i].Folder);
+                for (int j = i + 1; j < Indexes.Count; j++)
+                {
+                    loaded[j] = Indexes[i].Folder == Indexes[j].Folder;
+                }
+            }
 
             return true;
         }
@@ -521,6 +586,16 @@ namespace PictureViewer.Files
         public void addTreeIndex(int folder, int file, int sub)
         {
             addTreeIndex(new Index(folder, file, sub));
+        }
+        /// <summary>
+        /// 重新加载文件信息
+        /// </summary>
+        public void Reload()
+        {
+            System.IO.FileInfo file = new System.IO.FileInfo(Full);
+
+            Time = file.LastWriteTime.ToFileTime();
+            Length = file.Length;
         }
 
         /// <summary>

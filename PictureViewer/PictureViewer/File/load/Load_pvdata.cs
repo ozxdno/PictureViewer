@@ -27,6 +27,7 @@ namespace PictureViewer.Files
         /// </summary>
         public static void load()
         {
+            #region 加载 pvdata 中已有的文件
             try
             {
                 StreamReader sr = new StreamReader(Config.ConstFiles.pvdataFull);
@@ -40,6 +41,15 @@ namespace PictureViewer.Files
             {
 
             }
+
+            #endregion
+
+            #region 加载 pvdata 中没有的文件
+
+            for (int i = 0; i < Config.RootPathes.Count; i++) { Config.Trees.Add(new List<List<int>>()); }
+            Load_files.load();
+
+            #endregion
         }
     }
 }

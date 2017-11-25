@@ -132,8 +132,8 @@ namespace PictureViewer.Files
 
             }
 
-            for (int i = 0; i < Config.RootPathes.Count; i++) { Config.Trees.Add(new List<List<int>>()); }
-            Load_files.load();
+            //for (int i = 0; i < Config.RootPathes.Count; i++) { Config.Trees.Add(new List<List<int>>()); }
+            //Load_files.load();
         }
     }
 }
