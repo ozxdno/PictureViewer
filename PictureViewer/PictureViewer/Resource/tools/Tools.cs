@@ -106,5 +106,24 @@ namespace PictureViewer.Tools
             return result != Files.BaseFileInfo.FILE_MOVE_RESULT.SUCCESSED &&
                 result != Files.BaseFileInfo.FILE_MOVE_RESULT.CANCLED;
         }
+
+        /// <summary>
+        /// 返回指定文件是否正在使用
+        /// </summary>
+        /// <param name="full">指定文件</param>
+        /// <returns></returns>
+        public static bool IsUsing(string full)
+        {
+            try
+            {
+                System.IO.StreamWriter sw = new System.IO.StreamWriter(full);
+                sw.Close();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
     }
 }

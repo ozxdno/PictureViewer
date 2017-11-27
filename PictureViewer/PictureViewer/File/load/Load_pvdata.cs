@@ -15,7 +15,7 @@ namespace PictureViewer.Files
         public static void thread()
         {
             // 等待读取完毕
-            while (Config.Loading != null && Config.Loading.ThreadState == System.Threading.ThreadState.Running) ;
+            while (Config.IObusy) ;
 
             // 开始新的线程
             Config.Loading = new System.Threading.Thread(load);

@@ -14,10 +14,10 @@ namespace PictureViewer.Files
         /// </summary>
         public static void thread()
         {
-            while (Config.Loading != null && Config.Loading.ThreadState == System.Threading.ThreadState.Running) ;
+            while (Config.IObusy) ;
 
-            Config.Loading = new System.Threading.Thread(load);
-            Config.Loading.Start();
+            Config.tIO = new System.Threading.Thread(load);
+            Config.tIO.Start();
         }
 
         /// <summary>
@@ -131,9 +131,6 @@ namespace PictureViewer.Files
             {
 
             }
-
-            //for (int i = 0; i < Config.RootPathes.Count; i++) { Config.Trees.Add(new List<List<int>>()); }
-            //Load_files.load();
         }
     }
 }

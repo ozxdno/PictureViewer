@@ -54,7 +54,7 @@ namespace PictureViewer.Files
             /// </summary>
             VIDEO,
             /// <summary>
-            /// 压缩文件
+            /// ZIP 压缩文件
             /// </summary>
             ZIP
         }

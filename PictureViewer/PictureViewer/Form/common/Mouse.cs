@@ -300,6 +300,31 @@ namespace PictureViewer.CommonForm
             Up2 = false;
             Up3 = false;
 
+            ptDown1 = new System.Drawing.Point(0, 0);
+            ptDown2 = new System.Drawing.Point(0, 0);
+            ptDown3 = new System.Drawing.Point(0, 0);
+            ptUp1 = new System.Drawing.Point(0, 0);
+            ptUp2 = new System.Drawing.Point(0, 0);
+            ptUp3 = new System.Drawing.Point(0, 0);
+
+            posWindow = new System.Drawing.Point(0, 0);
+            xScroll = 0;
+            yScroll = 0;
+
+            Delta = 0;
+            ptWheel = new System.Drawing.Point(0, 0);
+            tWheel = 0;
+
+            cntDown1 = 0;
+            cntDown2 = 0;
+            cntDown3 = 0;
+            cntUp1 = 0;
+            cntUp2 = 0;
+            cntUp3 = 0;
+
+            IsDoubleClicked = false;
+            IsClicked = false;
+            IsDraged = false;
         }
 
         /// <summary>

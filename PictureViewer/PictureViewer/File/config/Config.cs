@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace PictureViewer.Files
 {
+    /// <summary>
+    /// 正在使用的文件和文件信息
+    /// </summary>
     class Config
     {
         /// <summary>
@@ -112,20 +115,20 @@ namespace PictureViewer.Files
         }
 
         /// <summary>
-        /// 加载文件专用线程
+        /// 加载文件专用线程（IO 线程）
         /// </summary>
-        public static System.Threading.Thread Loading
+        public static System.Threading.Thread tIO
         {
-            set { loading = value; }
-            get { return loading; }
+            set { tio = value; }
+            get { return tio; }
         }
-        private static System.Threading.Thread loading;
+        private static System.Threading.Thread tio;
         /// <summary>
-        /// 是否正在加载文件
+        /// IO 线程正忙
         /// </summary>
-        public static bool IsLoading
+        public static bool IObusy
         {
-            get { return Loading != null && Loading.ThreadState == System.Threading.ThreadState.Running; }
+            get { return tio != null && tio.ThreadState == System.Threading.ThreadState.Running; }
         }
 
         /// <summary>
@@ -150,7 +153,7 @@ namespace PictureViewer.Files
             NotTip = null;
             IniTip = null;
 
-            Loading = null;
+            tIO = null;
 
             new Load_pvini();
             Support.SetDefault();

@@ -95,7 +95,7 @@ namespace PictureViewer.Files
         {
             get
             {
-                if (IsZip) { return System.IO.File.Exists(Path); }
+                if (InZip) { return System.IO.File.Exists(Path); }
                 return System.IO.File.Exists(Full);
             }
         }
@@ -163,12 +163,12 @@ namespace PictureViewer.Files
         /// <summary>
         /// 本文件是否是 ZIP 文件中的文件
         /// </summary>
-        public bool IsZip
+        public bool InZip
         {
             get
             {
-                return System.IO.File.Exists(Path) &&
-                    Support.GetType(Tools.Tools.getExtension(Path)) == Support.TYPE.ZIP;
+                return Support.GetType(Tools.Tools.getExtension(Path)) == Support.TYPE.ZIP &&
+                    System.IO.File.Exists(Path);
             }
         }
         /// <summary>
@@ -604,7 +604,23 @@ namespace PictureViewer.Files
         /// <returns></returns>
         public string ToString()
         {
-            return "";
+            string file = "";
+            if (!Loaded) { return file; }
+            if (GraysR == null) { return file; }
+            if (GraysC == null) { return file; }
+
+            file += Path + "|";
+            file += Name + "|";
+            file += ((int)Type).ToString() + "|";
+            file += Time.ToString() + "|";
+            file += Length.ToString() + "|";
+            file += Height.ToString() + "|";
+            file += Width.ToString() + "|";
+
+            for (int i = 0; i < GraysR.Length; i++) { file += GraysR[i].ToString() + "|"; }
+            for (int i = 0; i < GraysC.Length; i++) { file += GraysC[i].ToString() + "|"; }
+
+            return file;
         }
         /// <summary>
         /// 文本记录转换为 BaseFileInfo，失败返回 FALSE
@@ -612,13 +628,27 @@ namespace PictureViewer.Files
         /// <param name="str">文本记录</param>
         public bool ToBaseFileInfo(string str)
         {
-            return false;
-
             if (str == null || str.Length == 0) { return false; }
 
             string[] items = str.Split(new char[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
-            if (items.Length != 2 * FindForm.Config.Pixes + 8) { return false; }
+            if (items.Length != 2 * FindForm.Config.Pixes + 7) { return false; }
 
+            Path = items[0];
+            Name = items[1];
+            try { Type = (Support.TYPE)int.Parse(items[2]); } catch { return false; }
+            try { Time = long.Parse(items[3]); } catch { return false; }
+            try { Length = long.Parse(items[4]); } catch { return false; }
+            try { Height = int.Parse(items[5]); } catch { return false; }
+            try { Width = int.Parse(items[6]); } catch { return false; }
+
+            GraysR = new int[FindForm.Config.Pixes];
+            GraysC = new int[FindForm.Config.Pixes];
+
+            for (int i = 0; i < FindForm.Config.Pixes; i++)
+            {
+                try { GraysR[i] = int.Parse(items[7 + i]); } catch { return false; }
+                try { GraysC[i] = int.Parse(items[7 + FindForm.Config.Pixes + i]); } catch { return false; }
+            }
 
             return true;
         }
