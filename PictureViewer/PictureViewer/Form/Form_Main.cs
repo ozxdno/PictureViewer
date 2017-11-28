@@ -988,6 +988,7 @@ namespace PictureViewer
                 WMPLib.WMPPlayState state = this.axWindowsMediaPlayer1.playState;
                 if (state == WMPLib.WMPPlayState.wmppsPaused) { this.axWindowsMediaPlayer1.Ctlcontrols.play(); }
                 if (state == WMPLib.WMPPlayState.wmppsStopped) { this.axWindowsMediaPlayer1.Ctlcontrols.play(); }
+                if (state == WMPLib.WMPPlayState.wmppsReady) { this.axWindowsMediaPlayer1.Ctlcontrols.play(); }
                 if (state == WMPLib.WMPPlayState.wmppsPlaying) { this.axWindowsMediaPlayer1.Ctlcontrols.pause(); }
                 return;
             }
@@ -1753,6 +1754,9 @@ namespace PictureViewer
                 {
                     if (config.IsSub && FileOperate.IsZip(config.Type)) { } else
                     {
+                        if (this.axWindowsMediaPlayer1.playState == WMPLib.WMPPlayState.wmppsReady)
+                        { this.axWindowsMediaPlayer1.Ctlcontrols.play(); }
+
                         string index = "[" + (config.FileIndex + 1).ToString() + "/" + FileOperate.RootFiles[config.FolderIndex].Name.Count.ToString() + "]";
                         string subindex = "[" + (config.SubIndex + 1).ToString() + "/" + config.SubFiles.Count.ToString() + "]";
                         string curpos = "";
