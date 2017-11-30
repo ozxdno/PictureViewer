@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using PictureViewer.Class;
 
 namespace PictureViewer
 {
@@ -15,28 +14,15 @@ namespace PictureViewer
         [STAThread]
         static void Main()
         {
-            Files.Config.Initialize();
-            MainForm.Config.Initialize();
-            FindForm.Config.Initialize();
-            ImageForm.Config.Initialize();
-            SearchForm.Config.Initialize();
-            InputForm.Config.Initialize();
-            Strings.Language.Initialize();
-
-            //Files.Load_pvdata.thread();
-            Files.Load_pvini.thread();
-
-            Files.Config.SetDefault();
-            MainForm.Config.SetDefault();
-            FindForm.Config.SetDefault();
-            ImageForm.Config.SetDefault();
-            SearchForm.Config.SetDefault();
-            InputForm.Config.SetDefault();
-            Strings.Language.SetDefault();
+            Files.Manager.Open();
+            Forms.Manager.Open();
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Form_Main());
+            Application.Run(Forms.Manager.MainViewer);
+
+            Files.Manager.Close();
+            Forms.Manager.Close();
         }
     }
 }

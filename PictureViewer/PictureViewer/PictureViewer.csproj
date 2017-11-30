@@ -30,7 +30,7 @@
     <BootstrapperEnabled>true</BootstrapperEnabled>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>x64</PlatformTarget>
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -49,20 +49,15 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup>
-    <ApplicationIcon>Resource\icos\miku256.ico</ApplicationIcon>
+    <ApplicationIcon>Icos\miku256.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="ICSharpCode.SharpZipLib, Version=0.5.0.0, Culture=neutral, PublicKeyToken=1b03e6acf1164f73">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>dll\ICSharpCode.SharpZipLib.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.IO.Compression.FileSystem" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Deployment" />
     <Reference Include="System.Drawing" />
@@ -71,95 +66,104 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Class\FileOperate.cs" />
-    <Compile Include="Class\FilePicture.cs" />
-    <Compile Include="Class\FileSupport.cs" />
-    <Compile Include="Class\Load.cs" />
-    <Compile Include="Class\match\PicMatch.cs" />
-    <Compile Include="Class\Save.cs" />
-    <Compile Include="Class\ZipOperate.cs" />
-    <Compile Include="File\base\BaseFileInfo.cs" />
-    <Compile Include="File\config\Config.cs" />
-    <Compile Include="File\index\Index.cs" />
-    <Compile Include="File\load\Load_files.cs" />
-    <Compile Include="File\load\Load_pvdata.cs" />
-    <Compile Include="File\load\Load_pvini.cs" />
-    <Compile Include="File\load\Load_tip.cs" />
-    <Compile Include="File\load\Load_vars.cs" />
-    <Compile Include="File\const\ConstFiles.cs" />
-    <Compile Include="File\save\Save_pvdata.cs" />
-    <Compile Include="File\save\Save_pvini.cs" />
-    <Compile Include="File\support\Support.cs" />
-    <Compile Include="File\zip\Zip.cs" />
-    <Compile Include="Form\common\Mouse.cs" />
-    <Compile Include="Form\find\Config.cs" />
-    <Compile Include="Form\image\Config.cs" />
-    <Compile Include="Form\input\Config.cs" />
-    <Compile Include="Form\main\Config.cs" />
-    <Compile Include="Form\main\DirectionKey.cs" />
-    <Compile Include="Form\main\Form_Main.cs">
+    <Compile Include="Files\Text\TextModel.cs" />
+    <Compile Include="Forms\Attributer\Form_Attribute.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Form\main\Form_Main.Designer.cs">
+    <Compile Include="Forms\Attributer\Form_Attribute.Designer.cs">
+      <DependentUpon>Form_Attribute.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\Searcher\Match.cs" />
+    <Compile Include="Files\Base\BaseModel.cs" />
+    <Compile Include="Files\Base\FileMoveResult.cs" />
+    <Compile Include="Files\Base\FileType.cs" />
+    <Compile Include="Files\Index\BaseIndex.cs" />
+    <Compile Include="Files\Index\IndexInfo.cs" />
+    <Compile Include="Files\Index\TreeIndex.cs" />
+    <Compile Include="Files\Load\Load.cs" />
+    <Compile Include="Files\Manager\Manager.cs" />
+    <Compile Include="Files\Media\MediaInfo.cs" />
+    <Compile Include="Files\Media\MediaModel.cs" />
+    <Compile Include="Files\Pvdata\PvdataInfo.cs" />
+    <Compile Include="Files\Pvini\PviniInfo.cs" />
+    <Compile Include="Files\Root\RootInfo.cs" />
+    <Compile Include="Files\Save\Save.cs" />
+    <Compile Include="Files\Support\SupportInfo.cs" />
+    <Compile Include="Files\Support\SupportModel.cs" />
+    <Compile Include="Files\Tips\Error\TipErrInfo.cs" />
+    <Compile Include="Files\Tips\Initializing\TipIntInfo.cs" />
+    <Compile Include="Files\Tips\Model\TipModel.cs" />
+    <Compile Include="Files\Tips\Music\TipMusInfo.cs" />
+    <Compile Include="Files\Tips\NotExist\TipNotInfo.cs" />
+    <Compile Include="Files\Tips\Unknow\TipUnkInfo.cs" />
+    <Compile Include="Files\Tips\Unsupport\TipUnpInfo.cs" />
+    <Compile Include="Forms\Main\PlayModel.cs" />
+    <Compile Include="Forms\Manager\Manager.cs" />
+    <Compile Include="Forms\Searcher\MatchMode.cs" />
+    <Compile Include="Tools\Dialog\Dialog.cs" />
+    <Compile Include="Tools\File\FileOperate.cs" />
+    <Compile Include="Tools\Key\KeyModel.cs" />
+    <Compile Include="Tools\Key\KeysModel.cs" />
+    <Compile Include="Tools\Language\Language\Language.cs" />
+    <Compile Include="Tools\Mouse\MouseModel.cs" />
+    <Compile Include="Tools\NumForm\NumForm.cs" />
+    <Compile Include="Tools\Screen\Screen.cs" />
+    <Compile Include="Tools\Time\Time.cs" />
+    <Compile Include="Tools\Video\VideoOperate.cs" />
+    <Compile Include="Forms\Main\Form_Main.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\Main\Form_Main.Designer.cs">
       <DependentUpon>Form_Main.cs</DependentUpon>
     </Compile>
-    <Compile Include="Form\input\Form_Input.cs">
+    <Compile Include="Tools\Dialog\Form_Input.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Form\input\Form_Input.Designer.cs">
+    <Compile Include="Tools\Dialog\Form_Input.Designer.cs">
       <DependentUpon>Form_Input.cs</DependentUpon>
     </Compile>
-    <Compile Include="Form\main\Play.cs" />
-    <Compile Include="Form\main\Tip.cs" />
-    <Compile Include="Form\search\Config.cs" />
-    <Compile Include="Form\search\Form_Search.cs">
+    <Compile Include="Forms\Lister\Form_List.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Form\search\Form_Search.Designer.cs">
+    <Compile Include="Forms\Lister\Form_List.Designer.cs">
+      <DependentUpon>Form_List.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\Searcher\Form_Search.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\Searcher\Form_Search.Designer.cs">
       <DependentUpon>Form_Search.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Form\find\Form_Find.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Form\find\Form_Find.Designer.cs">
-      <DependentUpon>Form_Find.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Form\tip\Form_Tip.cs">
+    <Compile Include="Forms\Viewers\Form_View.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Form\tip\Form_Tip.Designer.cs">
-      <DependentUpon>Form_Tip.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Form\image\Form_Image.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Form\image\Form_Image.Designer.cs">
-      <DependentUpon>Form_Image.cs</DependentUpon>
+    <Compile Include="Forms\Viewers\Form_View.Designer.cs">
+      <DependentUpon>Form_View.cs</DependentUpon>
     </Compile>
     <Compile Include="PictureViewer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Resource\strings\file\FileStrings.cs" />
-    <Compile Include="Resource\strings\main\MainStrings.cs" />
-    <Compile Include="Resource\strings\language\Language.cs" />
-    <Compile Include="Resource\strings\messagebox\BoxStrings.cs" />
-    <Compile Include="Resource\tools\Tools.cs" />
-    <EmbeddedResource Include="Form\find\Form_Find.resx">
-      <DependentUpon>Form_Find.cs</DependentUpon>
+    <Compile Include="Tools\Language\Strings\FileStrings.cs" />
+    <Compile Include="Tools\Language\Strings\MainStrings.cs" />
+    <Compile Include="Tools\Language\Strings\BoxStrings.cs" />
+    <Compile Include="Tools\Window\WinOperate.cs" />
+    <EmbeddedResource Include="Forms\Attributer\Form_Attribute.resx">
+      <DependentUpon>Form_Attribute.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Form\image\Form_Image.resx">
-      <DependentUpon>Form_Image.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Form\input\Form_Input.resx">
-      <DependentUpon>Form_Input.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Form\main\Form_Main.resx">
-      <DependentUpon>Form_Main.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Form\search\Form_Search.resx">
+    <EmbeddedResource Include="Forms\Searcher\Form_Search.resx">
       <DependentUpon>Form_Search.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Form\tip\Form_Tip.resx">
-      <DependentUpon>Form_Tip.cs</DependentUpon>
+    <EmbeddedResource Include="Forms\Viewers\Form_View.resx">
+      <DependentUpon>Form_View.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Tools\Dialog\Form_Input.resx">
+      <DependentUpon>Form_Input.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\Main\Form_Main.resx">
+      <DependentUpon>Form_Main.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\Lister\Form_List.resx">
+      <DependentUpon>Form_List.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
@@ -185,8 +189,8 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Resource\icos\128.ico" />
-    <Content Include="Resource\icos\miku256.ico" />
+    <Content Include="Icos\128.ico" />
+    <Content Include="Icos\miku256.ico" />
   </ItemGroup>
   <ItemGroup>
     <COMReference Include="AxWMPLib">
@@ -219,10 +223,7 @@
       <Install>false</Install>
     </BootstrapperPackage>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Resource\strings\find\" />
-    <Folder Include="Resource\strings\search\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
