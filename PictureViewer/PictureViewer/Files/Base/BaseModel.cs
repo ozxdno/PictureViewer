@@ -105,7 +105,7 @@ namespace PictureViewer.Files
         public bool Asking
         {
             get { return asking; }
-            set { asking = value; if (asking) { Forms.Manager.Asking(); } }
+            set { asking = value; if (asking) { Manager.Asking(Full); } }
         }
         private bool asking;
         /// <summary>
@@ -113,7 +113,7 @@ namespace PictureViewer.Files
         /// </summary>
         public bool Answered
         {
-            get { return Forms.Manager.Answered(); }
+            get { return Manager.Answered(); }
         }
 
         /// <summary>

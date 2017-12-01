@@ -23,14 +23,7 @@ namespace PictureViewer.Forms
     public partial class Form_Main : Form
     {
         ///////////////////////////////////////////////////// public attribute ///////////////////////////////////////////////
-
-        /// <summary>
-        /// 基本索引号
-        /// </summary>
-        public BaseIndex BaseIndex
-        {
-            get { return TreeIndex.Base; }
-        }
+        
         /// <summary>
         /// 树形索引号
         /// </summary>
@@ -57,18 +50,18 @@ namespace PictureViewer.Forms
             get;
         }
         
-        /// <summary>
-        /// 当前显示文件的文件类型
-        /// </summary>
-        public FileType Type
-        {
-            set;
-            get;
-        }
-
         ///////////////////////////////////////////////////// private attribute ///////////////////////////////////////////////
 
         private bool initializing = true;
+        private FileType showType = FileType.Unsupport;
+        private bool isImage
+        {
+            get { return this.pictureBox1.Visible; }
+        }
+        private bool isStream
+        {
+            get { return this.axWindowsMediaPlayer1.Visible; }
+        }
         private System.Timers.Timer timer = new System.Timers.Timer(10);
         private Image sourPicture = null;
         private Image destPicture = null;
@@ -93,24 +86,26 @@ namespace PictureViewer.Forms
         {
             get
             {
-                if (!this.axWindowsMediaPlayer1.Visible && !this.pictureBox1.Visible)
-                { return false; }
-
-                if (Type == FileType.Music || Type == FileType.Video)
+                if (this.axWindowsMediaPlayer1.Visible)
                 { return this.Height < this.axWindowsMediaPlayer1.Height; }
-                return this.Height < this.pictureBox1.Height;
+
+                if (this.pictureBox1.Visible)
+                { return this.Height < this.pictureBox1.Height; }
+
+                return false;
             }
         }
         private bool notEnoughW
         {
             get
             {
-                if (!this.axWindowsMediaPlayer1.Visible && !this.pictureBox1.Visible)
-                { return false; }
-
-                if (Type == FileType.Music || Type == FileType.Video)
+                if (!this.axWindowsMediaPlayer1.Visible)
                 { return this.Width < this.axWindowsMediaPlayer1.Width; }
-                return this.Width < this.pictureBox1.Width;
+
+                if (!this.pictureBox1.Visible)
+                { return this.Width < this.pictureBox1.Width; }
+
+                return false;
             }
         }
         private bool notEnough
@@ -187,7 +182,7 @@ namespace PictureViewer.Forms
         public Form_Main()
         {
             InitializeComponent();
-            this.MouseWheel += Form_MouseWheel;
+            this.MouseWheel += Form_Main_MouseWheel;
         }
         /// <summary>
         /// 加载配置信息
@@ -217,7 +212,9 @@ namespace PictureViewer.Forms
 
             while (pvini.Get("Main_RootPath", ref tempString))
             {
+                if (!System.IO.Directory.Exists(tempString)) { continue; }
                 Files.Manager.Root.Input(tempString);
+                this.rootPathToolStripMenuItem.DropDownItems.Add(new ToolStripMenuItem(tempString));
             }
 
             tempBool = false; pvini.Get("Main_HideL", ref tempBool);
@@ -499,6 +496,16 @@ namespace PictureViewer.Forms
 
                 #endregion
 
+                #region 释放请求
+
+                if (!Answered && TreeIndex.Exist && TreeIndex.Model.Asking)
+                {
+                    ShowCurrent();
+                    TreeIndex.Model.Dispose(BaseIndex);
+                }
+
+                #endregion
+
                 #region 上下左右翻动控件
 
                 if (notEnough && (keyL.Down || keyR.Down || keyU.Down || keyD.Down))
@@ -512,17 +519,7 @@ namespace PictureViewer.Forms
                 #endregion
 
                 if (Tools.Time.Ticks % 100 != 0){ return; }
-
-                #region 释放请求
-
-                if (!Answered && TreeIndex.Exist && TreeIndex.Model.Asking)
-                {
-                    ShowCurrent();
-                    TreeIndex.Model.Dispose(BaseIndex);
-                }
-
-                #endregion
-
+                
                 #region 初始化完成
 
                 #endregion
@@ -604,32 +601,34 @@ namespace PictureViewer.Forms
 
                     bool playNext = true;
 
-                    if (Type == FileType.Music || Type == FileType.Video)
+                    if (isStream)
                     {
                         playNext = this.axWindowsMediaPlayer1.playState == WMPLib.WMPPlayState.wmppsStopped;
                     }
-                    else
+                    if (isImage)
                     {
                         playNext = Tools.Time.Ticks > play.End;
                     }
-                    
+
                     #endregion
 
                     #region 是否存在下一个
 
-                    TreeIndex next = new TreeIndex();
-                    playNext = play.GetNext(ref next);
-
+                    if (playNext)
+                    {
+                        TreeIndex next = new TreeIndex();
+                        playNext = play.GetNext(ref next, false);
+                    }
+                    
                     #endregion
 
                     #region 下一个
 
                     if (playNext)
                     {
-                        if (play.Rand && play.IsCircleEnd) { play.SetRandList(); play.GetCurrent(ref next); }
-                        TreeIndex = next;
-                        play.Index++;
-                        play.Begin = Tools.Time.Ticks;
+                        if (play.Rand && play.IsCircleEnd) { play.SetRandList(); }
+                        TreeIndex next = new TreeIndex();
+                        play.GetNext(ref next, true);
                         ShowCurrent();
                     }
 
@@ -801,19 +800,19 @@ namespace PictureViewer.Forms
                     int y = clientH / 2 - this.label5.Height / 2;
                     this.label5.Location = new Point(x, y);
                 }
-                else if (this.label5.Visible && play.IsPlaying)
-                {
-                    this.label5.Text = Tools.MainStrings.ButtonText_Stop;
-                    int x = clientW / 2 - this.label5.Width / 2;
-                    int y = clientH / 2 - this.label5.Height / 2;
-                    this.label5.Location = new Point(x, y);
-                }
-                else if (this.label5.Visible && (Type == FileType.Music || Type == FileType.Video))
+                else if (this.label5.Visible && isStream)
                 {
                     this.label5.Text = this.axWindowsMediaPlayer1.playState == WMPLib.WMPPlayState.wmppsPlaying ?
                         Tools.MainStrings.ButtonText_Pause :
                         Tools.MainStrings.ButtonText_Start;
 
+                    int x = clientW / 2 - this.label5.Width / 2;
+                    int y = clientH / 2 - this.label5.Height / 2;
+                    this.label5.Location = new Point(x, y);
+                }
+                else if (this.label5.Visible && play.IsPlaying)
+                {
+                    this.label5.Text = Tools.MainStrings.ButtonText_Stop;
                     int x = clientW / 2 - this.label5.Width / 2;
                     int y = clientH / 2 - this.label5.Height / 2;
                     this.label5.Location = new Point(x, y);
@@ -886,9 +885,12 @@ namespace PictureViewer.Forms
 
                 #endregion
 
-                #region 刷新播放时间
-                if (Type == FileType.Music || Type == FileType.Video)
+                #region 刷新播放时间，播放已经准备好的文件
+                if (isStream)
                 {
+                    if (this.axWindowsMediaPlayer1.playState == WMPLib.WMPPlayState.wmppsReady)
+                    { try { this.axWindowsMediaPlayer1.Ctlcontrols.play(); } catch { } }
+
                     string index = "[" + (TreeIndex.File + 1).ToString() + "/" + TreeIndex.TotalFiles.ToString() + "]";
                     string subindex = "[" + (TreeIndex.Sub + 1).ToString() + "/" + TreeIndex.TotalSubs.ToString() + "]";
                     string curpos = "";
@@ -977,7 +979,7 @@ namespace PictureViewer.Forms
 
             if (e.KeyValue == fastkey_L)
             {
-                Page_L(null, null); return;
+                Button_L(null, null); return;
             }
 
             #endregion
@@ -986,7 +988,7 @@ namespace PictureViewer.Forms
 
             if (e.KeyValue == fastkey_R)
             {
-                Page_R(null, null); return;
+                Button_R(null, null); return;
             }
 
             #endregion
@@ -995,7 +997,7 @@ namespace PictureViewer.Forms
 
             if (e.KeyValue == fastkey_U)
             {
-                Page_U(null, null); return;
+                Button_U(null, null); return;
             }
 
             #endregion
@@ -1004,7 +1006,7 @@ namespace PictureViewer.Forms
 
             if (e.KeyValue == fastkey_D)
             {
-                Page_D(null, null); return;
+                Button_D(null, null); return;
             }
 
             #endregion
@@ -1086,12 +1088,7 @@ namespace PictureViewer.Forms
                 if (input.Input == "#small") { UseSmallWindowOpen = true; return; }
                 if (input.Input == "#big") { UseSmallWindowOpen = false; return; }
                 if (input.Input.Length > 5 && input.Input.Substring(0, 5) == "#disk") { ReplaceDisk(input.Input); return; }
-
-                if (ZipOperate.SupportZip && input.Input.Length != 0 && input.Input[0] != '-')
-                { ZipOperate.A_PassWord(input.Input); ShowCurrent(); }
-                if (ZipOperate.SupportZip && input.Input.Length != 0 && input.Input[0] == '-')
-                { ZipOperate.D_PassWord(input.Input); ShowCurrent(); }
-
+                
                 return;
             }
 
@@ -1119,7 +1116,7 @@ namespace PictureViewer.Forms
 
             if (e.KeyValue == fastkey_Rotate)
             {
-                if (Type != FileType.Picture && Type != FileType.Gif) { return; }
+                if (showType != FileType.Picture && showType != FileType.Gif) { return; }
                 TreeIndex.Model.Rotate090();
                 return;
             }
@@ -1130,7 +1127,7 @@ namespace PictureViewer.Forms
 
             if (e.KeyValue == fastkey_FlipX)
             {
-                if (Type != FileType.Picture && Type != FileType.Gif) { return; }
+                if (showType != FileType.Picture && showType != FileType.Gif) { return; }
                 TreeIndex.Model.FlipX();
                 return;
             }
@@ -1141,263 +1138,61 @@ namespace PictureViewer.Forms
 
             if (e.KeyValue == fastkey_FlipY)
             {
-                if (Type != FileType.Picture && Type != FileType.Gif) { return; }
+                if (showType != FileType.Picture && showType != FileType.Gif) { return; }
                 TreeIndex.Model.FlipY();
                 return;
             }
 
             #endregion
         }
-        private void Form_Main_DoubleClick(object sender, EventArgs e)
+
+        private void Form_Main_MouseDown(object sender, MouseEventArgs e)
         {
-            #region 播放时的双击操作
-
-            if (play.IsPlaying && Type != FileType.Music && Type != FileType.Video)
-            { play.IsPlaying = false; return; }
-
-            #endregion
-
-            #region 判断位置是否摆正
-
-            bool PicWindowIsOK = !NeedCorrectPictureBox();
-            bool VidWindowIsOK = !NeedCorrectWMP();
-
-            #endregion
-
-            #region 图片文件的双击操作
-
-            if (Type == FileType.Picture)
+            if (mouse.Left.Down && !mouse.Right.Down && e.Button == MouseButtons.Left)
             {
-                if (!PicWindowIsOK) { ShowPictureS(); NextShowBigPicture = false; return; }
-                if (config.SourPicture.Height <= ClientHeight && config.SourPicture.Width <= ClientWidth)
-                { ShowPictureS(); return; }
-
-                NextShowBigPicture = !NextShowBigPicture;
-                if (NextShowBigPicture) { ShowPictureB(); } else { ShowPictureS(); }
-                return;
+                mouse.Left.KeyDown(this.Location, GetScrollW(), GetScrollH());
             }
-
-            #endregion
-
-            #region 3 型文件的双击操作
-
-            if (FileOperate.IsGif(type))
+            if (!mouse.Left.Down && mouse.Right.Down && e.Button == MouseButtons.Right)
             {
-                ShowGif(null, null, false); return;
-            }
-
-            #endregion
-
-            #region 4 型文件的双击操作
-
-            if (FileOperate.IsStream(type))
-            {
-                string name = config.IsSub ? config.SubName : config.Name;
-                if (!VidWindowIsOK) { ShowVideo(null, name, false); return; }
-
-                WMPLib.WMPPlayState state = this.axWindowsMediaPlayer1.playState;
-                if (state == WMPLib.WMPPlayState.wmppsPaused) { this.axWindowsMediaPlayer1.Ctlcontrols.play(); }
-                if (state == WMPLib.WMPPlayState.wmppsStopped) { this.axWindowsMediaPlayer1.Ctlcontrols.play(); }
-                if (state == WMPLib.WMPPlayState.wmppsPlaying) { this.axWindowsMediaPlayer1.Ctlcontrols.pause(); }
-                return;
-            }
-
-            #endregion
-
-            #region 其他文件双击操作
-
-            ShowCurrent();
-
-            #endregion
-        }
-
-        private void WMP_DoubleClick(object sender, AxWMPLib._WMPOCXEvents_DoubleClickEvent e)
-        {
-            Form_Main_DoubleClick(null, null);
-        }
-        private void WMP_MouseDown(object sender, AxWMPLib._WMPOCXEvents_MouseDownEvent e)
-        {
-            if (e.nButton == 1)
-            {
-                mouse.Down = true;
-                mouse.Up = false;
-                mouse.pDown = MousePosition;
-                mouse.tDown = TimeCount;
-                mouse.nDown++;
-
-                mouse.pWindow = this.Location;
-                mouse.xScroll = this.HorizontalScroll.Value;
-                mouse.yScroll = this.VerticalScroll.Value;
-
-                mouse.Resizing = Resizable;
-                mouse.Size = this.Size;
-            }
-
-            if (e.nButton == 2)
-            {
-                mouse.Down2 = true;
-                mouse.Up2 = false;
-                mouse.pDown2 = MousePosition;
-                mouse.tDown2 = TimeCount;
-                mouse.pWindow = this.Location;
+                mouse.Right.KeyDown(this.Location, GetScrollW(), GetScrollH());
             }
         }
-        private void WMP_MouseUp(object sender, AxWMPLib._WMPOCXEvents_MouseUpEvent e)
+        private void Form_Main_MouseUp(object sender, MouseEventArgs e)
         {
-            if (e.nButton == 1)
+            if (mouse.Left.Down && !mouse.Right.Down && e.Button == MouseButtons.Left)
             {
-                if (mouse.tUp != 0 && TimeCount - mouse.tUp < 20)
-                { Form_Main_DoubleClick(null, null); }
-                
-                mouse.Down = false;
-                mouse.Up = true;
-                mouse.pUp = MousePosition;
-                mouse.tUp = TimeCount;
-                mouse.nUp++;
+                mouse.Left.KeyUp(this.Location, GetScrollW(), GetScrollH());
 
-                mouse.Resizing = false;
+                if (mouse.Left.IsDoubleClicked) { Form_Main_DoubleClick(null, null); }
             }
-            if (e.nButton == 2)
+            if (!mouse.Left.Down && mouse.Right.Down && e.Button == MouseButtons.Right)
             {
-                mouse.Down2 = false;
-                mouse.Up2 = true;
-                mouse.pUp2 = MousePosition;
-                mouse.tUp2 = TimeCount;
+                mouse.Right.KeyUp(this.Location, GetScrollW(), GetScrollH());
 
-                bool showMenu = Math.Abs(mouse.pDown2.X - mouse.pUp2.X) < 10 &&
-                    Math.Abs(mouse.pDown2.Y - mouse.pUp2.Y) < 10;
-                if (showMenu) { this.contextMenuStrip1.Show(MousePosition); }
-            }
-        }
-        
-        
-        private void Page_U(object sender, EventArgs e)
-        {
-            if (config.SubFiles == null || config.SubFiles.Count == 0) { return; }
-            config.SubIndex--;
-            if (config.SubIndex < 0) { config.SubIndex = config.SubFiles.Count - 1; }
-
-            ShowCurrent();
-        }
-        private void Page_D(object sender, EventArgs e)
-        {
-            if (config.SubFiles == null || config.SubFiles.Count == 0) { return; }
-            config.SubIndex++;
-            if (config.SubIndex >= config.SubFiles.Count) { config.SubIndex = 0; }
-
-            ShowCurrent();
-        }
-        private void Page_L(object sender, EventArgs e)
-        {
-            if (FileOperate.RootFiles.Count == 0) { return; }
-
-            config.FileIndex--; if (config.FileIndex < 0) { config.FolderIndex--; }
-            if (config.FolderIndex < 0)
-            { config.FolderIndex = FileOperate.RootFiles.Count - 1; }
-            if (config.FileIndex < 0)
-            { config.FileIndex = FileOperate.RootFiles[config.FolderIndex].Name.Count - 1; }
-
-            config.SubFiles = new List<string>(); config.SubIndex = 0; ShowCurrent();
-        }
-        private void Page_R(object sender, EventArgs e)
-        {
-            if (FileOperate.RootFiles.Count == 0) { return; }
-
-            config.FileIndex++;
-            if (config.FileIndex >= FileOperate.RootFiles[config.FolderIndex].Name.Count)
-            { config.FileIndex = 0; config.FolderIndex++; }
-            if (config.FolderIndex >= FileOperate.RootFiles.Count) { config.FolderIndex = 0; }
-
-            config.SubFiles = new List<string>(); config.SubIndex = 0; ShowCurrent();
-        }
-
-        private void Form_MouseDown(object sender, MouseEventArgs e)
-        {
-            if (e.Button == MouseButtons.Left && !mouse.Down2)
-            {
-                mouse.Down = true;
-                mouse.Up = false;
-                mouse.pDown = MousePosition;
-                mouse.tDown = TimeCount;
-
-                mouse.pWindow = this.Location;
-                mouse.xScroll = this.HorizontalScroll.Value;
-                mouse.yScroll = this.VerticalScroll.Value;
-
-                mouse.Resizing = Resizable;
-                mouse.Size = this.Size;
-            }
-
-            if (e.Button == MouseButtons.Right && !mouse.Down)
-            {
-                mouse.Down2 = true;
-                mouse.Up2 = false;
-                mouse.pDown2 = MousePosition;
-                mouse.tDown2 = TimeCount;
-                mouse.pWindow = this.Location;
-
-                if (this.pictureBox1.Visible)
+                if (mouse.Right.IsDraged)
                 {
-                    mouse.xImage = this.pictureBox1.PointToClient(MousePosition).X;
-                    mouse.yImage = this.pictureBox1.PointToClient(MousePosition).Y;
+                    this.contextMenuStrip1.Hide();
+                }
+                else
+                {
+                    this.contextMenuStrip1.Show();
                 }
             }
         }
-        private void Form_MouseUp(object sender, MouseEventArgs e)
-        {
-            if (e.Button == MouseButtons.Left && !mouse.Down2)
-            {
-                mouse.Down = false;
-                mouse.Up = true;
-                mouse.pUp = MousePosition;
-                mouse.tUp = TimeCount;
-
-                mouse.Resizing = false;
-            }
-
-            if (e.Button == MouseButtons.Right && !mouse.Down)
-            {
-                mouse.Down2 = false;
-                mouse.Up2 = true;
-                mouse.pUp2 = MousePosition;
-                mouse.tUp2 = TimeCount;
-
-                // 显示右键菜单
-                bool showMenu = Math.Abs(mouse.pDown2.X - mouse.pUp2.X) < 10 &&
-                    Math.Abs(mouse.pDown2.Y - mouse.pUp2.Y) < 10;
-                this.contextMenuStrip1.Visible = showMenu;
-
-                if (!showMenu && this.pictureBox1.Visible && !this.HorizontalScroll.Visible && !this.VerticalScroll.Visible)
-                {
-                    Point pt = this.pictureBox1.PointToClient(MousePosition);
-                    bool inPic = pt.X >= 0 && pt.X < this.pictureBox1.Width &&
-                        pt.Y >= 0 && pt.Y < this.pictureBox1.Height;
-                    if (inPic) { return; }
-
-                    int type = config.IsSub ? config.SubType : config.Type;
-                    if (!FileOperate.IsPicture(type) && !FileOperate.IsGif(type)) { return; }
-                    string path = config.IsSub ? config.Path + "\\" + config.Name : config.Path;
-                    string name = config.IsSub ? config.SubName : config.Name;
-                    Images.Add(new Form_Image(path, name, ShapeWindowRate, 2));
-                    Images[Images.Count - 1].InitLoc = new Point(MousePosition.X - mouse.xImage, MousePosition.Y - mouse.yImage);
-                    Images[Images.Count - 1].Show();
-                }
-            }
-        }
-        private void Form_MouseWheel(object sender, MouseEventArgs e)
+        private void Form_Main_MouseWheel(object sender, MouseEventArgs e)
         {
             int type = config.IsSub ? config.SubType : config.Type;
             bool xs = this.HorizontalScroll.Visible;
             bool ys = this.VerticalScroll.Visible;
 
-            #region 滑动滚轮上下翻页
+            #region 滑动滚轮翻页
 
             if (this.lockToolStripMenuItem.Checked && !xs && !ys)
             {
                 if (FileOperate.IsStream(type)) { return; }
                 if (TimeCount - mouse.tWheel < 20) { return; }
                 mouse.tWheel = TimeCount;
-                
+
                 if (e.Delta > 0) { RightMenu_Previous(null, null); }
                 if (e.Delta < 0) { RightMenu_Next(null, null); }
                 return;
@@ -1425,7 +1220,7 @@ namespace PictureViewer.Forms
                 // 下一次的显示比例
                 if (e.Delta > 0) { ShapeWindowRate = currRate + 5; }
                 if (e.Delta < 0) { ShapeWindowRate = currRate - 5; }
-                
+
                 // 不自动裁剪窗体时，显示图片的比例不能大于当前窗口（出现滚动条）
                 if (!UseShapeWindow)
                 {
@@ -1458,7 +1253,7 @@ namespace PictureViewer.Forms
                 if (this.lockToolStripMenuItem.Checked) { return; }
                 if (config.SourPicture == null) { return; }
                 if (!UseShapeWindow) { return; }
-                
+
                 int sh = Screen.PrimaryScreen.Bounds.Height;
                 int sw = Screen.PrimaryScreen.Bounds.Width;
                 int ph = ClientHeight;
@@ -1473,14 +1268,14 @@ namespace PictureViewer.Forms
                 if (e.Delta < 0) { ShapeWindowRate = currRate - 5; }
                 if (ShapeWindowRate <= MinWindowSize) { ShapeWindowRate = MinWindowSize; }
                 if (ShapeWindowRate >= MaxWindowSize) { ShapeWindowRate = MaxWindowSize; }
-                
+
                 // 显示 GIF
                 ShowGif(null, null, false);
                 return;
             }
 
             #endregion
-            
+
             #region 播放音/视频
 
             if (FileOperate.IsStream(type))
@@ -1509,7 +1304,7 @@ namespace PictureViewer.Forms
                     if (e.Delta < 0) { ShapeWindowRate = currRate - 5; }
                     if (ShapeWindowRate <= MinWindowSize) { ShapeWindowRate = MinWindowSize; }
                     if (ShapeWindowRate >= MaxWindowSize) { ShapeWindowRate = MaxWindowSize; }
-                    
+
                     ShowVideo(null, ".mp4", false);
                     return;
                 }
@@ -1519,150 +1314,89 @@ namespace PictureViewer.Forms
 
             #endregion
         }
-        private void Form_MouseHover(object sender, MouseEventArgs e)
+        private void Form_Main_DoubleClick(object sender, EventArgs e)
         {
-            
-        }
+            #region 播放时的双击操作
 
+            if (play.IsPlaying && !isStream) { play.IsPlaying = false; return; }
+
+            #endregion
+
+            #region 判断位置是否摆正
+
+            bool PicWindowIsOK = !NeedCorrectPictureBox();
+            bool VidWindowIsOK = !NeedCorrectWMP();
+
+            #endregion
+
+            #region 图片文件的双击操作
+
+            if (showType == FileType.Picture)
+            {
+                if (!PicWindowIsOK) { ShowPictureS(); nextShowBig = false; return; }
+                if (sourPicture.Height <= clientH && sourPicture.Width <= clientW)
+                { ShowPictureS(); return; }
+
+                nextShowBig = !nextShowBig;
+                if (nextShowBig) { ShowPictureB(); } else { ShowPictureS(); }
+                return;
+            }
+
+            #endregion
+
+            #region GIF 型文件的双击操作
+
+            if (showType == FileType.Gif)
+            {
+                ShowGif(null, null, false); return;
+            }
+
+            #endregion
+
+            #region 视频文件的双击操作
+
+            if (showType == FileType.Video)
+            {
+                if (!VidWindowIsOK) { ShowVideo(null, null, false); return; }
+
+                WMPLib.WMPPlayState state = this.axWindowsMediaPlayer1.playState;
+                if (state == WMPLib.WMPPlayState.wmppsPaused) { this.axWindowsMediaPlayer1.Ctlcontrols.play(); }
+                if (state == WMPLib.WMPPlayState.wmppsStopped) { this.axWindowsMediaPlayer1.Ctlcontrols.play(); }
+                if (state == WMPLib.WMPPlayState.wmppsPlaying) { this.axWindowsMediaPlayer1.Ctlcontrols.pause(); }
+                return;
+            }
+
+            #endregion
+
+            #region 其他文件双击操作
+
+            ShowCurrent();
+
+            #endregion
+        }
         
-        private void KeyDown_Enter_U()
-        {
-            if (!this.VerticalScroll.Visible) { return; }
-            int max = this.VerticalScroll.Maximum;
-            int min = this.VerticalScroll.Minimum;
-            int value = this.VerticalScroll.Value;
-
-            value -= 5;
-            if (value > max) { value = max; }
-            if (value < min) { value = min; }
-
-            this.VerticalScroll.Value = value;
-        }
-        private void KeyDown_Enter_D()
-        {
-            if (!this.VerticalScroll.Visible) { return; }
-            int max = this.VerticalScroll.Maximum;
-            int min = this.VerticalScroll.Minimum;
-            int value = this.VerticalScroll.Value;
-
-            value += 5;
-            if (value > max) { value = max; }
-            if (value < min) { value = min; }
-
-            this.VerticalScroll.Value = value;
-        }
-        private void KeyDown_Enter_L()
-        {
-            if (!this.HorizontalScroll.Visible) { return; }
-            int max = this.HorizontalScroll.Maximum;
-            int min = this.HorizontalScroll.Minimum;
-            int value = this.HorizontalScroll.Value;
-
-            value -= 5;
-            if (value > max) { value = max; }
-            if (value < min) { value = min; }
-
-            this.HorizontalScroll.Value = value;
-        }
-        private void KeyDown_Enter_R()
-        {
-            if (!this.HorizontalScroll.Visible) { return; }
-            int max = this.HorizontalScroll.Maximum;
-            int min = this.HorizontalScroll.Minimum;
-            int value = this.HorizontalScroll.Value;
-
-            value += 5;
-            if (value > max) { value = max; }
-            if (value < min) { value = min; }
-
-            this.HorizontalScroll.Value = value;
-        }
-
         private void ShowCurrent()
         {
-            #region 初始化当前文件的各种属性
+            #region 初始化
 
-            config.SubFiles.Clear();
-            config.ExistFolder = false;
-            config.ExistFile = false;
-            config.ExistSub = false;
-            config.Path = "";
-            config.Name = "";
-            config.Extension = "";
-            config.Type = -1;
-            config.Hide = false;
-            config.IsSub = false;
-            config.SubName = "";
-            config.SubType = -1;
-            config.SubExtension = "";
-            config.SubHide = false;
-
-            if (config.FolderIndex < 0) { config.FolderIndex = 0; }
-            if (config.FolderIndex >= FileOperate.RootFiles.Count) { config.FolderIndex = FileOperate.RootFiles.Count - 1; }
-            if (config.FolderIndex >= 0 && config.FolderIndex < FileOperate.RootFiles.Count)
-            {
-                config.Path = FileOperate.RootFiles[config.FolderIndex].Path;
-
-                if (config.FileIndex < 0) { config.FileIndex = 0; }
-                if (config.FileIndex >= FileOperate.RootFiles[config.FolderIndex].Name.Count) { config.FileIndex = FileOperate.RootFiles[config.FolderIndex].Name.Count - 1; }
-                if (config.FileIndex >= 0 && config.FileIndex < FileOperate.RootFiles[config.FolderIndex].Name.Count)
-                { config.Name = FileOperate.RootFiles[config.FolderIndex].Name[config.FileIndex]; }
-            }
-            
-            config.ExistFolder = Directory.Exists(config.Path);
-            config.Extension = FileOperate.getExtension(config.Name);
-            config.Hide = FileOperate.IsSupportHide(config.Extension);
-            config.Type = FileOperate.getFileType(config.Extension);
-            config.IsSub = FileOperate.IsComic(config.Type);
-            if (config.Type == 1) { config.ExistFile = Directory.Exists(config.Path + "\\" + config.Name); }
-            else { config.ExistFile = File.Exists(config.Path + "\\" + config.Name); }
-            if (!config.IsSub) { config.SubIndex = -1; }
-
-            if (config.ExistFile && config.Type == 1)
-            {
-                config.SubFiles = FileOperate.getSubFiles(config.Path + "\\" + config.Name);
-                if (config.SubIndex < 0) { config.SubIndex = 0; }
-                if (config.SubIndex >= config.SubFiles.Count) { config.SubIndex = config.SubFiles.Count - 1; }
-                if (config.SubFiles.Count != 0)
-                {
-                    config.SubName = config.SubFiles[config.SubIndex];
-                    config.SubExtension = FileOperate.getExtension(config.SubName);
-                    config.SubType = FileOperate.getFileType(config.SubExtension);
-                    config.SubHide = FileOperate.IsSupportHide(config.SubExtension);
-                    config.ExistSub = true;
-                }
-            }
-            if (config.ExistFile && config.Type == 5)
-            {
-                ZipOperate.ReadZipEX(config.Path + "\\" + config.Name);
-                if (config.SubIndex < 0) { config.SubIndex = 0; }
-                if (config.SubIndex >= config.SubFiles.Count) { config.SubIndex = config.SubFiles.Count - 1; }
-                if (config.SubFiles.Count != 0)
-                {
-                    config.SubName = config.SubFiles[config.SubIndex];
-                    config.SubExtension = FileOperate.getExtension(config.SubName);
-                    config.SubType = FileOperate.getFileType(config.SubExtension);
-                    config.SubHide = FileOperate.IsSupportHide(config.SubExtension);
-                    config.ExistSub = true;
-                }
-            }
+            showType = FileType.Unsupport;
+            TreeIndex.Fit();
 
             #endregion
 
             #region 关闭播放以前的文件
 
-            if (config.SourPicture != null) { try { config.SourPicture.Dispose(); } catch { } }
-            if (config.DestPicture != null) { try { config.DestPicture.Dispose(); } catch { } }
+            try { sourPicture.Dispose(); } catch { }
+            try { destPicture.Dispose(); } catch { }
             if (this.axWindowsMediaPlayer1.playState == WMPLib.WMPPlayState.wmppsPlaying)
-            { try { this.axWindowsMediaPlayer1.Ctlcontrols.stop(); } catch { } }
+            { this.axWindowsMediaPlayer1.Ctlcontrols.stop(); }
 
-            config.SourPicture = null;
-            config.DestPicture = null;
+            sourPicture = null; destPicture = null;
             this.pictureBox1.Image = null;
 
-            this.HorizontalScroll.Value = 0;
-            this.VerticalScroll.Value = 0;
-
+            this.axWindowsMediaPlayer1.Visible = false;
+            this.pictureBox1.Visible = false;
+            
             #endregion
 
             #region 切到当前文件夹，无效文件信息
@@ -1670,143 +1404,87 @@ namespace PictureViewer.Forms
             for (int i = 0; i < this.rootPathToolStripMenuItem.DropDownItems.Count; i++)
             {
                 ToolStripMenuItem imenu = (ToolStripMenuItem)this.rootPathToolStripMenuItem.DropDownItems[i];
-                imenu.Checked = i == config.FolderIndex;
+                imenu.Checked = i == TreeIndex.Folder;
             }
 
             #endregion
 
             #region 提取显示文本，处理错误信息，若文件不存在，标题给出提示信息后直接返回
 
-            string index = config.ExistFolder ?
-                "[" + (config.FileIndex + 1).ToString() + "/" + FileOperate.RootFiles[config.FolderIndex].Name.Count.ToString() + "]" :
-                "";
-            string subindex = config.ExistFile && config.IsSub ?
-                "[" + (config.SubIndex + 1).ToString() + "/" + config.SubFiles.Count.ToString() + "]" :
-                "";
-            
-            if (FileOperate.RootFiles.Count == 0) { this.Text = "[不存在任何文件] 右键窗体，导入文件夹来开始！"; ShowNot(); return; }
-            if (!config.ExistFolder) { this.Text = "[文件夹不存在] " + config.Path; ShowErr(); return; }
-            if (FileOperate.RootFiles[config.FolderIndex].Name.Count == 0) { this.Text = "[0/0] [空文件夹]当前文件夹不存在任何文件！"; ShowNot(); return; }
-            if (!config.ExistFile) { this.Text = index + " [文件/文件夹不存在] " + config.Name; ShowErr(); return; }
-            if (FileOperate.IsFolder(config.Type) && config.SubFiles.Count == 0) { this.Text = index + " " + subindex + " [空文件夹] " + config.Name; ShowNot(); return; }
-            if (FileOperate.IsZip(config.Type) && config.SubFiles.Count == 0) { this.Text = index + " " + subindex + " [空文件] " + config.Name; ShowNot(); return; }
-
-            #endregion
-
-            #region 隐藏文件不予显示
-
-            if (!FileSupport.SupportHide && (!config.IsSub ? config.Hide : config.SubHide))
+            if (initializing || TreeIndex.Model.Asking)
             {
-                this.Text = config.IsSub ?
-                    index + " " + subindex + " [未知文件] " + config.Name + " : " + config.SubName :
-                    index + " [未知文件] " + config.Name;
-
-                config.Type = -1; config.SubType = -1; ShowUnk(); return;
-            }
-
-            #endregion
-            
-            #region 0 型文件（暂不支持类型）
-
-            if (FileOperate.IsUnsupport(config.Type))
-            {
-                this.Text = config.IsSub ?
-                    index + " " + subindex + " [不支持] " + config.Name + " : " + config.SubName :
-                    index + " [不支持] " + config.Name;
-                ShowUnp(); return;
-            }
-
-            #endregion
-
-            #region 1 型文件（文件夹）
-
-            if (FileOperate.IsFolder(config.Type))
-            {
-                this.Text = config.SubType == 4 ?
-                    index + " " + subindex + " " + config.Name + " : " + config.SubName :
-                    index + " " + subindex + " " + config.Name + " : " + config.SubName;
-                
-                if (FileOperate.IsPicture(config.SubType)) { ShowPicture(config.Path + "\\" + config.Name, config.SubName); return; }
-                if (FileOperate.IsGif(config.SubType)) { ShowGif(config.Path + "\\" + config.Name, config.SubName); return; }
-                if (FileOperate.IsStream(config.SubType)) { ShowVideo(config.Path + "\\" + config.Name, config.SubName); return; }
-
-                this.Text = index + " " + subindex + " [不支持] " + config.Name + " : " + config.SubName;
-                config.SubType = -1;
-                ShowUnp();
+                this.Text = TreeIndex.ToString() + " " + Tools.MainStrings.WindowTitle_Initializing;
+                ShowTip(Files.Manager.TipInt.Model);
                 return;
             }
 
-            #endregion
-
-            #region 2 型文件（图片）
-
-            if (FileOperate.IsPicture(config.Type))
+            if (TreeIndex.ExistFile && TreeIndex.Empty)
             {
-                this.Text = index + " " + config.Name;
-                ShowPicture(config.Path, config.Name); return;
-            }
-
-            #endregion
-
-            #region 3 型文件（GIF）
-
-            if (FileOperate.IsGif(config.Type))
-            {
-                this.Text = index + " " + config.Name;
-                ShowGif(config.Path, config.Name); return;
-            }
-
-            #endregion
-
-            #region 4 型文件（视频）
-
-            if (FileOperate.IsStream(config.Type))
-            {
-                this.Text = index + " " + config.Name;
-                ShowVideo(config.Path, config.Name); return;
-            }
-
-            #endregion
-
-            #region 5 型文件（ZIP）
-
-            if (FileOperate.IsZip(config.Type))
-            {
-                if (!ZipOperate.Known)
-                {
-                    this.Text = index + " " + subindex + " [密码错误] " + config.Name + " : " + config.SubName;
-                    ShowErr(); return;
-                }
-
-                this.Text = index + " " + subindex + " " + config.Name + " : " + config.SubName;
-                
-                if (FileOperate.IsPicture(config.SubType) && ZipOperate.LoadPictureEX()) { ShowPicture(null, null, false); return; }
-                if (FileOperate.IsGif(config.SubType) && ZipOperate.LoadGifEX()) { ShowGif(null, null, false); return; }
-
-                this.Text = index + " " + subindex + " [不支持] " + config.Name + " : " + config.SubName;
-                config.SubType = -1;
-                ShowUnp();
+                this.Text = TreeIndex.ToString() + " " + Tools.MainStrings.WindowTitle_Empty;
+                ShowTip(Files.Manager.TipNot.Model);
                 return;
             }
+
+            if (!TreeIndex.Exist)
+            {
+                this.Text = TreeIndex.ToString() + " " + Tools.MainStrings.WindowTitle_ErrorFile;
+                ShowTip(Files.Manager.TipErr.Model);
+                return;
+            }
+
+            if (!TreeIndex.Model.Exist)
+            {
+                this.Text = TreeIndex.ToString() + " " + Tools.MainStrings.WindowTitle_ErrorFile;
+                ShowTip(Files.Manager.TipErr.Model);
+                return;
+            }
+
+            this.Text = TreeIndex.Model.InFolder ?
+                TreeIndex.ToString() + " " + TreeIndex.Model.Subfolder + " : " + TreeIndex.Model.Name :
+                TreeIndex.ToString() + TreeIndex.Model.Name;
+
+            #endregion
+
+            #region 图片
+
+            if (TreeIndex.Model.Type == FileType.Picture) { ShowPicture(TreeIndex.Model.Full); }
+
+            #endregion
+
+            #region GIF
+
+            if (TreeIndex.Model.Type == FileType.Gif) { ShowPicture(TreeIndex.Model.Full); }
+
+            #endregion
+
+            #region 音频
+
+            if (TreeIndex.Model.Type == FileType.Music) { ShowMusic(TreeIndex.Model.Full); }
+
+            #endregion
+
+            #region 视频
+
+            if (TreeIndex.Model.Type == FileType.Video) { ShowPicture(TreeIndex.Model.Full); }
 
             #endregion
 
             #region 其他文件（不支持）
 
-            this.Text = index + " [不支持] " + config.Name;
-            ShowUnp();
-            config.Type = -1;
+            this.Text = TreeIndex.ToString() + " " + Tools.MainStrings.WindowTitle_Unsupport;
+            ShowTip(Files.Manager.TipUnp.Model);
+            return;
 
             #endregion
         }
-        private void ShowPicture(string path, string name, bool load = true)
+        private void ShowPicture(string full, bool load = true)
         {
             #region 确保占用资源被释放
             
-            if (load) { try { config.SourPicture.Dispose(); } catch { } }
-            try { config.DestPicture.Dispose(); } catch { }
-            if (load) { config.SourPicture = null; }
-            config.DestPicture = null;
+            if (load) { try { sourPicture.Dispose(); } catch { } }
+            try { destPicture.Dispose(); } catch { }
+            if (load) { sourPicture = null; }
+            destPicture = null;
             if (load) { this.pictureBox1.Image = null; }
 
             if (this.axWindowsMediaPlayer1.playState == WMPLib.WMPPlayState.wmppsPlaying)
@@ -1816,8 +1494,8 @@ namespace PictureViewer.Forms
 
             #region 重新加载资源
 
-            if (load) { config.SourPicture = Image.FromFile(path + "\\" + name); }
-            if (config.SourPicture == null) { return; }
+            if (load) { sourPicture = Image.FromFile(full); }
+            if (sourPicture == null) { return; }
             this.axWindowsMediaPlayer1.Visible = false;
             this.pictureBox1.Visible = true;
 
@@ -1825,8 +1503,7 @@ namespace PictureViewer.Forms
 
             #region 加载并显示图片
             
-            if (NextShowBigPicture) { ShowPictureB(); }
-            else { ShowPictureS(); }
+            if (nextShowBig) { ShowPictureB(); } else { ShowPictureS(); }
 
             #endregion
 
@@ -1837,14 +1514,14 @@ namespace PictureViewer.Forms
 
             #endregion
         }
-        private void ShowGif(string path, string name, bool load = true)
+        private void ShowGif(string full, bool load = true)
         {
             #region 确保资源被释放
 
-            if (load) { try { config.SourPicture.Dispose(); } catch { } }
-            try { config.DestPicture.Dispose(); } catch { }
-            if (load) { config.SourPicture = null; }
-            config.DestPicture = null;
+            if (load) { try { sourPicture.Dispose(); } catch { } }
+            try { destPicture.Dispose(); } catch { }
+            if (load) { sourPicture = null; }
+            destPicture = null;
             if (load) { this.pictureBox1.Image = null; }
             
             if (this.axWindowsMediaPlayer1.playState == WMPLib.WMPPlayState.wmppsPlaying)
@@ -1854,8 +1531,8 @@ namespace PictureViewer.Forms
 
             #region 重新加载资源
 
-            if (load) { config.SourPicture = (Bitmap)Image.FromFile(path + "\\" + name); }
-            if (config.SourPicture == null) { return; }
+            if (load) { sourPicture = (Bitmap)Image.FromFile(full); }
+            if (sourPicture == null) { return; }
             this.axWindowsMediaPlayer1.Visible = false;
             this.pictureBox1.Visible = true;
 
@@ -1863,32 +1540,28 @@ namespace PictureViewer.Forms
 
             #region 获取窗体大小
 
-            if (UseShapeWindow)
+            if (useShape)
             {
-                int sh = (int)(Screen.PrimaryScreen.Bounds.Height * ShapeWindowRate / 100);
-                int sw = (int)(Screen.PrimaryScreen.Bounds.Width * ShapeWindowRate / 100);
+                int sh = (int)(Tools.Screen.Height * shapeWindowRate);
+                int sw = (int)(Tools.Screen.Width * shapeWindowRate);
 
-                double rate1 = (double)sh / config.SourPicture.Height;
-                double rate2 = (double)sw / config.SourPicture.Width;
-                double rate = Math.Min(rate1, rate2);
-                if (rate > 1) { rate = 1; }
-
-                int shapeh = (int)(config.SourPicture.Height * rate);
-                int shapew = (int)(config.SourPicture.Width * rate);
+                Size winSize = Tools.WinOperate.FitRect(sourPicture.Width, sourPicture.Height, sw, sh);
+                int shapeh = winSize.Height;
+                int shapew = winSize.Width;
 
                 // 当屏幕能够容纳 GIF 源图，则不做任何裁剪。
-                if (sh >= config.SourPicture.Height && sw >= config.SourPicture.Width)
+                if (sh >= sourPicture.Height && sw >= sourPicture.Width)
                 {
-                    shapeh = config.SourPicture.Height;
-                    shapew = config.SourPicture.Width;
+                    shapeh = sourPicture.Height;
+                    shapew = sourPicture.Width;
                 }
 
                 int centerh = this.Location.Y + this.Height / 2;
                 int centerw = this.Location.X + this.Width / 2;
 
                 SetScroll0();
-                ClientHeight = shapeh;
-                ClientWidth = shapew;
+                clientH = shapeh;
+                clientW = shapew;
                 this.Location = new Point(centerw - this.Width / 2, centerh - this.Height / 2);
             }
 
@@ -1898,20 +1571,20 @@ namespace PictureViewer.Forms
 
             if (true)
             {
-                int ch = ClientHeight;
-                int cw = ClientWidth;
-                int sh = config.SourPicture.Height;
-                int sw = config.SourPicture.Width;
+                int ch = clientH;
+                int cw = clientW;
+                int sh = sourPicture.Height;
+                int sw = sourPicture.Width;
 
                 int px = (cw - sw) / 2; if (px < 0) { px = 0; }
                 int py = (ch - sh) / 2; if (py < 0) { py = 0; }
 
                 SetScroll0();
                 this.pictureBox1.Location = new Point(px, py);
-                this.pictureBox1.Height = config.SourPicture.Height;
-                this.pictureBox1.Width = config.SourPicture.Width;
+                this.pictureBox1.Height = sourPicture.Height;
+                this.pictureBox1.Width = sourPicture.Width;
                 SetScroll0();
-                if (load) { this.pictureBox1.Image = config.SourPicture; }
+                if (load) { this.pictureBox1.Image = sourPicture; }
             }
 
             #endregion
@@ -1923,7 +1596,90 @@ namespace PictureViewer.Forms
 
             #endregion
         }
-        private void ShowVideo(string path, string name, bool load = true)
+        private void ShowMusic(string full, bool load = true)
+        {
+            #region 确保占用资源被释放
+
+            try { sourPicture.Dispose(); } catch { }
+            try { destPicture.Dispose(); } catch { }
+            sourPicture = null;
+            destPicture = null;
+            this.pictureBox1.Image = null;
+
+            if (load && this.axWindowsMediaPlayer1.playState == WMPLib.WMPPlayState.wmppsPlaying)
+            { this.axWindowsMediaPlayer1.Ctlcontrols.stop(); }
+
+            #endregion
+
+            #region 重新加载资源
+
+            this.axWindowsMediaPlayer1.Visible = true;
+            this.pictureBox1.Visible = false;
+
+            if (load && axWindowsMediaPlayer1.URL != full) { axWindowsMediaPlayer1.URL = full; }
+            if (load) { axWindowsMediaPlayer1.Ctlcontrols.play(); }
+
+            #endregion
+
+            #region 获取窗体大小
+
+            if (true)
+            {
+                int shapeh = Tools.Screen.MinWindowSide;
+                int shapew = shapeh;
+                
+                int centerh = this.Location.Y + this.Height / 2;
+                int centerw = this.Location.X + this.Width / 2;
+
+                SetScroll0();
+                clientH = shapeh;
+                clientW = shapew;
+                this.Location = new Point(centerw - this.Width / 2, centerh - this.Height / 2);
+            }
+
+            #endregion
+
+            #region 获取控件大小
+
+            if (isMusic)
+            {
+                int ch = ClientHeight;
+                int cw = ClientWidth;
+
+                int sh = Screen.PrimaryScreen.Bounds.Height * MinWindowSize / 100;
+                int sw = Screen.PrimaryScreen.Bounds.Width * MinWindowSize / 100;
+                int shapeh = Math.Min(sh, sw) - 2;
+                int shapew = shapeh;
+
+                SetScroll0();
+                this.axWindowsMediaPlayer1.Height = shapeh;
+                this.axWindowsMediaPlayer1.Width = shapew;
+                this.axWindowsMediaPlayer1.Location = new Point((cw - shapew) / 2, (ch - shapeh) / 2);
+            }
+            if (isVideo)
+            {
+                int ch = ClientHeight;
+                int cw = ClientWidth;
+
+                int shapeh = ch - 2;
+                int shapew = cw - 2;
+
+                SetScroll0();
+                this.axWindowsMediaPlayer1.Height = shapeh;
+                this.axWindowsMediaPlayer1.Width = shapew;
+                this.axWindowsMediaPlayer1.Location = new Point(1, 1);
+            }
+
+            #endregion
+
+            #region 确保窗体打开
+
+            this.axWindowsMediaPlayer1.Visible = true;
+            this.pictureBox1.Visible = false;
+
+            #endregion
+        }
+        private void ShowVideo(string full, bool load = true)
         {
             #region 确保占用资源被释放
 
@@ -2028,28 +1784,51 @@ namespace PictureViewer.Forms
 
             #endregion
         }
-        private void ShowOff()
+        private void ShowTip(TipModel tip, bool load = true)
         {
-            #region 确保占用资源被释放
+            if (tip.Type == FileType.Picture) { ShowPicture(tip.Full); return; }
+            if (tip.Type == FileType.Gif) { ShowGif(tip.Full); return; }
+            if (tip.Type == FileType.Music) { ShowMusic(tip.Full); return; }
+            if (tip.Type == FileType.Video) { ShowVideo(tip.Full); return; }
+        }
+        private void ShowBoard(bool show)
+        {
+            if (UseBoard == show) { return; }
 
-            try { config.SourPicture.Dispose(); } catch { }
-            try { config.DestPicture.Dispose(); } catch { }
-            config.SourPicture = null;
-            config.DestPicture = null;
-            this.pictureBox1.Image = null;
+            int top = UseBoard ? this.Location.Y + ClientTop : this.Location.Y;
+            int lef = UseBoard ? this.Location.X + ClientLeft : this.Location.X;
 
-            if (this.axWindowsMediaPlayer1.playState == WMPLib.WMPPlayState.wmppsPlaying)
-            { this.axWindowsMediaPlayer1.Ctlcontrols.stop(); }
+            int centerh = top + ClientHeight / 2;
+            int centerw = lef + ClientWidth / 2;
+            int clienth = ClientHeight;
+            int clientw = ClientWidth;
 
-            #endregion
+            UseBoard = show;
+            if (show) { this.FormBorderStyle = FormBorderStyle.Sizable; }
+            else { this.FormBorderStyle = FormBorderStyle.None; }
+            ClientHeight = clienth;
+            ClientWidth = clientw;
 
-            #region 确保窗体关闭
+            int pty = centerh - ClientHeight / 2 - (UseBoard ? ClientTop : 0);
+            int ptx = centerw - ClientWidth / 2 - (UseBoard ? ClientLeft : 0);
 
-            this.axWindowsMediaPlayer1.Visible = false;
-            this.pictureBox1.Visible = false;
+            this.Location = new Point(ptx, pty);
+
+            #region 判断位置
+
+            bool PicWindowIsOK = !NeedCorrectPictureBox();
+            bool VidWindowIsOK = !NeedCorrectWMP();
+            int type = config.IsSub ? config.SubType : config.Type;
+            string name = config.IsSub ? config.SubName : config.Name;
+            if (FileOperate.IsError(type) && !PicWindowIsOK) { ShowPictureS(); }
+            if (FileOperate.IsUnsupport(type) && !PicWindowIsOK) { ShowPictureS(); }
+            if (FileOperate.IsPicture(type) && !PicWindowIsOK) { ShowPictureS(); }
+            if (FileOperate.IsGif(type) && !PicWindowIsOK) { ShowGif(null, null, false); }
+            if (FileOperate.IsStream(type) && !VidWindowIsOK) { ShowVideo(null, name, false); }
 
             #endregion
         }
+
         private void ShowUnk()
         {
             string unkpath = FileOperate.getExePath();
@@ -2267,43 +2046,6 @@ namespace PictureViewer.Forms
 
             #endregion
         }
-        private void ShowBoard(bool show)
-        {
-            if (UseBoard == show) { return; }
-
-            int top = UseBoard ? this.Location.Y + ClientTop : this.Location.Y;
-            int lef = UseBoard ? this.Location.X + ClientLeft : this.Location.X;
-
-            int centerh = top + ClientHeight / 2;
-            int centerw = lef + ClientWidth / 2;
-            int clienth = ClientHeight;
-            int clientw = ClientWidth;
-
-            UseBoard = show;
-            if (show) { this.FormBorderStyle = FormBorderStyle.Sizable; }
-            else { this.FormBorderStyle = FormBorderStyle.None; }
-            ClientHeight = clienth;
-            ClientWidth = clientw;
-
-            int pty = centerh - ClientHeight / 2 - (UseBoard ? ClientTop : 0);
-            int ptx = centerw - ClientWidth / 2 - (UseBoard ? ClientLeft : 0);
-
-            this.Location = new Point(ptx, pty);
-
-            #region 判断位置
-
-            bool PicWindowIsOK = !NeedCorrectPictureBox();
-            bool VidWindowIsOK = !NeedCorrectWMP();
-            int type = config.IsSub ? config.SubType : config.Type;
-            string name = config.IsSub ? config.SubName : config.Name;
-            if (FileOperate.IsError(type) && !PicWindowIsOK) { ShowPictureS(); }
-            if (FileOperate.IsUnsupport(type) && !PicWindowIsOK) { ShowPictureS(); }
-            if (FileOperate.IsPicture(type) && !PicWindowIsOK) { ShowPictureS(); }
-            if (FileOperate.IsGif(type) && !PicWindowIsOK) { ShowGif(null, null, false); }
-            if (FileOperate.IsStream(type) && !VidWindowIsOK) { ShowVideo(null, name, false); }
-
-            #endregion
-        }
         private void SetScroll0()
         {
             this.VerticalScroll.Value = 0;
@@ -2369,7 +2111,6 @@ namespace PictureViewer.Forms
             if (this.pictureBox1.Visible) { return this.pictureBox1.Location.X; }
             return 0;
         }
-
         private bool NeedCorrectPictureBox()
         {
             if (!this.pictureBox1.Visible) { return false; }
@@ -2431,267 +2172,29 @@ namespace PictureViewer.Forms
             return false;
         }
         
-        private void SearchPlayFile()
+        private void Button_U(object sender, EventArgs e)
         {
-            play.FolderIndexes = new List<int>();
-            play.FileIndexes = new List<int>();
-            play.SubIndexes = new List<int>();
-            play.PlayIndexes = new List<int>();
-
-            if (play.Single)
-            {
-                play.PlayIndexes.Add(0);
-                play.FolderIndexes.Add(config.FolderIndex);
-                play.FileIndexes.Add(config.FileIndex);
-                play.SubIndexes.Add(config.SubIndex);
-                return;
-            }
-
-            bool existFile = play.Picture || play.Gif || play.Music || play.Video;
-            if (!existFile) { play.Index = -1; return; }
-            
-            int folderbg = play.TotalRoots ? 0 : config.FolderIndex;
-            int foldered = play.TotalRoots ? FileOperate.RootFiles.Count : folderbg + 1;
-            int filebg = play.Subroot ? config.FileIndex : 0;
-            int fileed = play.Subroot ? filebg + 1 : (config.ExistFolder ? FileOperate.RootFiles[config.FolderIndex].Name.Count : 0);
-
-            for (int i = folderbg; i < foldered; i++)
-            {
-                #region 文件夹
-
-                if (!play.Subroot) { filebg = 0; fileed = FileOperate.RootFiles[i].Name.Count; }
-
-                for (int j = filebg; j < fileed; j++)
-                {
-                    string path = FileOperate.RootFiles[i].Path;
-                    string name = FileOperate.RootFiles[i].Name[j];
-                    string extension = FileOperate.getExtension(name);
-                    int type = FileOperate.getFileType(extension);
-                    bool isMusic = FileOperate.IsMusic(extension);
-                    bool isVideo = FileOperate.IsVideo(extension);
-
-                    bool found =
-                        (play.Picture && type == 2) ||
-                        (play.Gif && type == 3) ||
-                        (play.Music && isMusic) ||
-                        (play.Video && isVideo);
-                    if (found) { play.FolderIndexes.Add(i); play.FileIndexes.Add(j); play.SubIndexes.Add(-1); play.PlayIndexes.Add(play.FolderIndexes.Count - 1); continue; }
-                    if (!FileOperate.IsComic(type)) { continue; }
-
-                    List<string> subfiles = null;
-                    if (type == 1) { subfiles = FileOperate.getSubFiles(path + "\\" + name); }
-                    if (type == 5) { subfiles = ZipOperate.getZipFileEX(path + "\\" + name); }
-                    if (subfiles == null || subfiles.Count == 0) { continue; }
-
-                    #region 子文件夹
-
-                    for (int k = 0; k < subfiles.Count; k++)
-                    {
-                        name = subfiles[k];
-                        extension = FileOperate.getExtension(name);
-                        type = FileOperate.getFileType(extension);
-                        isMusic = FileOperate.IsMusic(extension);
-                        isVideo = FileOperate.IsVideo(extension);
-
-                        found =
-                            (play.Picture && type == 2) ||
-                            (play.Gif && type == 3) ||
-                            (play.Music && isMusic) ||
-                            (play.Video && isVideo);
-
-                        if (found) { play.FolderIndexes.Add(i); play.FileIndexes.Add(j); play.SubIndexes.Add(k); play.PlayIndexes.Add(play.FolderIndexes.Count - 1); }
-                    }
-
-                    if (play.Subroot) { break; }
-
-                    #endregion
-                }
-
-                if (play.Root) { break; }
-
-                #endregion
-            }
-
-            if (play.Rand) { play.PlayIndexes = play.PlayIndexes.OrderBy(x => Guid.NewGuid()).ToList(); }
-        }
-        private void ResetPlayIndex()
-        {
-            int folderindex = config.FolderIndex, fileindex = config.FileIndex, subindex = config.SubIndex;
-            play.Index = -1;
-
-            for (int i = play.PlayIndexes.Count - 1; i >= 0; i--)
-            {
-                if (play.FolderIndexes[play.PlayIndexes[i]] != folderindex || play.FileIndexes[play.PlayIndexes[i]] != fileindex) { continue; }
-                play.Index = i;
-                if (subindex == -1 || play.SubIndexes[play.PlayIndexes[i]] == subindex) { break; }
-            }
-        }
-
-        private void CloseImages()
-        {
-            for (int i = Images.Count - 1; i >= 0; i--)
-            {
-                if (!Images[i].IsDisposed) { Images[i].Close(); }
-            }
-        }
-        private void CloseImages(string fullname)
-        {
-            for (int i = Images.Count - 1; i >= 0; i--)
-            {
-                if (!Images[i].IsDisposed && Images[i].Path + "\\" + Images[i].Name == fullname) { Images[i].Close(); }
-            }
-        }
-        private void CloseImages(string path, string name)
-        {
-            for (int i = Images.Count - 1; i >= 0; i--)
-            {
-                if (!Images[i].IsDisposed && Images[i].Path == path && Images[i].Name == name)
-                {
-                    Images[i].Close();
-                }
-            }
-        }
-        private void ShowImages()
-        {
-            for (int i = 0; i < Images.Count; i++)
-            {
-                if (!Images[i].IsDisposed) { Images[i].Show(); }
-            }
-        }
-        private void HideImages()
-        {
-            for (int i = 0; i < Images.Count; i++)
-            {
-                if (!Images[i].IsDisposed) { Images[i].Hide(); }
-            }
-        }
-
-        private void HideFiles()
-        {
-            // 关断当前
-            try { this.axWindowsMediaPlayer1.Ctlcontrols.stop(); } catch { }
-            try { config.SourPicture.Dispose(); } catch { }
-            try { config.DestPicture.Dispose(); } catch { }
-
-            this.axWindowsMediaPlayer1.Visible = false;
-            this.pictureBox1.Visible = false;
-
-            // 更改文件后缀
-            for (int i = 0; i < FileOperate.RootFiles.Count; i++) { FileOperate.HideFiles(FileOperate.RootFiles[i].Path); }
-
-            // 重新加载文件
-            Class.Save.Save_CFG();
-            Class.Load.Load_CFG();
-
-            // 刷新列表
-            for (int i = FileOperate.RootFiles.Count - 1; i >= 0; i--)
-            {
-                ToolStripMenuItem menu = new ToolStripMenuItem(FileOperate.RootFiles[i].Path);
-                menu.Click += RightMenu_Path;
-                this.rootPathToolStripMenuItem.DropDownItems.Insert(0, menu);
-            }
-
-            // 显示
-            if (FileOperate.RootFiles.Count > 0)
-            { ((ToolStripMenuItem)this.rootPathToolStripMenuItem.DropDownItems[0]).Checked = true; }
+            TreeIndex.Sub--;
+            if (TreeIndex.Sub < 0) { TreeIndex.Sub = TreeIndex.TotalSubs - 1; }
             ShowCurrent();
         }
-        private void ShowFiles()
+        private void Button_D(object sender, EventArgs e)
         {
-            // 释放资源
-            if (config.SourPicture != null) { try { config.SourPicture.Dispose(); } catch { } }
-            if (config.DestPicture != null) { try { config.DestPicture.Dispose(); } catch { } }
-            if (this.axWindowsMediaPlayer1.playState == WMPLib.WMPPlayState.wmppsPlaying)
-            { try { this.axWindowsMediaPlayer1.Ctlcontrols.stop(); } catch { } }
-
-            // 更改文件后缀
-            for (int i = 0; i < FileOperate.RootFiles.Count; i++) { FileOperate.ShowFiles(FileOperate.RootFiles[i].Path); }
-
-            // 重新加载文件
-            //int folder = config.FolderIndex, file = config.FileIndex, sub = config.SubIndex;
-            //Class.Load.Load_CFG();
-            //config.FolderIndex = folder; config.FileIndex = file; config.SubIndex = sub;
-            Class.Save.Save_CFG();
-            Class.Load.Load_CFG();
-            
-            // 刷新列表
-            for (int i = FileOperate.RootFiles.Count - 1; i >= 0; i--)
-            {
-                ToolStripMenuItem menu = new ToolStripMenuItem(FileOperate.RootFiles[i].Path);
-                menu.Click += RightMenu_Path;
-                this.rootPathToolStripMenuItem.DropDownItems.Insert(0, menu);
-            }
-
-            // 显示
-            if (FileOperate.RootFiles.Count > 0)
-            { ((ToolStripMenuItem)this.rootPathToolStripMenuItem.DropDownItems[0]).Checked = true; }
+            TreeIndex.Sub++;
+            if (TreeIndex.Sub >= TreeIndex.TotalSubs) { TreeIndex.Sub = 0; }
             ShowCurrent();
         }
-        private void HideCurrentFolder()
+        private void Button_L(object sender, EventArgs e)
         {
-            // 关断当前
-            try { this.axWindowsMediaPlayer1.Ctlcontrols.stop(); } catch { }
-            try { config.SourPicture.Dispose(); } catch { }
-            try { config.DestPicture.Dispose(); } catch { }
-
-            this.axWindowsMediaPlayer1.Visible = false;
-            this.pictureBox1.Visible = false;
-
-            // 更改文件后缀
-            if (config.FolderIndex < 0) { return; }
-            if (config.FolderIndex >= FileOperate.RootFiles.Count) { return; }
-            FileOperate.HideFiles(FileOperate.RootFiles[config.FolderIndex].Path);
-
-            // 重新加载文件
-            FileOperate.Reload(config.FolderIndex);
-
-            // 显示
+            TreeIndex.File--;
+            if (TreeIndex.File < 0) { TreeIndex.File = TreeIndex.TotalFiles - 1; }
             ShowCurrent();
         }
-        private void ShowCurrentFolder()
+        private void Button_R(object sender, EventArgs e)
         {
-            // 释放资源
-            if (config.SourPicture != null) { try { config.SourPicture.Dispose(); } catch { } }
-            if (config.DestPicture != null) { try { config.DestPicture.Dispose(); } catch { } }
-            if (this.axWindowsMediaPlayer1.playState == WMPLib.WMPPlayState.wmppsPlaying)
-            { try { this.axWindowsMediaPlayer1.Ctlcontrols.stop(); } catch { } }
-
-            // 更改文件后缀
-            if (config.FolderIndex < 0) { return; }
-            if (config.FolderIndex >= FileOperate.RootFiles.Count) { return; }
-            FileOperate.ShowFiles(FileOperate.RootFiles[config.FolderIndex].Path);
-
-            // 重新加载文件
-            FileOperate.Reload(config.FolderIndex);
-
-            // 显示
+            TreeIndex.File++;
+            if (TreeIndex.File >= TreeIndex.TotalFiles) { TreeIndex.File = 0; }
             ShowCurrent();
-        }
-        private void ReplaceDisk(string input)
-        {
-            if (input.Length < 9) { return; }
-            input = input.ToUpper();
-
-            char sdisk = input[6];
-            char ddisk = input[8];
-            char _disk = ' ';
-            if (sdisk == ddisk) { return; }
-
-            if (Class.Load.Initialize.ThreadState == System.Threading.ThreadState.Running)
-            { MessageBox.Show("尚未读取完成！", "提示"); return; }
-
-            for (int i = 0; i < Form_Find.PictureFiles.Count; i++)
-            {
-                Form_Find.PICTURE p = Form_Find.PictureFiles[i];
-                if (p.Path == null || p.Path.Length == 0) { continue; }
-                _disk = p.Path.ToUpper()[0];
-                if (_disk != sdisk) { continue; }
-
-                p.Path = ddisk + p.Path.Substring(1);
-                p.Full = ddisk + p.Full.Substring(1);
-
-                Form_Find.PictureFiles[i] = p;
-            }
         }
 
         private void RightMenu_Refresh(object sender, EventArgs e)

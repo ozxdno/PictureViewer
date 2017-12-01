@@ -32,8 +32,7 @@ namespace PictureViewer.Files
         /// </summary>
         public System.Drawing.Image Image
         {
-            get;
-            set;
+            get { return System.Drawing.Image.FromFile(Full); }
         }
         /// <summary>
         /// 提示文件的高度，单位：像素
@@ -73,13 +72,7 @@ namespace PictureViewer.Files
         /// </summary>
         public TipModel()
         {
-            base.FillBaseModel();
-
-            Loaded = false;
-            Type = FileType.Unsupport;
-            Image = null;
-            Height = 0;
-            Width = 0;
+            base.FillBaseModel(); initialize();
         }
         /// <summary>
         /// 创建提示文件模型
@@ -87,13 +80,7 @@ namespace PictureViewer.Files
         /// <param name="full">文件全称</param>
         public TipModel(string full)
         {
-            base.FillBaseModel(full);
-
-            Loaded = false;
-            Type = FileType.Unsupport;
-            Image = null;
-            Height = 0;
-            Width = 0;
+            base.FillBaseModel(full); initialize();
         }
         /// <summary>
         /// 创建提示文件模型
@@ -102,13 +89,7 @@ namespace PictureViewer.Files
         /// <param name="name">文件名称</param>
         public TipModel(string path, string name)
         {
-            base.FillBaseModel(path, name);
-
-            Loaded = false;
-            Type = FileType.Unsupport;
-            Image = null;
-            Height = 0;
-            Width = 0;
+            base.FillBaseModel(path, name); initialize();
         }
         /// <summary>
         /// 创建提示文件模型
@@ -116,13 +97,7 @@ namespace PictureViewer.Files
         /// <param name="file">文件信息</param>
         public TipModel(System.IO.FileInfo file)
         {
-            base.FillBaseModel(file);
-
-            Loaded = false;
-            Type = FileType.Unsupport;
-            Image = null;
-            Height = 0;
-            Width = 0;
+            base.FillBaseModel(file); initialize();
         }
 
         /// <summary>
@@ -193,6 +168,15 @@ namespace PictureViewer.Files
         {
             try { Image.Dispose(); } catch { }
             Image = null;
+        }
+
+
+        private void initialize()
+        {
+            Loaded = false;
+            Type = FileType.Unsupport;
+            Height = 0;
+            Width = 0;
         }
     }
 }

@@ -55,6 +55,16 @@ namespace PictureViewer.Files
             }
         }
         /// <summary>
+        /// 是否为空子目录
+        /// </summary>
+        public bool Empty
+        {
+            get
+            {
+                return TotalSubs == 0;
+            }
+        }
+        /// <summary>
         /// 索引号的根目录是否存在
         /// </summary>
         public bool ExistFolder
@@ -141,6 +151,62 @@ namespace PictureViewer.Files
         }
 
         /// <summary>
+        /// 上一个
+        /// </summary>
+        public TreeIndex Previous
+        {
+            get
+            {
+                int folder = Folder;
+                int file = File;
+                int sub = Sub;
+
+                sub--;
+                if (sub < 0) { file--; }
+                if (file < 0) { folder--; }
+
+                if (folder < 0) { folder = Manager.Index.IndexPairs.Count - 1; }
+                if (folder < 0) { return new TreeIndex(); }
+
+                if (file < 0) { file = Manager.Index.IndexPairs[folder].Count - 1; }
+                if (file < 0) { return new TreeIndex(folder); }
+
+                if (sub < 0) { sub = Manager.Index.IndexPairs[folder][file].Count - 1; }
+                if (sub < 0) { return new TreeIndex(folder, file); }
+
+                return new TreeIndex(folder, file, sub);
+            }
+        }
+        /// <summary>
+        /// 下一个
+        /// </summary>
+        public TreeIndex Next
+        {
+            get
+            {
+                int folder = Folder;
+                int file = File;
+                int sub = Sub;
+
+                if (folder >= Manager.Index.IndexPairs.Count) { folder = Manager.Index.IndexPairs.Count - 1; }
+                if (folder < 0) { return new TreeIndex(); }
+
+                if (file >= Manager.Index.IndexPairs[folder].Count) { file = Manager.Index.IndexPairs[folder].Count - 1; }
+                if (file < 0) { return new TreeIndex(folder); }
+
+                if (sub >= Manager.Index.IndexPairs[folder][file].Count) { sub = Manager.Index.IndexPairs[folder][file].Count - 1; }
+                if (sub < 0) { return new TreeIndex(folder, file); }
+
+                sub++;
+                if (sub >= Manager.Index.IndexPairs[folder][file].Count) { sub = 0; file++; }
+                if (file >= Manager.Index.IndexPairs[folder].Count) { file = 0; folder++; }
+                if (folder >= Manager.Index.IndexPairs.Count) { folder = 0; }
+
+                return new TreeIndex(folder, file, sub);
+            }
+        }
+
+        /// <summary>
         /// 构建树形索引号
         /// </summary>
         /// <param name="folder">根目录索引号</param>
@@ -177,6 +243,16 @@ namespace PictureViewer.Files
         public TreeIndex Copy()
         {
             return new TreeIndex(Folder, File, Sub);
+        }
+
+        /// <summary>
+        /// 转换为字符串，格式：[1/20] [1/1]
+        /// </summary>
+        /// <returns></returns>
+        public string ToString()
+        {
+            return "[" + (File + 1).ToString() + " / " + TotalFiles.ToString() + "] [" +
+                (Sub + 1).ToString() + " / " + TotalSubs.ToString() + "]";
         }
 
         public static bool operator ==(TreeIndex left, TreeIndex right)

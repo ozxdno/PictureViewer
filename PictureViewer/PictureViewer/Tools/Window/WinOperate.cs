@@ -35,5 +35,38 @@ namespace PictureViewer.Tools
             int y = centre.Y - height / 2;
             return new System.Drawing.Point(x, y);
         }
+
+        /// <summary>
+        /// 把宽 width 高 height 的方框放入宽 rectw 高 recth 的方框中，返回最大的尺寸。
+        /// </summary>
+        /// <param name="width"></param>
+        /// <param name="height"></param>
+        /// <param name="rectw"></param>
+        /// <param name="recth"></param>
+        /// <returns></returns>
+        public static System.Drawing.Size FitRect(int width, int height, int rectw, int recth)
+        {
+            double rate1 = (double)recth / height;
+            double rate2 = (double)rectw / width;
+            double rate = Math.Min(rate1, rate2);
+
+            int h = (int)(height * rate);
+            int w = (int)(width * rate);
+            return new System.Drawing.Size(w, h);
+        }
+        /// <summary>
+        /// 获取宽 width 高 height 方框的缩放比率。
+        /// </summary>
+        /// <param name="width"></param>
+        /// <param name="height"></param>
+        /// <returns></returns>
+        public static double GetShapeRate(int width, int height)
+        {
+            double rate1 = (double)width / Screen.Width;
+            double rate2 = (double)height / Screen.Height;
+            double rate = Math.Max(rate1, rate2);
+
+            return rate;
+        }
     }
 }

@@ -152,5 +152,23 @@ namespace PictureViewer.Files
             Pvini.Model.Save();
             Pvdata.Model.Save();
         }
+
+        /// <summary>
+        /// 请求释放指定文件
+        /// </summary>
+        /// <param name="full"></param>
+        /// <returns></returns>
+        public static void Asking(string full)
+        {
+            
+        }
+        /// <summary>
+        /// 是否已经释放完成
+        /// </summary>
+        /// <returns></returns>
+        public static bool Answered()
+        {
+            return true;
+        }
     }
 }

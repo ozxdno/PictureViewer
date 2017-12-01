@@ -20,6 +20,42 @@ namespace PictureViewer.Tools
                 return "文本缺失！";
             }
         }
+        public static string WindowTitle_Initializing
+        {
+            get
+            {
+                if (SetLanguage.Current == Language.Chinese) { return "图片查看器"; }
+                if (SetLanguage.Current == Language.English) { return "Picture Viewer"; }
+                return "文本缺失！";
+            }
+        }
+        public static string WindowTitle_Empty
+        {
+            get
+            {
+                if (SetLanguage.Current == Language.Chinese) { return "图片查看器"; }
+                if (SetLanguage.Current == Language.English) { return "Picture Viewer"; }
+                return "文本缺失！";
+            }
+        }
+        public static string WindowTitle_ErrorFile
+        {
+            get
+            {
+                if (SetLanguage.Current == Language.Chinese) { return "图片查看器"; }
+                if (SetLanguage.Current == Language.English) { return "Picture Viewer"; }
+                return "文本缺失！";
+            }
+        }
+        public static string WindowTitle_Unsupport
+        {
+            get
+            {
+                if (SetLanguage.Current == Language.Chinese) { return "图片查看器"; }
+                if (SetLanguage.Current == Language.English) { return "Picture Viewer"; }
+                return "文本缺失！";
+            }
+        }
 
         public static string RightMenu_Refresh
         {

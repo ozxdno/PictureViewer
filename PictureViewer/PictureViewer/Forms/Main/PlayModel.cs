@@ -339,7 +339,7 @@ namespace PictureViewer.Forms
             if (!exist) { index = SortList.Count - 1; }
             treeIndex = Rand ? RandList[index] : SortList[index];
 
-            if (decreaseIndex) { Index = index; }
+            if (decreaseIndex) { Index = index; Begin = Tools.Time.Ticks; }
             if (Single || Circle) { return true; }
             return exist;
         }
@@ -358,6 +358,7 @@ namespace PictureViewer.Forms
             if (!exist) { index = 0; }
             treeIndex = Rand ? RandList[index] : SortList[index];
 
+            if (increaseIndex) { Index = index; Begin = Tools.Time.Ticks; }
             if (Single || Circle) { return true; }
             return exist;
         }
