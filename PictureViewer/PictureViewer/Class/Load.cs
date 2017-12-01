@@ -101,6 +101,9 @@ namespace PictureViewer.Class
             public int FastKey_Main_FlipY;
             public int FastKey_Image_FlipX;
             public int FastKey_Image_FlipY;
+
+            public int FastKey_Main_TrackBar;
+            public int FastKey_Image_TrackBar;
         }
 
         /// <summary>
@@ -185,6 +188,9 @@ namespace PictureViewer.Class
             public bool FastKey_Main_FlipY;
             public bool FastKey_Image_FlipX;
             public bool FastKey_Image_FlipY;
+
+            public bool FastKey_Main_TrackBar;
+            public bool FastKey_Image_TrackBar;
         }
 
         ///////////////////////////////////////////////////// public method ///////////////////////////////////////////////
@@ -313,6 +319,8 @@ namespace PictureViewer.Class
                     case "FastKey_Main_FlipX": Found.FastKey_Main_FlipX = ToInt(Item[1], ref settings.FastKey_Main_FlipX); break;
                     case "FastKey_Image_FlipY": Found.FastKey_Image_FlipY = ToInt(Item[1], ref settings.FastKey_Image_FlipY); break;
                     case "FastKey_Main_FlipY": Found.FastKey_Main_FlipY = ToInt(Item[1], ref settings.FastKey_Main_FlipY); break;
+                    case "FastKey_Main_TrackBar": Found.FastKey_Main_TrackBar = ToInt(Item[1], ref settings.FastKey_Main_TrackBar); break;
+                    case "FastKey_Image_TrackBar": Found.FastKey_Image_TrackBar = ToInt(Item[1], ref settings.FastKey_Image_TrackBar); break;
                     default: break;
                 }
 
@@ -567,11 +575,17 @@ namespace PictureViewer.Class
             if (!Found.FastKey_Image_FlipY) { settings.FastKey_Image_FlipY = (int)ConsoleKey.Y; }
             if (!Found.FastKey_Main_FlipY) { settings.FastKey_Main_FlipY = (int)ConsoleKey.Y; }
 
+            if (!Found.FastKey_Image_TrackBar) { settings.FastKey_Image_TrackBar = (int)ConsoleKey.B; }
+            if (!Found.FastKey_Main_TrackBar) { settings.FastKey_Main_TrackBar = (int)ConsoleKey.B; }
+
             #endregion
 
             #region 有历史信息，但需要修改
 
             settings.Form_Find_Pixes = settings.Form_Find_Pixes / 2 * 2;
+
+            if (settings.Form_Main_Height < 150) { settings.Form_Main_Height = 150; }
+            if (settings.Form_Main_Width < 150) { settings.Form_Main_Width = 150; }
 
             #endregion
         }

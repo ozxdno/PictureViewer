@@ -182,6 +182,7 @@ namespace PictureViewer.Class
                 swCFG.WriteLine("FastKey_Main_Rotate=" + Load.settings.FastKey_Main_Rotate.ToString());
                 swCFG.WriteLine("FastKey_Main_FlipX=" + Load.settings.FastKey_Main_FlipX.ToString());
                 swCFG.WriteLine("FastKey_Main_FlipY=" + Load.settings.FastKey_Main_FlipY.ToString());
+                swCFG.WriteLine("FastKey_Main_TrackBar=" + Load.settings.FastKey_Main_TrackBar.ToString());
                 swCFG.WriteLine("");
 
                 swCFG.WriteLine("FastKey_Find_Esc=" + Load.settings.FastKey_Find_Esc.ToString());
@@ -204,6 +205,7 @@ namespace PictureViewer.Class
                 swCFG.WriteLine("FastKey_Image_Rotate=" + Load.settings.FastKey_Image_Rotate.ToString());
                 swCFG.WriteLine("FastKey_Image_FlipX=" + Load.settings.FastKey_Image_FlipX.ToString());
                 swCFG.WriteLine("FastKey_Image_FlipY=" + Load.settings.FastKey_Image_FlipY.ToString());
+                swCFG.WriteLine("FastKey_Image_TrackBar=" + Load.settings.FastKey_Image_TrackBar.ToString());
                 swCFG.WriteLine("");
             }
             catch

@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Drawing.Drawing2D;
 using System.IO;
+using System.Diagnostics;
 
 namespace PictureViewer
 {
@@ -26,6 +27,15 @@ namespace PictureViewer
         /// 初始位置
         /// </summary>
         public Point InitLoc = new Point(0, 0);
+
+        /// <summary>
+        /// 打开视频时设置此项
+        /// </summary>
+        public int VideoHeight;
+        /// <summary>
+        /// 打开视频时设置此项
+        /// </summary>
+        public int VideoWidth;
 
         /// <summary>
         /// 打开一个 图片/GIF 文件的副本。location - 打开位置：
@@ -64,8 +74,12 @@ namespace PictureViewer
         private bool error;
         private bool isPic;
         private bool isGif;
+        private bool isMusic;
+        private bool isVideo;
         private int location;
         private bool initLoc = true;
+        private long tPrevLeftKeyUp = 0;
+        private bool showTrackBar = false;
 
         private Image sour = null;
         private Image dest = null;
@@ -109,9 +123,11 @@ namespace PictureViewer
 
             isPic = Class.FileOperate.IsPicture(type);
             isGif = Class.FileOperate.IsGif(type);
+            isMusic = Class.FileOperate.IsMusic(Class.FileOperate.getExtension(sourname));
+            isVideo = Class.FileOperate.IsVideo(Class.FileOperate.getExtension(sourname));
 
             FillTipError();
-            if (!error) { sour = Image.FromFile(full); }
+            if (!error && (isGif || isPic)) { sour = Image.FromFile(full); }
 
             if (location == 0)
             {
@@ -123,8 +139,18 @@ namespace PictureViewer
             {
                 this.Location = MousePosition;
             }
-            
-            ShowPictureS();
+
+            this.pictureBox1.Visible = isPic || isGif;
+            this.axWindowsMediaPlayer1.Visible = isMusic || isVideo;
+
+            this.axWindowsMediaPlayer1.uiMode = "none";
+            this.axWindowsMediaPlayer1.enableContextMenu = false;
+            this.axWindowsMediaPlayer1.Ctlenabled = false;
+            this.axWindowsMediaPlayer1.fullScreen = false;
+
+            if (isPic || isGif) { ShowPictureS(); }
+            if (isMusic) { ShowMusic(); }
+            if (isVideo) { ShowVideo(); }
 
             this.toolTip1.ToolTipTitle = tip1;
             this.toolTip1.SetToolTip(this.pictureBox1, tip2);
@@ -159,7 +185,7 @@ namespace PictureViewer
                 // 显示图片
                 ShowPictureS();
             }
-            else
+            if (isPic)
             {
                 if (this.HorizontalScroll.Visible || this.VerticalScroll.Visible) { return; }
                 if (sour == null) { return; }
@@ -181,6 +207,32 @@ namespace PictureViewer
 
                 // 显示图片
                 ShowPictureR();
+            }
+            if (isMusic)
+            {
+
+            }
+            if (isVideo)
+            {
+                if (this.HorizontalScroll.Visible || this.VerticalScroll.Visible) { return; }
+
+                // 屏幕参数
+                int sh = Screen.PrimaryScreen.Bounds.Height;
+                int sw = Screen.PrimaryScreen.Bounds.Width;
+
+                // 当前缩放
+                double rate1 = (double)this.axWindowsMediaPlayer1.Height / sh * 100;
+                double rate2 = (double)this.axWindowsMediaPlayer1.Width / sw * 100;
+                double currRate = Math.Max(rate1, rate2);
+
+                // 下一次的显示比例
+                if (e.Delta > 0) { rate = currRate + 5; }
+                if (e.Delta < 0) { rate = currRate - 5; }
+                if (rate <= 10) { rate = 10; }
+                if (rate >= 100) { rate = 100; }
+
+                // 显示图片
+                ShowVideo(false);
             }
         }
         private void Form_Image_MouseDown(object sender, MouseEventArgs e)
@@ -260,11 +312,13 @@ namespace PictureViewer
         {
             if (e.KeyValue == Class.Load.settings.FastKey_Image_Esc)
             {
+                if (this.axWindowsMediaPlayer1.Visible) { this.axWindowsMediaPlayer1.Dispose(); }
                 this.Close();
                 return;
             }
             if (e.KeyValue == Class.Load.settings.FastKey_Image_Rotate)
             {
+                if (isMusic || isVideo) { return; }
                 if (this.HorizontalScroll.Visible || this.VerticalScroll.Visible) { return; }
                 sour.RotateFlip(RotateFlipType.Rotate90FlipNone);
                 ShowPictureS();
@@ -272,6 +326,7 @@ namespace PictureViewer
             }
             if (e.KeyValue == Class.Load.settings.FastKey_Image_FlipX)
             {
+                if (isMusic || isVideo) { return; }
                 if (this.HorizontalScroll.Visible || this.VerticalScroll.Visible) { return; }
                 sour.RotateFlip(RotateFlipType.RotateNoneFlipX);
                 ShowPictureS();
@@ -279,6 +334,7 @@ namespace PictureViewer
             }
             if (e.KeyValue == Class.Load.settings.FastKey_Image_FlipY)
             {
+                if (isMusic || isVideo) { return; }
                 if (this.HorizontalScroll.Visible || this.VerticalScroll.Visible) { return; }
                 sour.RotateFlip(RotateFlipType.RotateNoneFlipY);
                 ShowPictureS();
@@ -288,6 +344,63 @@ namespace PictureViewer
             {
                 Form_Image_DoubleClicked(null, null);
                 return;
+            }
+        }
+
+        private void WMP_MouseDown(object sender, AxWMPLib._WMPOCXEvents_MouseDownEvent e)
+        {
+            if (showTrackBar) { return; }
+
+            if (e.nButton == 1)
+            {
+                MouseEventArgs mouseButton = new MouseEventArgs(MouseButtons.Left, 0, 0, 0, 0);
+                Form_Image_MouseDown(null, mouseButton);
+            }
+
+            if (e.nButton == 2)
+            {
+                MouseEventArgs mouseButton = new MouseEventArgs(MouseButtons.Right, 0, 0, 0, 0);
+                Form_Image_MouseDown(null, mouseButton);
+            }
+
+        }
+        private void WMP_MouseUp(object sender, AxWMPLib._WMPOCXEvents_MouseUpEvent e)
+        {
+            if (showTrackBar) { return; }
+
+            if (e.nButton == 1)
+            {
+                MouseEventArgs mouseButton = new MouseEventArgs(MouseButtons.Left, 0, 0, 0, 0);
+                Form_Image_MouseUp(null, mouseButton);
+
+                long tUp = System.DateTime.Now.Ticks / 1000000;
+                if (tUp - tPrevLeftKeyUp < 5) { WMP_DoubleClicked(); }
+                tPrevLeftKeyUp = tUp;
+            }
+
+            if (e.nButton == 2)
+            {
+                MouseEventArgs mouseButton = new MouseEventArgs(MouseButtons.Right, 0, 0, 0, 0);
+                Form_Image_MouseUp(null, mouseButton);
+            }
+        }
+        private void WMP_MouseMove(object sender, AxWMPLib._WMPOCXEvents_MouseMoveEvent e)
+        {
+            if (showTrackBar) { return; }
+
+            Form_Image_MouseMove(null, null);
+        }
+        private void WMP_DoubleClicked()
+        {
+            if (showTrackBar) { return; }
+
+            if (this.axWindowsMediaPlayer1.playState == WMPLib.WMPPlayState.wmppsPlaying)
+            {
+                this.axWindowsMediaPlayer1.Ctlcontrols.pause();
+            }
+            else
+            {
+                this.axWindowsMediaPlayer1.Ctlcontrols.play();
             }
         }
 
@@ -321,6 +434,9 @@ namespace PictureViewer
         private void ShowPictureS()
         {
             if (sour == null) { return; }
+
+            this.pictureBox1.Visible = true;
+            this.axWindowsMediaPlayer1.Visible = false;
 
             #region 窗体大小
             
@@ -403,11 +519,163 @@ namespace PictureViewer
             #endregion
         }
 
+        private void ShowMusic(bool load = true)
+        {
+            #region 确保占用资源被释放
+
+            if (load && this.axWindowsMediaPlayer1.playState == WMPLib.WMPPlayState.wmppsPlaying)
+            { this.axWindowsMediaPlayer1.Ctlcontrols.stop(); }
+
+            #endregion
+
+            #region 重新加载资源
+
+            this.axWindowsMediaPlayer1.Visible = true;
+            this.pictureBox1.Visible = false;
+
+            if (load && axWindowsMediaPlayer1.URL != path + "\\" + name) { axWindowsMediaPlayer1.URL = path + "\\" + name; }
+            if (load) { axWindowsMediaPlayer1.Ctlcontrols.play(); }
+
+            #endregion
+
+            #region 获取窗体大小
+
+            if (true)
+            {
+                int sh = Screen.PrimaryScreen.Bounds.Height * Class.Load.settings.Form_Main_MinWindowSize / 100;
+                int sw = Screen.PrimaryScreen.Bounds.Width * Class.Load.settings.Form_Main_MinWindowSize / 100;
+
+                int shapeh = Math.Min(sh, sw);
+                int shapew = shapeh;
+
+                int centerh = this.Location.Y + this.Height / 2;
+                int centerw = this.Location.X + this.Width / 2;
+
+                this.VerticalScroll.Value = 0;
+                this.HorizontalScroll.Value = 0;
+
+                this.Height = shapeh + 2;
+                this.Width = shapew + 2;
+                this.Location = new Point(centerw - this.Width / 2, centerh - this.Height / 2);
+            }
+
+            #endregion
+
+            #region 获取控件大小
+
+            if (isVideo)
+            {
+                int ch = this.Height;
+                int cw = this.Width;
+
+                int shapeh = ch - 2;
+                int shapew = cw - 2;
+
+                this.VerticalScroll.Value = 0;
+                this.HorizontalScroll.Value = 0;
+
+                this.axWindowsMediaPlayer1.Height = shapeh;
+                this.axWindowsMediaPlayer1.Width = shapew;
+                this.axWindowsMediaPlayer1.Location = new Point(1, 1);
+            }
+
+            #endregion
+
+            #region 确保窗体打开
+
+            this.axWindowsMediaPlayer1.Visible = true;
+            this.pictureBox1.Visible = false;
+
+            #endregion
+        }
+        private void ShowVideo(bool load = true)
+        {
+            #region 确保占用资源被释放
+            
+            if (load && this.axWindowsMediaPlayer1.playState == WMPLib.WMPPlayState.wmppsPlaying)
+            { this.axWindowsMediaPlayer1.Ctlcontrols.stop(); }
+
+            #endregion
+
+            #region 重新加载资源
+
+            this.axWindowsMediaPlayer1.Visible = true;
+            this.pictureBox1.Visible = false;
+
+            if (load && axWindowsMediaPlayer1.URL != path + "\\" + name) { axWindowsMediaPlayer1.URL = path + "\\" + name; }
+            if (load) { axWindowsMediaPlayer1.Ctlcontrols.play(); }
+
+            #endregion
+
+            #region 获取窗体大小
+           
+            if (true)
+            {
+                int sh = (int)(Screen.PrimaryScreen.Bounds.Height * this.rate / 100);
+                int sw = (int)(Screen.PrimaryScreen.Bounds.Width * this.rate / 100);
+                
+                int vh = VideoHeight;
+                int vw = VideoWidth;
+
+                double rate1 = (double)sh / vh;
+                double rate2 = (double)sw / vw;
+                double rate = Math.Min(rate1, rate2);
+                if (rate > 1) { rate = 1; }
+
+                int shapeh = (int)(vh * rate);
+                int shapew = (int)(vw * rate);
+                if (sh >= vh && sw >= vw)
+                {
+                    shapeh = vh;
+                    shapew = vw;
+                }
+
+                int centerh = this.Location.Y + this.Height / 2;
+                int centerw = this.Location.X + this.Width / 2;
+
+                this.VerticalScroll.Value = 0;
+                this.HorizontalScroll.Value = 0;
+
+                this.Height = shapeh + 2;
+                this.Width = shapew + 2;
+                this.Location = new Point(centerw - this.Width / 2, centerh - this.Height / 2);
+            }
+
+            #endregion
+
+            #region 获取控件大小
+            
+            if (isVideo)
+            {
+                int ch = this.Height;
+                int cw = this.Width;
+
+                int shapeh = ch - 2;
+                int shapew = cw - 2;
+
+                this.VerticalScroll.Value = 0;
+                this.HorizontalScroll.Value = 0;
+
+                this.axWindowsMediaPlayer1.Height = shapeh;
+                this.axWindowsMediaPlayer1.Width = shapew;
+                this.axWindowsMediaPlayer1.Location = new Point(1, 1);
+            }
+
+            #endregion
+
+            #region 确保窗体打开
+
+            this.axWindowsMediaPlayer1.Visible = true;
+            this.pictureBox1.Visible = false;
+
+            #endregion
+        }
+
         private void FillTipError()
         {
-            if (!Class.FileOperate.IsPicture(type) && !Class.FileOperate.IsGif(type))
+            if (!Class.FileOperate.IsPicture(type) && !Class.FileOperate.IsGif(type) && !Class.FileOperate.IsStream(type))
             {
-                tip1 = "[Error]: Select is not a Picture or Gif File";
+                tip1 = "[Error]: Select is a unsupport file";
                 tip2 = name + " : " + path;
                 error = true;
                 return;
@@ -473,6 +741,34 @@ namespace PictureViewer
 
             this.HorizontalScroll.Value = value;
             this.HorizontalScroll.Value = value;
+        }
+
+        private void axWindowsMediaPlayer1_KeyUpEvent(object sender, AxWMPLib._WMPOCXEvents_KeyUpEvent e)
+        {
+            if (e.nKeyCode == Class.Load.settings.FastKey_Image_Esc)
+            {
+                if (this.axWindowsMediaPlayer1.Visible) { this.axWindowsMediaPlayer1.Dispose(); }
+                this.Close();
+                return;
+            }
+            if (e.nKeyCode == Class.Load.settings.FastKey_Image_Enter)
+            {
+                WMP_DoubleClicked();
+                return;
+            }
+            if (e.nKeyCode == Class.Load.settings.FastKey_Image_TrackBar)
+            {
+                WMP_BarState();
+                return;
+            }
+        }
+        private void WMP_BarState()
+        {
+            this.axWindowsMediaPlayer1.Ctlenabled = !this.axWindowsMediaPlayer1.Ctlenabled;
+            this.axWindowsMediaPlayer1.uiMode = this.axWindowsMediaPlayer1.Ctlenabled ?
+                "full" :
+                "none";
+            showTrackBar = this.axWindowsMediaPlayer1.Ctlenabled;
         }
     }
 }

@@ -219,6 +219,10 @@ namespace PictureViewer
         private int videoHeight;
         private int videoWidth;
         /// <summary>
+        /// 进度条
+        /// </summary>
+        private bool showTrackBar = false;
+        /// <summary>
         /// 鼠标信息
         /// </summary>
         private MOUSE mouse;
@@ -874,6 +878,15 @@ namespace PictureViewer
             }
 
             #endregion
+
+            #region 开进度条
+
+            if (e.KeyValue == Class.Load.settings.FastKey_Main_TrackBar)
+            {
+                WMP_BarState(); return;
+            }
+
+            #endregion
         }
         private void Form_KeyUp(object sender, KeyEventArgs e)
         {
@@ -885,10 +898,14 @@ namespace PictureViewer
         }
         private void WMP_DoubleClick(object sender, AxWMPLib._WMPOCXEvents_DoubleClickEvent e)
         {
+            if (showTrackBar) { return; }
+
             Form_Main_DoubleClick(null, null);
         }
         private void WMP_MouseDown(object sender, AxWMPLib._WMPOCXEvents_MouseDownEvent e)
         {
+            if (showTrackBar) { return; }
+
             if (e.nButton == 1)
             {
                 mouse.Down = true;
@@ -916,6 +933,8 @@ namespace PictureViewer
         }
         private void WMP_MouseUp(object sender, AxWMPLib._WMPOCXEvents_MouseUpEvent e)
         {
+            if (showTrackBar) { return; }
+
             if (e.nButton == 1)
             {
                 if (mouse.tUp != 0 && TimeCount - mouse.tUp < 20)
@@ -939,7 +958,35 @@ namespace PictureViewer
                 bool showMenu = Math.Abs(mouse.pDown2.X - mouse.pUp2.X) < 10 &&
                     Math.Abs(mouse.pDown2.Y - mouse.pUp2.Y) < 10;
                 if (showMenu) { this.contextMenuStrip1.Show(MousePosition); }
+
+                if (!showMenu && this.axWindowsMediaPlayer1.Visible && !this.HorizontalScroll.Visible && !this.VerticalScroll.Visible)
+                {
+                    return;
+
+                    Point pt = this.axWindowsMediaPlayer1.PointToClient(MousePosition);
+                    bool inPic = pt.X >= 0 && pt.X < this.axWindowsMediaPlayer1.Width &&
+                        pt.Y >= 0 && pt.Y < this.axWindowsMediaPlayer1.Height;
+                    //if (inPic) { return; }
+
+                    int type = config.IsSub ? config.SubType : config.Type;
+                    if (!FileOperate.IsStream(type)) { return; }
+                    string path = config.IsSub ? config.Path + "\\" + config.Name : config.Path;
+                    string name = config.IsSub ? config.SubName : config.Name;
+                    Images.Add(new Form_Image(path, name, ShapeWindowRate, 2));
+                    Images[Images.Count - 1].InitLoc = new Point(MousePosition.X - mouse.xImage, MousePosition.Y - mouse.yImage);
+                    Images[Images.Count - 1].VideoHeight = videoHeight;
+                    Images[Images.Count - 1].VideoWidth = videoWidth;
+                    Images[Images.Count - 1].Show();
+                }
             }
+        }
+        private void WMP_BarState()
+        {
+            this.axWindowsMediaPlayer1.Ctlenabled = !this.axWindowsMediaPlayer1.Ctlenabled;
+            this.axWindowsMediaPlayer1.uiMode = this.axWindowsMediaPlayer1.Ctlenabled ?
+                "full" :
+                "none";
+            showTrackBar = this.axWindowsMediaPlayer1.Ctlenabled;
         }
         
         private void Form_Main_DoubleClick(object sender, EventArgs e)
@@ -3399,10 +3446,13 @@ namespace PictureViewer
         private void RightMenu_New(object sender, EventArgs e)
         {
             int type = config.IsSub ? config.SubType : config.Type;
-            if (!FileOperate.IsPicture(type) && !FileOperate.IsGif(type)) { MessageBox.Show("新窗口不能打开 图片/GIF 以外的文件！", "提示"); return; }
+            if (!FileOperate.IsPicture(type) && !FileOperate.IsGif(type) && !FileOperate.IsStream(type))
+            { MessageBox.Show("新窗口不能打开不支持的文件！", "提示"); return; }
             string path = config.IsSub ? config.Path + "\\" + config.Name : config.Path;
             string name = config.IsSub ? config.SubName : config.Name;
             Images.Add(new Form_Image(path, name, ShapeWindowRate));
+            Images[Images.Count - 1].VideoHeight = videoHeight;
+            Images[Images.Count - 1].VideoWidth = videoWidth;
             Images[Images.Count - 1].Show();
         }
         private void RightMenu_Find(object sender, EventArgs e)
