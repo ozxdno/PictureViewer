@@ -212,7 +212,12 @@ namespace PictureViewer
         /// 查找界面。
         /// </summary>
         private Form_Find Find = null;
-
+        /// <summary>
+        /// FFMPEG
+        /// </summary>
+        private Process ffmpeg = new Process();
+        private int videoHeight;
+        private int videoWidth;
         /// <summary>
         /// 鼠标信息
         /// </summary>
@@ -2236,16 +2241,30 @@ namespace PictureViewer
             {
                 int sh = (int)(Screen.PrimaryScreen.Bounds.Height * ShapeWindowRate / 100);
                 int sw = (int)(Screen.PrimaryScreen.Bounds.Width * ShapeWindowRate / 100);
+                
+                if (load) { GetVideoSize(path + "\\" + name, ref videoWidth, ref videoHeight); }
+                int vh = videoHeight;
+                int vw = videoWidth;
 
-                int shapeh = sh;
-                int shapew = sw;
+                double rate1 = (double)sh / vh;
+                double rate2 = (double)sw / vw;
+                double rate = Math.Min(rate1, rate2);
+                if (rate > 1) { rate = 1; }
+
+                int shapeh = (int)(vh * rate);
+                int shapew = (int)(vw * rate);
+                if (sh >= vh && sw >= vw)
+                {
+                    shapeh = vh;
+                    shapew = vw;
+                }
 
                 int centerh = this.Location.Y + this.Height / 2;
                 int centerw = this.Location.X + this.Width / 2;
 
                 SetScroll0();
-                ClientHeight = shapeh;
-                ClientWidth = shapew;
+                ClientHeight = shapeh + 2;
+                ClientWidth = shapew + 2;
                 this.Location = new Point(centerw - this.Width / 2, centerh - this.Height / 2);
             }
 
@@ -2934,6 +2953,60 @@ namespace PictureViewer
                 p.Full = ddisk + p.Full.Substring(1);
 
                 Form_Find.PictureFiles[i] = p;
+            }
+        }
+        private void GetVideoSize(string full, ref int width, ref int height)
+        {
+            if (!File.Exists(FileOperate.getExePath() + "\\ffmpeg.exe"))
+            {
+                height = (int)(Screen.PrimaryScreen.Bounds.Height * ShapeWindowRate / 100);
+                width = (int)(Screen.PrimaryScreen.Bounds.Width * ShapeWindowRate / 100);
+                return;
+            }
+
+            try
+            {
+                string output = "";
+                string error = "";
+                ffmpeg.StartInfo.FileName = "\"" + FileOperate.getExePath() + "\\ffmpeg.exe\" -i \"" + full + "\"";
+                ffmpeg.StartInfo.UseShellExecute = false;
+                ffmpeg.StartInfo.RedirectStandardOutput = true;
+                ffmpeg.StartInfo.RedirectStandardError = true;
+                ffmpeg.StartInfo.CreateNoWindow = true;
+                ffmpeg.Start();
+                
+                ffmpeg.BeginOutputReadLine();
+                ffmpeg.BeginErrorReadLine();
+                ffmpeg.OutputDataReceived += (ss, ee) => { output += ee.Data; };
+                ffmpeg.ErrorDataReceived += (ss, ee) => { error += ee.Data; };
+                ffmpeg.WaitForExit();
+
+                string w = "";
+                string h = "";
+                for (int i = 1; i < error.Length - 1; i++)
+                {
+                    if (error[i] != 'x') { continue; }
+                    if (error[i - 1] < '0') { continue; }
+                    if (error[i - 1] > '9') { continue; }
+                    if (error[i + 1] < '0') { continue; }
+                    if (error[i + 1] > '9') { continue; }
+
+                    for (int j = i - 1; j >= 0; j--) { if (error[j] == ' ') { w = error.Substring(j + 1, i - j - 1); break; } }
+                    for (int j = i + 1; j < error.Length; j++) { if (error[j] == ' ') { h = error.Substring(i + 1, j - i); break; } }
+                    if (w.Length == 0 || h.Length == 0) { continue; }
+
+                    try { height = int.Parse(h); } catch { w = ""; h = ""; continue; }
+                    try { width = int.Parse(w); } catch { w = ""; h = ""; continue; }
+                    return;
+                }
+
+                height = (int)(Screen.PrimaryScreen.Bounds.Height * ShapeWindowRate / 100);
+                width = (int)(Screen.PrimaryScreen.Bounds.Width * ShapeWindowRate / 100);
+            }
+            catch
+            {
+                height = (int)(Screen.PrimaryScreen.Bounds.Height * ShapeWindowRate / 100);
+                width = (int)(Screen.PrimaryScreen.Bounds.Width * ShapeWindowRate / 100);
             }
         }
 

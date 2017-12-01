@@ -21,7 +21,7 @@ namespace PictureViewer.Class
         /// 是否支持 ZIP 文件。
         /// 若该值为真，目标平台必须改成 64 位。
         /// </summary>
-        public static bool SupportZip = true;
+        public static bool SupportZip = false;
 
         /// <summary>
         /// 所有密码
