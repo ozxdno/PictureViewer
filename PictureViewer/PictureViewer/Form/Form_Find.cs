@@ -191,6 +191,14 @@ namespace PictureViewer
             /// 相似程度
             /// </summary>
             public int Degree;
+            /// <summary>
+            /// 是否比较行
+            /// </summary>
+            public bool CmpRow;
+            /// <summary>
+            /// 是否比较列
+            /// </summary>
+            public bool CmpCol;
 
             /// <summary>
             /// 计时起点
@@ -1021,6 +1029,14 @@ namespace PictureViewer
             ShowSourPic();
             ShowDestPic();
         }
+        private void RightMenu_CmpCol(object sender, EventArgs e)
+        {
+            this.cmpColToolStripMenuItem.Checked = config.CmpCol = !config.CmpCol;
+        }
+        private void RightMenu_CmpRow(object sender, EventArgs e)
+        {
+            this.cmpRowToolStripMenuItem.Checked = config.CmpRow = !config.CmpRow;
+        }
 
         private void ShowInitial()
         {
@@ -1313,6 +1329,8 @@ namespace PictureViewer
             config.Degree = Class.Load.settings.Form_Find_Degree;
             config.MinCmpPix = Class.Load.settings.Form_Find_Pixes;
             config.Method = -1;
+            config.CmpCol = true; this.cmpRowToolStripMenuItem.Checked = true;
+            config.CmpRow = true; this.cmpColToolStripMenuItem.Checked = true;
 
             config.TimeBG = 0;
             config.TimeED = 0;

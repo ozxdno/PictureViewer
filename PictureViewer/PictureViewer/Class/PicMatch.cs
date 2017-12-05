@@ -135,8 +135,9 @@ namespace PictureViewer.Class
                     pixes = Form_Find.config.MinCmpPix;
                     permitcnterr = pixes * (100 - degree) / 100;
 
-                    if (!cmpRow()) { continue; }
-                    if (!cmpCol()) { continue; }
+                    if (!Form_Find.config.CmpRow && !Form_Find.config.CmpCol) { continue; }
+                    if (Form_Find.config.CmpRow && !cmpRow()) { continue; }
+                    if (Form_Find.config.CmpCol && !cmpCol()) { continue; }
 
                     Form_Find.Results[0].Add(Form_Find.config.Dest[Form_Find.IndexD]);
                 }
@@ -165,8 +166,9 @@ namespace PictureViewer.Class
                     pixes = Form_Find.config.MinCmpPix;
                     permitcnterr = pixes * (100 - degree) / 100;
 
-                    if (!cmpRow()) { continue; }
-                    if (!cmpCol()) { continue; }
+                    if (!Form_Find.config.CmpRow && !Form_Find.config.CmpCol) { continue; }
+                    if (Form_Find.config.CmpRow && !cmpRow()) { continue; }
+                    if (Form_Find.config.CmpCol && !cmpCol()) { continue; }
 
                     if (!newResultItem)
                     {
@@ -200,9 +202,10 @@ namespace PictureViewer.Class
                     pixes = Form_Find.config.MinCmpPix;
                     permitcnterr = pixes * (100 - degree) / 100;
 
-                    if (!cmpRow()) { continue; }
-                    if (!cmpCol()) { continue; }
-                    
+                    if (!Form_Find.config.CmpRow && !Form_Find.config.CmpCol) { continue; }
+                    if (Form_Find.config.CmpRow && !cmpRow()) { continue; }
+                    if (Form_Find.config.CmpCol && !cmpCol()) { continue; }
+
                     if (!newResultItem)
                     {
                         newResultItem = true;

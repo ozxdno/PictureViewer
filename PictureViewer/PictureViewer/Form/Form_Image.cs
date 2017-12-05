@@ -554,8 +554,8 @@ namespace PictureViewer
                 this.VerticalScroll.Value = 0;
                 this.HorizontalScroll.Value = 0;
 
-                this.Height = shapeh + 2;
-                this.Width = shapew + 2;
+                this.Height = shapeh;
+                this.Width = shapew;
                 this.Location = new Point(centerw - this.Width / 2, centerh - this.Height / 2);
             }
 
@@ -563,7 +563,7 @@ namespace PictureViewer
 
             #region 获取控件大小
 
-            if (isVideo)
+            if (true)
             {
                 int ch = this.Height;
                 int cw = this.Width;

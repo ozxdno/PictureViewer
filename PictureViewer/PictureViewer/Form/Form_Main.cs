@@ -1176,6 +1176,7 @@ namespace PictureViewer
 
             if (this.lockToolStripMenuItem.Checked && !xs && !ys)
             {
+                if (play.IsPlaying) { return; }
                 if (FileOperate.IsStream(type)) { return; }
                 if (TimeCount - mouse.tWheel < 20) { return; }
                 mouse.tWheel = TimeCount;
@@ -1371,6 +1372,7 @@ namespace PictureViewer
                         !mouse.Down &&
                         !mouse.Down2 &&
                         !Resizable &&
+                        !showTrackBar &&
                         TimeCount - mouse.tDown > 50 &&
                         TimeCount - mouse.tDown2 > 50 &&
                         TimeCount - mouse.tUp > 20 &&
@@ -1415,6 +1417,11 @@ namespace PictureViewer
                     {
                         if (sameText) { tip.Form.hide(); tip.Visible = false; }
                     }
+
+                    if (showTrackBar)
+                    {
+                        tip.Form.hide();
+                    }
                 }
 
                 #endregion
@@ -1444,7 +1451,8 @@ namespace PictureViewer
                         tip.Form.KeyValue == Class.Load.settings.FastKey_Main_Enter ||
                         tip.Form.KeyValue == Class.Load.settings.FastKey_Main_Rotate ||
                         tip.Form.KeyValue == Class.Load.settings.FastKey_Main_FlipX ||
-                        tip.Form.KeyValue == Class.Load.settings.FastKey_Main_FlipY)
+                        tip.Form.KeyValue == Class.Load.settings.FastKey_Main_FlipY ||
+                        tip.Form.KeyValue == Class.Load.settings.FastKey_Main_TrackBar)
                     {
                         KeyEventArgs eKey = new KeyEventArgs((Keys)tip.Form.KeyValue);
                         if (tip.Form.KeyState == 0) { Form_KeyDown(null, eKey); }
@@ -1483,7 +1491,7 @@ namespace PictureViewer
                 {
                     #region 是否播放下一个文件
 
-                    bool playNext = true; ResetPlayIndex();
+                    bool playNext = true;
 
                     if (playNext)
                     {
@@ -1519,21 +1527,11 @@ namespace PictureViewer
 
                     if (playNext)
                     {
-                        if (play.Forward || play.Rand) { play.Index++; }
-                        if (play.Backward) { play.Index--; }
-
-                        playNext = play.IsPlaying = play.Circle|| play.Single || (play.Index >= 0 && play.Index < play.PlayIndexes.Count);
+                        playNext = play.IsPlaying = !IsPlayFinished();
                     }
                     if (playNext)
                     {
-                        if (play.Index < 0) { play.Index = play.PlayIndexes.Count - 1; }
-                        if (play.Index >= play.PlayIndexes.Count) { play.Index = 0; }
-                        int index = play.PlayIndexes[play.Index];
-
-                        config.FolderIndex = play.FolderIndexes[index];
-                        config.FileIndex = play.FileIndexes[index];
-                        config.SubIndex = play.SubIndexes[index];
-                        play.Begin = TimeCount;
+                        GetNextToPlay();
                         ShowCurrent();
                     }
 
@@ -1558,12 +1556,11 @@ namespace PictureViewer
                 #region 左翻页
 
                 bool hidePageMark =
-                    mouse.Down || 
-                    mouse.Down2 || 
+                    mouse.Down ||
+                    mouse.Down2 ||
                     this.Width < 150 ||
                     this.Height < 150 ||
-                    this.contextMenuStrip1.Visible ||
-                    !IsActive;
+                    this.contextMenuStrip1.Visible;
 
                 if (this.hideLToolStripMenuItem.Checked || hidePageMark) { this.label1.Visible = false; } else
                 {
@@ -1697,8 +1694,7 @@ namespace PictureViewer
                 Resizable =
                     Resizable &&
                     !UseBoard &&
-                    !this.contextMenuStrip1.Visible &&
-                    IsActive;
+                    !this.contextMenuStrip1.Visible;
 
                 #endregion
 
@@ -2284,35 +2280,38 @@ namespace PictureViewer
                 ClientWidth = shapew;
                 this.Location = new Point(centerw - this.Width / 2, centerh - this.Height / 2);
             }
-            if (isVideo && UseShapeWindow)
+            if (isVideo)
             {
-                int sh = (int)(Screen.PrimaryScreen.Bounds.Height * ShapeWindowRate / 100);
-                int sw = (int)(Screen.PrimaryScreen.Bounds.Width * ShapeWindowRate / 100);
-                
                 if (load) { GetVideoSize(path + "\\" + name, ref videoWidth, ref videoHeight); }
-                int vh = videoHeight;
-                int vw = videoWidth;
-
-                double rate1 = (double)sh / vh;
-                double rate2 = (double)sw / vw;
-                double rate = Math.Min(rate1, rate2);
-                if (rate > 1) { rate = 1; }
-
-                int shapeh = (int)(vh * rate);
-                int shapew = (int)(vw * rate);
-                if (sh >= vh && sw >= vw)
+                if (UseShapeWindow)
                 {
-                    shapeh = vh;
-                    shapew = vw;
+                    int sh = (int)(Screen.PrimaryScreen.Bounds.Height * ShapeWindowRate / 100);
+                    int sw = (int)(Screen.PrimaryScreen.Bounds.Width * ShapeWindowRate / 100);
+
+                    int vh = videoHeight;
+                    int vw = videoWidth;
+
+                    double rate1 = (double)sh / vh;
+                    double rate2 = (double)sw / vw;
+                    double rate = Math.Min(rate1, rate2);
+                    if (rate > 1) { rate = 1; }
+
+                    int shapeh = (int)(vh * rate);
+                    int shapew = (int)(vw * rate);
+                    if (sh >= vh && sw >= vw)
+                    {
+                        shapeh = vh;
+                        shapew = vw;
+                    }
+
+                    int centerh = this.Location.Y + this.Height / 2;
+                    int centerw = this.Location.X + this.Width / 2;
+
+                    SetScroll0();
+                    ClientHeight = shapeh + 2;
+                    ClientWidth = shapew + 2;
+                    this.Location = new Point(centerw - this.Width / 2, centerh - this.Height / 2);
                 }
-
-                int centerh = this.Location.Y + this.Height / 2;
-                int centerw = this.Location.X + this.Width / 2;
-
-                SetScroll0();
-                ClientHeight = shapeh + 2;
-                ClientWidth = shapew + 2;
-                this.Location = new Point(centerw - this.Width / 2, centerh - this.Height / 2);
             }
 
             #endregion
@@ -2742,22 +2741,37 @@ namespace PictureViewer
         
         private void SearchPlayFile()
         {
-            play.FolderIndexes = new List<int>();
-            play.FileIndexes = new List<int>();
-            play.SubIndexes = new List<int>();
-            play.PlayIndexes = new List<int>();
+            List<int> folderIndex = new List<int>();
+            List<int> fileIndex = new List<int>();
+            List<int> subIndex = new List<int>();
+
+            List<int> playIndex = new List<int>();
 
             if (play.Single)
             {
-                play.PlayIndexes.Add(0);
-                play.FolderIndexes.Add(config.FolderIndex);
-                play.FileIndexes.Add(config.FileIndex);
-                play.SubIndexes.Add(config.SubIndex);
+                folderIndex.Add(config.FolderIndex);
+                fileIndex.Add(config.FileIndex);
+                subIndex.Add(config.SubIndex);
+                playIndex.Add(0);
+
+                play.FolderIndexes = folderIndex;
+                play.FileIndexes = fileIndex;
+                play.SubIndexes = subIndex;
+                play.Index = 0;
+                play.PlayIndexes = playIndex;
                 return;
             }
 
             bool existFile = play.Picture || play.Gif || play.Music || play.Video;
-            if (!existFile) { play.Index = -1; return; }
+            if (!existFile)
+            {
+                play.FolderIndexes.Clear();
+                play.FileIndexes.Clear();
+                play.SubIndexes.Clear();
+                play.Index = -1;
+                play.PlayIndexes = playIndex;
+                return;
+            }
             
             int folderbg = play.TotalRoots ? 0 : config.FolderIndex;
             int foldered = play.TotalRoots ? FileOperate.RootFiles.Count : folderbg + 1;
@@ -2784,7 +2798,7 @@ namespace PictureViewer
                         (play.Gif && type == 3) ||
                         (play.Music && isMusic) ||
                         (play.Video && isVideo);
-                    if (found) { play.FolderIndexes.Add(i); play.FileIndexes.Add(j); play.SubIndexes.Add(-1); play.PlayIndexes.Add(play.FolderIndexes.Count - 1); continue; }
+                    if (found && !play.Subroot) { folderIndex.Add(i); fileIndex.Add(j); subIndex.Add(-1); continue; }
                     if (!FileOperate.IsComic(type)) { continue; }
 
                     List<string> subfiles = null;
@@ -2808,7 +2822,7 @@ namespace PictureViewer
                             (play.Music && isMusic) ||
                             (play.Video && isVideo);
 
-                        if (found) { play.FolderIndexes.Add(i); play.FileIndexes.Add(j); play.SubIndexes.Add(k); play.PlayIndexes.Add(play.FolderIndexes.Count - 1); }
+                        if (found) { folderIndex.Add(i); fileIndex.Add(j); subIndex.Add(k); }
                     }
 
                     if (play.Subroot) { break; }
@@ -2821,7 +2835,14 @@ namespace PictureViewer
                 #endregion
             }
 
-            if (play.Rand) { play.PlayIndexes = play.PlayIndexes.OrderBy(x => Guid.NewGuid()).ToList(); }
+            for (int i = 0; i < folderIndex.Count; i++) { playIndex.Add(i); }
+            if (play.Rand) { playIndex = playIndex.OrderBy(x => Guid.NewGuid()).ToList(); }
+
+            play.FolderIndexes = folderIndex;
+            play.FileIndexes = fileIndex;
+            play.SubIndexes = subIndex;
+            play.PlayIndexes = playIndex;
+            ResetPlayIndex();
         }
         private void ResetPlayIndex()
         {
@@ -2834,6 +2855,67 @@ namespace PictureViewer
                 play.Index = i;
                 if (subindex == -1 || play.SubIndexes[play.PlayIndexes[i]] == subindex) { break; }
             }
+        }
+        private void GetPreviousToPlay()
+        {
+            if (play.Backward) { getNextToPlay(); return; }
+            getPreviousToPlay();
+        }
+        private void getPreviousToPlay()
+        {
+            play.Index--;
+            if (play.Index < 0 && !play.Single && !play.Circle) { play.IsPlaying = false; return; }
+            if (play.Index < 0) { play.Index = play.FolderIndexes.Count - 1; }
+            if (play.Index < 0) { play.IsPlaying = false; return; }
+
+            if (play.Rand)
+            {
+                config.FolderIndex = play.FolderIndexes[play.PlayIndexes[play.Index]];
+                config.FileIndex = play.FileIndexes[play.PlayIndexes[play.Index]];
+                config.SubIndex = play.SubIndexes[play.PlayIndexes[play.Index]];
+            }
+            else
+            {
+                config.FolderIndex = play.FolderIndexes[play.Index];
+                config.FileIndex = play.FileIndexes[play.Index];
+                config.SubIndex = play.SubIndexes[play.Index];
+            }
+            play.Begin = TimeCount;
+        }
+        private void GetNextToPlay()
+        {
+            if (play.Backward) { getPreviousToPlay(); return; }
+            getNextToPlay();
+        }
+        private void getNextToPlay()
+        {
+            play.Index++;
+            if (play.Index >= play.FolderIndexes.Count) { play.Index = -1; }
+            if (play.Index < 0 && !play.Single && !play.Circle) { play.IsPlaying = false; return; }
+            if (play.Index < 0) { play.Index = 0; }
+            if (play.FolderIndexes.Count == 0) { play.IsPlaying = false; return; }
+
+            if (play.Rand)
+            {
+                config.FolderIndex = play.FolderIndexes[play.PlayIndexes[play.Index]];
+                config.FileIndex = play.FileIndexes[play.PlayIndexes[play.Index]];
+                config.SubIndex = play.SubIndexes[play.PlayIndexes[play.Index]];
+            }
+            else
+            {
+                config.FolderIndex = play.FolderIndexes[play.Index];
+                config.FileIndex = play.FileIndexes[play.Index];
+                config.SubIndex = play.SubIndexes[play.Index];
+            }
+            play.Begin = TimeCount;
+        }
+        private bool IsPlayFinished()
+        {
+            if (play.Single || play.Circle) { return false; }
+            if (play.Rand) { return play.Index == play.PlayIndexes.Count - 1; }
+            if (play.Backward) { return play.Index == 0; }
+            if (play.Forward) { return play.Index == play.PlayIndexes.Count - 1; }
+            return false;
         }
 
         private void CloseImages()
@@ -3006,8 +3088,8 @@ namespace PictureViewer
         {
             if (!File.Exists(FileOperate.getExePath() + "\\ffmpeg.exe"))
             {
-                height = (int)(Screen.PrimaryScreen.Bounds.Height * ShapeWindowRate / 100);
-                width = (int)(Screen.PrimaryScreen.Bounds.Width * ShapeWindowRate / 100);
+                height = (int)(Screen.PrimaryScreen.Bounds.Height * MaxWindowSize / 100);
+                width = (int)(Screen.PrimaryScreen.Bounds.Width * MaxWindowSize / 100);
                 return;
             }
 
@@ -3015,6 +3097,7 @@ namespace PictureViewer
             {
                 string output = "";
                 string error = "";
+                ffmpeg = new Process();
                 ffmpeg.StartInfo.FileName = "\"" + FileOperate.getExePath() + "\\ffmpeg.exe\" -i \"" + full + "\"";
                 ffmpeg.StartInfo.UseShellExecute = false;
                 ffmpeg.StartInfo.RedirectStandardOutput = true;
@@ -3027,6 +3110,7 @@ namespace PictureViewer
                 ffmpeg.OutputDataReceived += (ss, ee) => { output += ee.Data; };
                 ffmpeg.ErrorDataReceived += (ss, ee) => { error += ee.Data; };
                 ffmpeg.WaitForExit();
+                ffmpeg.Close();
 
                 string w = "";
                 string h = "";
@@ -3047,13 +3131,13 @@ namespace PictureViewer
                     return;
                 }
 
-                height = (int)(Screen.PrimaryScreen.Bounds.Height * ShapeWindowRate / 100);
-                width = (int)(Screen.PrimaryScreen.Bounds.Width * ShapeWindowRate / 100);
+                height = (int)(Screen.PrimaryScreen.Bounds.Height * MaxWindowSize / 100);
+                width = (int)(Screen.PrimaryScreen.Bounds.Width * MaxWindowSize / 100);
             }
             catch
             {
-                height = (int)(Screen.PrimaryScreen.Bounds.Height * ShapeWindowRate / 100);
-                width = (int)(Screen.PrimaryScreen.Bounds.Width * ShapeWindowRate / 100);
+                height = (int)(Screen.PrimaryScreen.Bounds.Height * MaxWindowSize / 100);
+                width = (int)(Screen.PrimaryScreen.Bounds.Width * MaxWindowSize / 100);
             }
         }
 
@@ -3137,9 +3221,11 @@ namespace PictureViewer
             int indexofSelect = FileOperate.Search(rootpath);
 
             if (indexofSelect == config.FolderIndex) { return; }
+            
             config.FolderIndex = indexofSelect;
             config.FileIndex = 0;
             ShowCurrent();
+            if (play.IsPlaying) { SearchPlayFile(); }
         }
         private void RightMenu_Export(object sender, EventArgs e)
         {
@@ -3530,6 +3616,8 @@ namespace PictureViewer
         }
         private void RightMenu_Previous(object sender, EventArgs e)
         {
+            if (play.IsPlaying) { GetPreviousToPlay(); ShowCurrent(); return; }
+            
             if (FileOperate.RootFiles.Count == 0) { return; }
             
             int currFolder = config.FolderIndex;
@@ -3565,6 +3653,8 @@ namespace PictureViewer
         }
         private void RightMenu_Next(object sender, EventArgs e)
         {
+            if (play.IsPlaying) { GetNextToPlay(); ShowCurrent(); return; }
+
             if (FileOperate.RootFiles.Count == 0) { return; }
             
             int currFolder = config.FolderIndex;

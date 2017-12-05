@@ -235,6 +235,12 @@ namespace PictureViewer.Class
                 Item[0] = cut == -1 ? Line : Line.Substring(0, cut);
                 Item[1] = cut == -1 ? "" : Line.Substring(cut + 1);
 
+                while (Item[0].Length != 0 && Item[0][Item[0].Length - 1] == ' ')
+                { Item[0] = Item[0].Substring(0, Item[0].Length - 1); }
+
+                while (Item[1].Length != 0 && Item[1][0] == ' ')
+                { Item[1] = Item[1].Substring(1); }
+
                 #region 文本
 
                 switch (Item[0])
